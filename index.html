@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Van Gogh's Universe — M0a</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0b0b0d; overflow: hidden; }
+  canvas { display: block; }
+  #ui { position: fixed; inset: 0; pointer-events: none;
+        font: 13px/1.5 ui-sans-serif, -apple-system, Helvetica, sans-serif;
+        color: #e8e4dc; }
+  #caption { position: absolute; left: 24px; bottom: 22px; max-width: 30em;
+             text-shadow: 0 1px 12px rgba(0,0,0,.85); opacity: .85; }
+  #caption b { font-weight: 600; letter-spacing: .01em; }
+  #caption span { display: block; opacity: .6; margin-top: 4px; font-size: 12px; }
+  #hint { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+          opacity: .45; font-size: 12px; letter-spacing: .04em;
+          text-shadow: 0 1px 12px rgba(0,0,0,.9); }
+  #debug { position: absolute; right: 16px; top: 14px; display: none;
+           font: 11px/1.55 ui-monospace, Menlo, monospace; opacity: .8;
+           text-align: right; text-shadow: 0 1px 10px rgba(0,0,0,.9);
+           white-space: pre; }
+  #fail { position: absolute; inset: 0; display: none; place-content: center;
+          padding: 8vh 10vw; }
+  #fail div { max-width: 34em; }
+  #fail h1 { font-size: 15px; font-weight: 600; margin: 0 0 .6em; }
+  #fail p { margin: 0 0 .5em; opacity: .7; font-size: 13px; }
+  #fail code { font: 11px/1.6 ui-monospace, Menlo, monospace; opacity: .55;
+               display: block; margin-top: 1em; white-space: pre-wrap; }
+  #scrubbar { position: absolute; left: 24px; right: 24px; bottom: 0; height: 2px;
+              background: rgba(255,255,255,.08); }
+  #scrubfill { height: 100%; width: 0; background: rgba(255,240,210,.55); }
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="caption"><b>Wheatfield with a Reaper</b> — one 25.6 cm tile
+    <span>The order in which the strokes arrive is reconstructed, not recorded.
+      M0a stands the paint up; it does not yet claim to know the sequence.</span></div>
+  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; Z lie down</div>
+  <div id="debug"></div>
+  <div id="scrubbar"><div id="scrubfill"></div></div>
+  <div id="fail"><div>
+    <h1 id="failh">Nothing to show.</h1>
+    <p id="failp"></p><code id="failc"></code>
+  </div></div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ---------------------------------------------------------------- failure --
+// It never shows a blank rectangle. Ten lines, and monets-universe got this
+// right in its own M0.
+const fail = (h, p, c = '') => {
+  document.getElementById('failh').textContent = h;
+  document.getElementById('failp').textContent = p;
+  document.getElementById('failc').textContent = c;
+  document.getElementById('fail').style.display = 'grid';
+  document.getElementById('hint').style.display = 'none';
+};
+addEventListener('error', e => fail('The page stopped.', e.message, e.filename || ''));
+
+const Q = new URLSearchParams(location.search);
+const has = k => Q.has(k);
+const num = (k, d) => (Q.has(k) ? parseFloat(Q.get(k)) : d);
+
+// Seeded PRNG, 18531890 (DESIGN 13): the world is identical on every load.
+let _s = 18531890 >>> 0;
+const rnd = () => (_s = (_s * 1664525 + 1013904223) >>> 0) / 4294967296;
+
+// ------------------------------------------------------------------ blob --
+const HDR = 192, STRIDE = 24;
+
+function readBlob(buf) {
+  const v = new DataView(buf);
+  const magic = String.fromCharCode(v.getUint8(0), v.getUint8(1), v.getUint8(2), v.getUint8(3));
+  if (magic !== 'VGST') throw new Error(`bad magic "${magic}", expected VGST`);
+  const version = v.getUint16(4, true), hdr = v.getUint16(6, true);
+  const stride = v.getUint16(8, true), count = v.getUint32(12, true);
+  if (stride !== STRIDE) throw new Error(`stride ${stride}, expected ${STRIDE}`);
+  if (buf.byteLength < hdr + count * stride)
+    throw new Error(`blob truncated: ${buf.byteLength} B for ${count} strokes`);
+  const hex = o => [...new Uint8Array(buf, o, 32)]
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  let slug = '';
+  for (let i = 136; i < 168; i++) { const c = v.getUint8(i); if (!c) break; slug += String.fromCharCode(c); }
+  return {
+    version, hdr, stride, count, slug,
+    canvasPx: [v.getUint32(16, true), v.getUint32(20, true)],
+    canvasCm: [v.getFloat32(24, true), v.getFloat32(28, true)],
+    pxPerCm: v.getFloat32(32, true),
+    tile: [v.getUint32(36, true), v.getUint32(40, true), v.getUint32(44, true), v.getUint32(48, true)],
+    coordLo: v.getFloat32(52, true), coordHi: v.getFloat32(56, true),
+    widthK: v.getFloat32(60, true), heightMm: v.getFloat32(64, true),
+    heightMethod: v.getUint8(68),
+    srcSha: hex(72), paramSha: hex(104),
+    bytes: buf,
+  };
+}
+
+// --------------------------------------------------------------- geometry --
+// One instanced draw. The instance is a unit ribbon: six segments near, three
+// columns across so the paint has a crest and two flanks. 24 triangles.
+const NSEG = 6, NCOL = 3;
+
+function ribbonBase() {
+  const rows = NSEG + 1, n = rows * NCOL;
+  const row = new Float32Array(n), col = new Float32Array(n);
+  for (let i = 0; i < rows; i++)
+    for (let j = 0; j < NCOL; j++) { row[i * NCOL + j] = i / NSEG; col[i * NCOL + j] = j - 1; }
+  const idx = [];
+  for (let i = 0; i < NSEG; i++)
+    for (let j = 0; j < NCOL - 1; j++) {
+      const a = i * NCOL + j, b = a + 1, c = a + NCOL, d = c + 1;
+      // wound so the paint faces the viewer. Across-then-along is clockwise
+      // seen from the front, which made every ribbon back-facing and lit by
+      // ambient alone -- invisible in ?flat, which ignores normals entirely.
+      idx.push(a, c, b, b, c, d);
+    }
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('aRow', new THREE.BufferAttribute(row, 1));
+  g.setAttribute('aCol', new THREE.BufferAttribute(col, 1));
+  g.setIndex(idx);
+  return g;
+}
+
+// The record is bound straight off the packed bytes -- no unpacking pass, no
+// second copy. This is what BUILD.md's correction 5 buys: every u16 field sits
+// at an even offset, so vertexAttribPointer can address it as it stands.
+function bindStrokes(g, blob) {
+  const n = blob.count;
+  const body = blob.bytes.slice(blob.hdr, blob.hdr + n * STRIDE);
+  const u16 = new THREE.InstancedInterleavedBuffer(new Uint16Array(body), STRIDE / 2, 1);
+  const u8 = new THREE.InstancedInterleavedBuffer(new Uint8Array(body), STRIDE, 1);
+  const put = (name, b, size, off, norm) =>
+    g.setAttribute(name, new THREE.InterleavedBufferAttribute(b, size, off, norm));
+  put('aP0', u16, 2, 0, true);
+  put('aP1', u16, 2, 2, true);
+  put('aP2', u16, 2, 4, true);
+  put('aOrder', u16, 1, 10, true);
+  put('aColor', u8, 3, 12, true);
+  put('aWidth', u8, 1, 15, true);
+  put('aHeight', u8, 1, 16, true);
+  put('aFlags', u8, 1, 18, false);
+  g.instanceCount = n;
+  return g;
+}
+
+// ---------------------------------------------------------------- shaders --
+const COMMON = /* glsl */`
+  vec3 srgbToLinear(vec3 c) {
+    return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+  }
+  vec3 linearToSrgb(vec3 c) {
+    c = max(c, vec3(0.0));
+    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+  }
+`;
+
+const STROKE_VERT = /* glsl */`
+  precision highp float;
+  attribute float aRow, aCol;
+  attribute vec2 aP0, aP1, aP2;
+  attribute vec3 aColor;
+  attribute float aWidth, aHeight, aOrder, aFlags;
+
+  uniform float uCoordLo, uCoordSpan;
+  uniform vec2  uCanvasM;        // the whole canvas in metres
+  uniform vec2  uTileCentre;     // canvas-normalised centre of the tile shown
+  uniform float uShortM, uWidthK, uHeightM, uScale, uHang;
+  uniform float uScrub, uArrive, uXray;
+
+  varying vec3 vColor, vWorld;
+  varying vec2 vNrm;
+  varying float vAcross, vHeight, vArrive, vSlope;
+
+  ${COMMON}
+
+  vec2 canvasToWorld(vec2 c) {
+    return (c - uTileCentre) * vec2(uCanvasM.x, -uCanvasM.y) * uScale + vec2(0.0, uHang);
+  }
+
+  void main() {
+    // The scrub is one uniform. Strokes past it collapse to degenerate
+    // triangles; nothing is rebuilt and no buffer is re-uploaded.
+    float arrive = uArrive > 0.0 ? clamp((uScrub - aOrder) / uArrive, 0.0, 1.0)
+                                 : step(aOrder, uScrub);
+    if (arrive <= 0.0) { gl_Position = vec4(-2.0, -2.0, -2.0, 1.0); return; }
+
+    vec2 c0 = canvasToWorld(aP0 * uCoordSpan + uCoordLo);
+    vec2 c1 = canvasToWorld(aP1 * uCoordSpan + uCoordLo);
+    vec2 c2 = canvasToWorld(aP2 * uCoordSpan + uCoordLo);
+
+    // an arriving stroke extrudes along its own length
+    float t = aRow * arrive;
+    float mt = 1.0 - t;
+    vec2 pos = mt * mt * c0 + 2.0 * t * mt * c1 + t * t * c2;
+    vec2 tan = normalize(2.0 * mt * (c1 - c0) + 2.0 * t * (c2 - c1) + vec2(1e-9, 0.0));
+    vec2 nrm = vec2(-tan.y, tan.x);
+
+    float w = aWidth * uWidthK * uShortM * uScale;
+    float h = aHeight * uHeightM * uScale;
+    if (uXray > 0.5) { w *= 0.12; h = 0.0; }
+
+    // the ends of a mark are laid down by a brush, not cut off square
+    float e = abs(2.0 * aRow - 1.0);
+    float taper = sqrt(max(0.0, 1.0 - e * e * e * e * e * e));
+    float u = aCol;
+
+    float across = u * 0.5 * w * taper;
+    float lift = h * (1.0 - u * u) * taper;          // rounded top across the width
+    vec3 p = vec3(pos + nrm * across, lift);
+
+    vColor = srgbToLinear(aColor);
+    vNrm = nrm;
+    // the bow's slope constant; the fragment builds the normal from it, so the
+    // paint has a rounded top rather than three flat facets
+    vSlope = (w > 1e-6) ? (4.0 * h * taper / w) : 0.0;
+    vWorld = p;
+    vAcross = u;
+    vHeight = aHeight;
+    vArrive = arrive;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }
+`;
+
+const STROKE_FRAG = /* glsl */`
+  precision highp float;
+  varying vec3 vColor, vWorld;
+  varying vec2 vNrm;
+  varying float vAcross, vHeight, vArrive, vSlope;
+  uniform vec3 uLight, uEye;
+  uniform float uFlat, uHeights, uAmbient;
+  ${COMMON}
+
+  void main() {
+    vec3 n = normalize(vec3(vNrm * (vSlope * vAcross), 1.0));
+    if (!gl_FrontFacing) n = -n;
+    vec3 base = vColor;
+
+    if (uHeights > 0.5) {            // false-colour the impasto field
+      float h = vHeight;
+      base = vec3(smoothstep(0.35, 1.0, h), smoothstep(0.0, 0.6, h) * 0.8,
+                  1.0 - smoothstep(0.0, 0.5, h)) * 0.9;
+      gl_FragColor = vec4(linearToSrgb(base), 1.0);
+      return;
+    }
+    if (uFlat > 0.5) {               // same image the Python tuning loop makes
+      gl_FragColor = vec4(linearToSrgb(base), 1.0);
+      return;
+    }
+
+    vec3 l = normalize(uLight);
+    vec3 v = normalize(uEye - vWorld);
+    vec3 hv = normalize(l + v);
+    float ndl = max(dot(n, l), 0.0);
+    float ndh = max(dot(n, hv), 0.0);
+
+    // one tight lobe and one broad one: oil paint has a sheen, it is not a
+    // mirror and it is not chalk. The broad lobe especially has to stay small
+    // -- it lands everywhere at once and turns the whole palette milky.
+    float tight = pow(ndh, 120.0) * 0.19;
+    float broad = pow(ndh, 22.0) * 0.022;
+
+    // contact shadow where the paint meets what is under it, per stroke rather
+    // than with a shadow map -- at this scale it is indistinguishable
+    float foot = smoothstep(0.86, 1.0, abs(vAcross));
+    float ao = 1.0 - foot * (0.05 + 0.22 * vHeight);
+
+    vec3 lit = base * (uAmbient + 0.90 * ndl) * ao + vec3(tight + broad) * (0.35 + 0.65 * vHeight);
+    lit *= mix(0.55, 1.0, vArrive);          // paint darkens as it is laid
+    gl_FragColor = vec4(linearToSrgb(lit), 1.0);
+  }
+`;
+
+// The substrate is a character: it is the canvas, not a modelled surface. With
+// ?noStrokes this is all that is left, and it must not read as a scene.
+const CLOTH_VERT = `precision highp float; varying vec2 vUv; varying vec3 vW;
+  void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz;
+    gl_Position = projectionMatrix * viewMatrix * w; }`;
+const CLOTH_FRAG = /* glsl */`
+  precision highp float; varying vec2 vUv; varying vec3 vW;
+  uniform float uWeaveM; uniform vec3 uGround, uEye;
+  ${COMMON}
+  void main() {
+    vec2 g = vW.xy / uWeaveM;
+    float warp = sin(g.x * 6.2831853), weft = sin(g.y * 6.2831853);
+    float weave = 0.5 + 0.5 * (warp * step(0.0, weft) + weft * step(0.0, -warp));
+    float d = length(uEye - vW);
+    float fade = 1.0 - smoothstep(0.6, 6.0, d);          // weave is a near thing
+    vec3 c = uGround * (0.96 + 0.09 * weave * fade);
+    gl_FragColor = vec4(linearToSrgb(c), 1.0);
+  }
+`;
+
+// ------------------------------------------------------------------ scene --
+const renderer = (() => {
+  try {
+    const r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    if (!r.capabilities.isWebGL2) throw new Error('WebGL 2 not available');
+    return r;
+  } catch (e) {
+    fail('This needs WebGL 2.', 'The strokes are drawn as instanced geometry, which WebGL 1 cannot do.', String(e));
+    return null;
+  }
+})();
+
+async function main() {
+  if (!renderer) return;
+  const slug = Q.get('blob') || 'strokes/m0a/reaper-gate.bin';
+  let blob;
+  try {
+    const res = await fetch(slug);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    blob = readBlob(await res.arrayBuffer());
+  } catch (e) {
+    fail('The strokes did not load.',
+         'The page needs the packed blob that tools/extract.py and tools/pack.py produce, ' +
+         'served over http rather than opened from the file system.',
+         `${slug}\n${e.message}\n\n  python3 -m http.server 8710`);
+    return;
+  }
+
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // the shader encodes
+  renderer.setClearColor(0x14131a, 1);
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const flatMode = has('flat');
+
+  // metres
+  const canvasM = [blob.canvasCm[0] / 100, blob.canvasCm[1] / 100];
+  const shortM = Math.min(canvasM[0], canvasM[1]);
+  const [tx, ty, tw, th] = blob.tile;
+  const tileCentre = [(tx + tw / 2) / blob.canvasPx[0], (ty + th / 2) / blob.canvasPx[1]];
+  const tileM = [tw / blob.canvasPx[0] * canvasM[0], th / blob.canvasPx[1] * canvasM[1]];
+
+  // The tile is 25.6 cm of canvas. It stands here as a wall of paint at a
+  // uniform magnification -- DESIGN 4.4's "present" treatment -- and the start
+  // position is set so a stroke subtends what it would at arm's length from the
+  // real canvas. Walking closer is the magnifying glass.
+  const scale = num('scale', 15.0);
+  const hang = flatMode ? 0 : num('hang', 1.65);       // hung at eye height
+  const world = new THREE.Group();
+  scene.add(world);
+
+  const uni = {
+    uCoordLo: { value: blob.coordLo }, uCoordSpan: { value: blob.coordHi - blob.coordLo },
+    uCanvasM: { value: new THREE.Vector2(...canvasM) },
+    uTileCentre: { value: new THREE.Vector2(...tileCentre) },
+    uShortM: { value: shortM }, uWidthK: { value: blob.widthK },
+    uHeightM: { value: blob.heightMm / 1000 * num('h', 1) },
+    uScale: { value: scale }, uHang: { value: hang },
+    uScrub: { value: 1 }, uArrive: { value: num('arrive', 0.012) },
+    uXray: { value: has('xray') ? 1 : 0 },
+    uLight: { value: new THREE.Vector3(-0.45, 0.62, 0.65).normalize() },
+    uEye: { value: new THREE.Vector3() },
+    uFlat: { value: flatMode ? 1 : 0 },
+    uHeights: { value: has('heights') ? 1 : 0 },
+    uAmbient: { value: 0.21 },
+  };
+
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: STROKE_VERT, fragmentShader: STROKE_FRAG,
+    uniforms: uni, side: THREE.DoubleSide,
+  });
+  const geo = bindStrokes(ribbonBase(), blob);
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
+                                        Math.max(...tileM) * scale);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.frustumCulled = false;
+  if (!has('noStrokes')) world.add(mesh);
+
+  const cloth = new THREE.Mesh(
+    new THREE.PlaneGeometry(tileM[0] * scale, tileM[1] * scale),
+    new THREE.ShaderMaterial({
+      vertexShader: CLOTH_VERT, fragmentShader: CLOTH_FRAG,
+      uniforms: {
+        uWeaveM: { value: 0.0009 * scale },            // ~9 px of weave at 120 px/cm
+        // measured: the mean of the darkest tenth of this tile, which is what
+        // actually shows between the ridges. A flat stand-in until M0b's
+        // residual underlayer, which is the real answer.
+        uGround: { value: new THREE.Color(0.223, 0.122, 0.015) },
+        uEye: uni.uEye,
+      },
+    }));
+  cloth.position.set(0, hang, -0.00006 * scale);   // just under the paint
+  world.add(cloth);
+
+  // ------------------------------------------------------------- the walk --
+  const EYE = 1.65, LIE = 0.18;
+  const cam = flatMode
+    ? new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 500)
+    : new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.02, 400);
+  const body = { x: 0, z: num('back', 0.40 * scale), yaw: 0, pitch: 0, lying: 0, phase: 0 };
+  const keys = new Set();
+
+  if (Q.has('cam')) {
+    const c = Q.get('cam').split(',').map(Number);
+    body.x = c[0]; body.z = c[2]; body.yaw = c[3] || 0; body.pitch = c[4] || 0;
+  }
+
+  const resize = () => {
+    renderer.setSize(innerWidth, innerHeight);
+    if (flatMode) {
+      const a = tileM[0] / tileM[1], s = tileM[1] * scale * 0.5;
+      cam.position.set(0, hang, 40); cam.lookAt(0, hang, 0);
+      const va = innerWidth / innerHeight;
+      const w = va > a ? s * va : s * a, h = va > a ? s : s * a / va;
+      cam.left = -w; cam.right = w; cam.top = h; cam.bottom = -h;
+    } else { cam.aspect = innerWidth / innerHeight; }
+    cam.updateProjectionMatrix();
+  };
+  addEventListener('resize', resize); resize();
+
+  const look = (dx, dy) => {
+    body.yaw -= dx * 0.0022;
+    body.pitch = Math.max(-1.45, Math.min(1.45, body.pitch - dy * 0.0022));
+  };
+  let dragging = false;
+  renderer.domElement.addEventListener('pointerdown', e => { dragging = true; e.target.setPointerCapture(e.pointerId); });
+  renderer.domElement.addEventListener('pointerup', e => { dragging = false; });
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (document.pointerLockElement) look(e.movementX, e.movementY);
+    else if (dragging) look(e.movementX, e.movementY);
+  });
+  renderer.domElement.addEventListener('click', () => {
+    if (!document.pointerLockElement) renderer.domElement.requestPointerLock?.();
+  });
+  addEventListener('keydown', e => {
+    keys.add(e.code);
+    if (e.code === 'KeyZ') body.lying = body.lying > 0.5 ? 0 : 1;
+  });
+  addEventListener('keyup', e => keys.delete(e.code));
+  addEventListener('wheel', e => setScrub(scrub - e.deltaY * 0.0006), { passive: true });
+
+  let scrub = num('tau', 1);
+  const fillEl = document.getElementById('scrubfill');
+  const setScrub = t => {
+    scrub = Math.max(0, Math.min(1, t));
+    uni.uScrub.value = scrub;
+    fillEl.style.width = (scrub * 100).toFixed(2) + '%';
+  };
+  setScrub(scrub);
+
+  // ------------------------------------------------------------ the loop --
+  const still = has('still');
+  const dbgEl = document.getElementById('debug');
+  if (has('debug')) dbgEl.style.display = 'block';
+  let last = performance.now(), ft = 16, frames = 0;
+  const lie = { v: body.lying };
+
+  function frame(now) {
+    // clamped delta, so a loop stalled by a hidden tab never teleports the body
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+
+    if (!flatMode) {
+      const fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
+      const str = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
+      if (keys.has('ArrowLeft')) setScrub(scrub - dt * 0.18);
+      if (keys.has('ArrowRight')) setScrub(scrub + dt * 0.18);
+      const sp = 1.45 * (keys.has('ShiftLeft') ? 3.2 : 1);
+      const sy = Math.sin(body.yaw), cy = Math.cos(body.yaw);
+      if (!still && (fwd || str)) {
+        const m = 1 / Math.hypot(fwd || 0, str || 0);
+        body.x += (-sy * fwd + cy * str) * sp * dt * m;
+        body.z += (-cy * fwd - sy * str) * sp * dt * m;
+        body.phase += dt * sp * 2.6;
+      }
+      lie.v += (body.lying - lie.v) * Math.min(1, dt * 4.5);
+      // the head moves on each step; it is the only thing saying you have a body
+      const bob = still ? 0 : Math.sin(body.phase * 2) * 0.019 + Math.sin(body.phase) * 0.006;
+      const eye = EYE * (1 - lie.v) + LIE * lie.v;
+      cam.position.set(body.x, eye + bob * (1 - lie.v), body.z);
+      cam.rotation.set(0, 0, 0);
+      cam.rotateY(body.yaw);
+      cam.rotateX(body.pitch + lie.v * 1.15);
+      cam.rotateZ(still ? 0 : Math.sin(body.phase) * 0.004 * (1 - lie.v));
+    }
+    uni.uEye.value.copy(cam.position);
+
+    renderer.render(scene, cam);
+    ft += ((performance.now() - now) - ft) * 0.1;
+    if (has('debug') && (frames++ & 7) === 0) {
+      const info = renderer.info.render;
+      dbgEl.textContent =
+        `tau      ${scrub.toFixed(4)}\n` +
+        `strokes  ${blob.count}  shown ${countShown()}\n` +
+        `draws    ${info.calls}\n` +
+        `tris     ${(info.triangles / 1000).toFixed(1)} k\n` +
+        `frame    ${ft.toFixed(2)} ms\n` +
+        `cam      ${body.x.toFixed(2)},${cam.position.y.toFixed(2)},${body.z.toFixed(2)}\n` +
+        `blob     ${blob.slug}\n` +
+        `src      ${blob.srcSha.slice(0, 12)}\n` +
+        `params   ${blob.paramSha.slice(0, 12)}`;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  const orders = (() => {
+    const a = new Float32Array(blob.count);
+    const dv = new DataView(blob.bytes);
+    for (let i = 0; i < blob.count; i++) a[i] = dv.getUint16(blob.hdr + i * STRIDE + 20, true) / 65535;
+    return a;
+  })();
+  const countShown = () => { let n = 0; for (let i = 0; i < orders.length; i++) if (orders[i] <= scrub) n++; return n; };
+
+  // ------------------------------------------------------------ debug API --
+  window.vg = {
+    get state() {
+      return { tau: scrub, cam: [body.x, cam.position.y, body.z, body.yaw, body.pitch],
+               strokes: blob.count, shown: countShown(), frameMs: +ft.toFixed(2),
+               blob: blob.slug, src: blob.srcSha, params: blob.paramSha,
+               heightMethod: blob.heightMethod };
+    },
+    scrub: setScrub,
+    strokes: () => ({ near: countShown(), mid: 0, far: 0 }),
+    cam: (x, y, z, yaw, pitch) => { body.x = x; body.z = z; body.yaw = yaw ?? body.yaw; body.pitch = pitch ?? body.pitch; },
+    snap: () => renderer.domElement.toDataURL('image/png'),
+    reload: async (path) => {
+      const b = readBlob(await (await fetch(path + '?t=' + Date.now())).arrayBuffer());
+      const g = bindStrokes(ribbonBase(), b);
+      g.boundingSphere = mesh.geometry.boundingSphere;
+      mesh.geometry.dispose(); mesh.geometry = g;
+      Object.assign(blob, b);
+      return b.count;
+    },
+  };
+  addEventListener('keydown', e => { if (e.code === 'KeyR') window.vg.reload(slug); });
+
+  document.body.dataset.ready = '1';
+  requestAnimationFrame(frame);
+}
+
+main().catch(e => fail('The page stopped.', e.message, e.stack || ''));
+</script>
+</body>
+</html>

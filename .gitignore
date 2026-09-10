@@ -1,0 +1,15 @@
+# Source scans: 1.7 GB of museum photography, gathered by tools/, never committed.
+# paintings/CREDITS.md records exactly what is in here and where each file came from.
+ref/
+
+# Local Python environment for the offline extraction pipeline.
+.venv/
+
+.DS_Store
+
+# Build outputs of the offline pipeline. Reproducible from ref/ plus params/,
+# and re-tuning forty canvases through git history is hundreds of megabytes of
+# churn. From M6 a station's blobs are committed once that station is frozen.
+strokes/**/*.bin
+strokes/**/*.json
+strokes/**/*.png

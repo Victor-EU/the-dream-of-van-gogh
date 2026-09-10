@@ -1,0 +1,64 @@
+{
+  "slug": "reaper",
+  "source": "ref/originals/s04-wheatfield-with-a-reaper_VGM_s0049V1962_12665x10012.jpg",
+  "canvas_cm": [
+    92.7,
+    73.2
+  ],
+  "px_per_cm": 120.0,
+  "_tile": "M0a works one 3072 px region. The three named regions disagree with each other on purpose (BUILD, two tracks). gate is the M0a tile: the reaper, the sheaves, dense directional wheat, bare weave between them.",
+  "tiles": {
+    "gate": [
+      1100,
+      3600,
+      3072,
+      3072
+    ],
+    "weave": [
+      6200,
+      1200,
+      3072,
+      3072
+    ],
+    "impasto": [
+      7400,
+      4200,
+      3072,
+      3072
+    ]
+  },
+  "tile": "gate",
+  "_scales": "px at 120 px/cm. Canvas weave is ~9 px and brush-hair striation ~6 px; every smoothing scale here must sit above both or the tracer fits the cloth and the hairs.",
+  "sigma_grad": 5.0,
+  "sigma_tensor": 24.0,
+  "sigma_ridge": 14.0,
+  "sigma_height": 140.0,
+  "_height": "peak impasto in mm, the hand multiplier DESIGN 4.1 step 6 allows. 4 mm on an 8 mm stroke made every mark taller than it was wide.",
+  "height_mm": 2.4,
+  "_seeds": "spacing is about a quarter of a stroke width; below that the same stroke is seeded many times and dedup does all the work.",
+  "seed_spacing": 36,
+  "seed_strength_pct": 55.0,
+  "coherence_min": 0.1,
+  "_trace": "max_arc is BUILD's hard cap, 1024 px = 8.5 cm. Direction is blended with where the trace was already going, so the tensor's own jitter at a 6 px step does not read as curvature; max_turn then measures real bend. Total turn stops at 2.6 rad because past that no single quadratic can hold it and it should be a chain.",
+  "step": 6.0,
+  "max_arc": 1024.0,
+  "min_arc": 110.0,
+  "max_turn": 0.14,
+  "max_total_turn": 2.6,
+  "dir_blend": 0.65,
+  "de_max": 15.0,
+  "recentre": 30.0,
+  "_attrs": "width from the ridge out to the shadowed gap on either side, clipped to plausible paint: 1.2 mm to 1.6 cm. colour_band is deliberately narrow -- at 0.35 the median ate the neighbouring stroke and the whole palette collapsed toward its own mean, which is BUILD's 'mud'.",
+  "width_min": 14.0,
+  "width_max": 190.0,
+  "width_drop_frac": 0.22,
+  "width_gap_frac": 0.72,
+  "trough_chroma_min": 3.0,
+  "colour_band": 0.12,
+  "_merge": "a trace whose centreline is mostly inside an already-claimed, similarly-directed footprint is the same stroke found twice.",
+  "dedup_frac": 0.55,
+  "dedup_angle": 0.45,
+  "dedup_band": 0.5,
+  "fit_tol_frac": 0.45,
+  "fit_max_split": 2
+}
