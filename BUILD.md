@@ -535,6 +535,19 @@ Station 9's widening frame as the canvases go double-square. Station 1's lamp, a
 - The flood at station 2 lands as a shock, which is only possible if station 1 was dark enough and short enough.
 - No station is longer than its material justifies.
 
+*Done. Ten stations, thirty canvases, 315,638 strokes, and the scrub runs end to end. The Progress entry below has
+the numbers; the short version is three answers and one retraction. **The flood survives its audit** — 39.6 in the
+lightness-and-chroma plane against 9.2 as the most a colour-profile mismatch could forge, 4.3× a bar pre-registered
+before station 1's canvas existed — and then the same measurement says the design's sentence is in the wrong place:
+the bleach is Paris and the flood is Arles, a station later and going on for three. **τ became a chronology and
+immediately found four canvases in the wrong year**, two of them in stations already shipped, one of which was not a
+slipped date but the wrong painting: the Van Gogh Museum's* Sunflowers *is the January 1889 repetition, which makes
+station 5 a station of four repetitions instead of three. **The volume question is closed and the answer is that the
+instrument was wrong** — and closing it meant taking M5's headline number back, because the eased return had been
+reading its boundary from the standpoint while the instrument read it from the volume's centre. What replaces the
+metric is `pressing`, time spent trying to leave rather than time spent standing at the edge, and it puts the
+outdoor volumes at two to three times their old size rather than the seven M3 feared.*
+
 ---
 
 ## M7 — The voice and the brush  *(1 week)*
@@ -622,7 +635,9 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
   source in the set (75 px/cm) and deserves the best version of the extractor rather than the first.
 - **Committing the blobs.** Until M6 the blobs are gitignored build outputs, reproducible from `ref/` plus
   `params/`, because re-tuning forty canvases through git history is hundreds of megabytes of churn. From M6 a
-  station's blobs are committed when that station is frozen.
+  station's blobs are committed when that station is frozen. *M6 freezes none — its own scope is "roughed in and
+  nothing polished" — so they stay out. What is committed is the goldens, and thirty canvases at two 1200 px images
+  each is **55 MB**, which is the first time that line has cost anything worth noticing.*
 - **Sound design beyond the brush.** Mistral, cicadas, rooks. After M7's brush exists at scale.
 
 ---
@@ -633,7 +648,7 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
 |---|---|---|---|
 | The strokes do not read as Van Gogh | fragmentation, uniform width, or a wrong height field | the gate, and arc length 250–700 px | M0a |
 | The residual carries the picture | the underlayer does the work and the ribbons are sprinkles | band-pass energy ratio < 0.6 | M0b |
-| The stations do not sit on one colour footing | forty scans, twelve institutions, loose profile handling | station 2's flood survives a profile audit | M0b, M6 |
+| The stations do not sit on one colour footing | forty scans, twelve institutions, loose profile handling | station 2's flood survives a profile audit | M0b, M6 — **it survives** |
 | Impasto is measuring colour, not relief | flat-field museum photography has erased the signal | ℓ scatters across the VGM scans | M1 — **it had** |
 
 *That last row fired. The 24 VGM scans return a resultant of 0.029, which is inside the 0.020–0.058 the same
@@ -655,7 +670,7 @@ about the canvases: the two that clear +10 are the two whose marks cross at ever
 +6 are fields of long nearly-parallel strokes where a crossing is shallow and the colour cue has less to work with.
 The claim did not need revising. It needed to be tried somewhere it might have failed.*
 
-| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes**, M4 — **and it got worse**, M5 — **and it is two questions** |
+| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes**, M4 — **and it got worse**, M5 — **and it is two questions**, M6 — **and the instrument was the wrong one** |
 
 *The instrument is built and reads out; the tester is not, and a person is what the criterion actually asks for. What
 it returns for three scripted ways of moving is 93%, 83% and 72% of the time within half a metre of the boundary —
@@ -684,8 +699,34 @@ straightish line is not a thing a bedroom can absorb — a fact about ambling an
 in two. **For an interior it is answered and there is nothing left to decide.** For a landscape it is exactly as open
 as M4 left it, and M6 now has only that half to settle.*
 
+***M6 takes M5's paragraph above back and then closes the row.*** The eased return that keeps a body inside a volume
+was reading its half-extents from the standpoint while the instrument read them from the volume's own centre, which
+M5 had just added. So at station 5 the walker was held inside a correctly-sized box in the wrong place — comfortably
+inside the boundary being scored — and 0.3% and 7.1% are what that produced. With the return reading the same centre,
+the three walkers there give **95.6%, 99.7% and 95.5%**. Nothing in this piece passes the edge test and station 5
+never did.
+
+And nothing could: **the edge test measures the walk.** Forty seconds at 1.45 m/s is 58 m, so any walker with a net
+forward drift arrives at any boundary nearer than that and stands at it, and the metric scores standing as pushing —
+which is why M3's sweep answered a slab bigger than the walk. That was the third of the three answers M3 wrote down
+and it is the one that is true. The statistic that replaces it is **pressing**: the fraction of the walk spent
+holding a key that would go further out while the ground takes the body back. `look`, the only scripted walker that
+stops and turns and looks, presses **0.0%** in station 2's corridor, 27.1% at station 4, 32.6% at station 5 and
+32.7% at station 8; `forward` and `wander` press 42–89% everywhere, which is a fact about walkers that never stop.
+Swept at station 4: **27.0% at 12 × 7, 20.6% at 18 × 11, 12.7% at 26 × 16, 0.0% at 40 × 25.** The six outdoor
+stations ship at 26 × 16 — the first size under the fifth M3 pre-registered, two to three times the old slab rather
+than the seven M3 feared, and paid for with a far field a quarter as dense at six metres and thinner beyond. The row
+is closed as far as an instrument can close it. A person in a chair is still what the criterion asks for.*
+
 | We drift into modelling Provence | the world stops being made of strokes | `?noStrokes` shows a scene | every |
-| Station 1 loses the viewer | too dark, too long, and no reason to continue | tested at M6, not argued about before | M6 |
+| Station 1 loses the viewer | too dark, too long, and no reason to continue | tested at M6, not argued about before | M6 — **dark and short, and still untested on a person** |
+
+*Dark: the Potato Eaters' area-weighted mean lightness is **11.9**, a quarter of the corridor's 51.5 and a fifth of
+the orchards' 64.3, and none of that darkness is a dimmer — there is no light in that room he did not paint. Short:
+one canvas, 13,036 strokes, **6.5 seconds and 2.6% of the arc**, the shortest station in the piece that has paint in
+it. A reason to continue: the road out of it is the longest in the piece, twenty-two seconds for the ten months
+between Nuenen and Paris, and what is at the end of it is four times the light. Those are the three things the row
+asks for and they are numbers. Whether a stranger stays is not a number and this milestone did not test it.*
 
 ---
 
@@ -2001,3 +2042,331 @@ down was 7.7.*
 
 **Not started, per scope.** The two chairs, which DESIGN 7 asks for at this station and M5's scope does not. Stations
 1, 2, 3, 6, 7, 9, 10. The letters (`text` is null in all three station files). The far LOD tier. Sound.
+
+---
+
+### M6 — The arc
+
+**Asked.** All ten stations roughed in, in order, everything walkable and nothing polished; station 2's colour
+flood; station 9's widening frame; station 1's lamp and its shortness. And the three decisions M3, M4 and M5 each
+deferred to here: **the viewing volume** for a landscape, **whether the transits are dead time**, and **what happens
+to the Reaper when τ stops being a station-local scrub and becomes a chronology**.
+
+**Built.** Nineteen more canvases extracted, packed and placed, for thirty in the piece. Seven station files —
+1, 2, 3, 6, 7, 9, 10 — and edits to the three that existed. `params/_base.json`, so that the forty numbers the
+extractor tunes with live in one file instead of thirty copies. Four new tools: `tools/palette.py` (the flood,
+against what a wrong colour profile could forge), `tools/station.py` (the station files' arithmetic, and whether the
+piece's time holds together), `tools/dates.py` (when each canvas was painted, from the holder's own record) and
+`tools/tiles.py` (the two 1:1 regions a params file names, picked by measurement rather than by eye). In the
+runtime: a station with no canvases at all, a corridor, a road whose length is the months it crosses, `vg.arc()`,
+and the `pressing` statistic that finally answers DESIGN 15's oldest question.
+
+**The flood survives its audit, and it is not a flood.** BUILD's risk table has carried one row since M0b that no
+milestone could close: forty scans, twelve institutions, and if the decode is loose the stations do not sit on one
+colour footing — with station 2's flood the effect most exposed to it, because the whole point of that station is
+that the colour changes. `tools/palette.py` was **committed before station 1's canvas finished extracting**, so the
+bar in it is a bar and not a description. The statistic is a canvas's area-weighted mean lightness and mean chroma
+in CIE Lab over its own stroke record; a station's palette is the mean of its canvases'. The bound is on the
+*difference* and it is adversarial: each station decoded under whichever of sRGB, Adobe RGB (1998) and Apple's
+Generic RGB pulls the two furthest apart, less the flood that is really there. Neither alternative is hypothetical —
+of the nine files in this set that carry a profile at all, two are Adobe RGB and two are Apple's.
+
+| | lightness | chroma |
+|---|---|---|
+| station 1, *The Potato Eaters* | **11.9** | 11.1 |
+| station 2, the corridor | **51.5** | 13.7 |
+| the flood, in that plane | **39.6** | |
+| the most a profile mismatch could forge | **9.2** | |
+
+**4.3× the bound, and 4.7× with the one Art Institute canvas dropped** — the Potato Eaters and five of the six
+corridor canvases come off one museum's rig, where a mismatch between two scans is least likely of all. The
+pre-registered bar was 3×. It passes.
+
+**And then the number says something the design did not.** Almost all of that 39.6 is lightness: 11.9 to 51.5, a
+factor of four and a third. The chroma moves 11.1 to 13.7 and that is nearly nothing. DESIGN 7 says *the world
+bleaches, then floods*, and both halves of that sentence are true — but they are not both at station 2. Measured
+along the whole arc:
+
+| station | lightness | chroma |
+|---|---|---|
+| 1 Nuenen, 1885 | **11.9** | 11.1 |
+| 2 Paris, 1886–88 | 51.5 | 13.7 |
+| 3 the orchards, 1888 | **64.3** | 22.5 |
+| 4 the Harvest, June 1888 | 51.8 | 30.7 |
+| 5 the Yellow House, 1888–89 | 59.3 | **35.9** |
+| 8 Saint-Rémy, 1889 | 44.5 | 21.2 |
+| 9 Auvers, 1890 | 55.9 | 27.7 |
+| 10 the wheatfield, July 1890 | **37.1** | 34.7 |
+
+**The bleach is Paris and the flood is Arles.** Paris is where the light arrives — four times the lightness of the
+cottage, for almost no extra colour — and the colour arrives a station later and goes on arriving for three. The
+smallest, palest thing in the whole piece is the 19 × 14 cm cardboard self-portrait that opens the corridor, at
+chroma **4.6**, which is less than half the Potato Eaters' 11.1: he got *less* colourful before he got more. And
+the last two rows are the shape of the ending, which is not the shape DESIGN 7 claims for it: the brightness peaks
+in the orchards and the last canvas is the darkest thing since Nuenen, while the *chroma* climbs to the end. The
+arc's peak immediately before nothing is real; it is a peak in colour and not in light.
+
+**τ became a chronology, and the first thing it did was find four canvases standing in the wrong year — two of them
+in stations this repository had already shipped.** M3 wrote that the Reaper's date would fight station 8 at M6 and
+that this was the milestone to settle it in. It did not fight; it turned out to have company. `tools/dates.py` asks
+the Van Gogh Museum's own object pages, which is the same rule `paintings/CREDITS.md` has kept for dimensions since
+M0b and which nothing had ever applied to dates — the axis the entire piece is controlled by.
+
+| | this repository said | the museum says | |
+|---|---|---|---|
+| *Sunflowers*, `s0031V1962` | August 1888 | **January 1889** | not the canvas, the repetition of it |
+| *Olive Grove*, `s0045V1962` | June to July 1889 | **November 1889** | outside its own station's span |
+| *The Sower*, `s0029V1962` | November 1888 ✓ | November 1888 | right since M3, and five months outside station 4 |
+| *Orchard in Blossom*, `s0038V1962` | — | **April 1889** | a year after the spring station 3 is about |
+
+The *Sunflowers* correction is the one that changes something. Station 5 has been standing what it called the
+Sunflowers next to three Bedrooms and calling three of its four canvases repetitions; the museum dates its canvas
+five months after the London one it repeats. **All four walls of that station are repetitions, and that was not
+designed.** The *Olive Grove* is a plain error in a shipped file, corrected here; station 8's span was widened to
+hold it rather than the date narrowed to fit, because DESIGN 7 calls that station "Saint-Rémy, 1889" and he was
+there until May 1890, so the narrow May-to-July span was the thing that was wrong.
+
+So the rule `tools/station.py` enforces is not that a canvas must be in its own year. The piece is allowed to put a
+canvas where the argument wants it — it is what station 5 is *for*. **What it is not allowed to do is that
+quietly.** A `when` outside its station's `span` with no `note` beside it is an error and the tool exits non-zero;
+seven canvases are outside, every one with a note, and the date on the band says so at run time. The Reaper is
+settled by being one of seven rather than by being moved.
+
+**The volume question is answered, and the answer is that the instrument was wrong — which was one of the three
+answers M3 wrote down and the only one that could be measured rather than chosen.** First a retraction. M5 reported
+that station 5's room was the first volume in the piece to pass, at 0.3% and 7.1% against the pre-registered 20%.
+It was not. The room's box is 2.8 × 3.8 m with its centre 0.8 m left of the standpoint and 1.6 m in front of it, and
+the eased return that keeps a body inside it read the half-extents from the **origin** while the instrument read
+them from the **centre** — so the walker was held inside a correctly-sized box in the wrong place, comfortably
+inside the boundary being scored. With the return reading the centre the instrument does, the same three walkers
+give 95.6%, 99.7% and 95.5%. **No station in this piece passes the edge test and station 5 never did.**
+
+And none could have, because the edge test measures the walk. Forty seconds at 1.45 m/s is 58 metres; any walker
+with a net forward drift reaches any boundary nearer than that and then stands at it, and standing at it scores as
+pushing at it. That is why M3's sweep answered *50 × 40 m*: a slab a hundred by eighty is bigger than the walk. So
+M6 adds **`pressing`** — the fraction of the walk spent holding a key that would go further out while the ground
+takes the body back. Trying to leave, rather than standing at the edge.
+
+| | forward | wander | look |
+|---|---|---|---|
+| 2 the corridor, 5.2 × 32 m | 51.7% · 42.7% | 89.1% · 68.1% | 36.8% · **0.0%** |
+| 4 the plain, 24 × 14 m | 89.6% · 80.4% | 86.9% · 77.2% | 75.2% · 27.1% |
+| 5 the room, 2.8 × 3.8 m | 95.6% · 86.2% | 99.7% · 89.0% | 95.5% · 32.6% |
+| 8 Saint-Rémy, 18 × 12 m | 91.3% · 82.3% | 89.9% · 80.2% | 76.8% · 32.7% |
+
+*(time within half a metre of the edge · time pressing against it)*
+
+`forward` and `wander` press everywhere and that is a fact about them: a walker that never stops will reach the edge
+of anything. `look` — walk a few paces, stop, turn, look, walk on — is the only one of the three that resembles
+somebody looking at a painting, and it presses **0.0%** in the corridor and about a third of the time in all three
+of the others. The corridor is the only volume in the piece longer than forty seconds of walking.
+
+Then the sweep, at station 4, with `look`:
+
+| slab, half-extents | 12 × 7 | 18 × 11 | **26 × 16** | 40 × 25 |
+|---|---|---|---|---|
+| pressing | 27.0% | 20.6% | **12.7%** | 0.0% |
+| and `wander` | 77.2% | 68.3% | 49.6% | 28.5% |
+
+**Two to three times the old slab, not seven.** The six outdoor stations ship at 26 × 16 — the first size in the
+sweep that comes under the fifth M3 pre-registered, with a bar that was set three milestones before this sweep
+existed. What it costs is a thin far field, and the number for that is M3's own: the plain is a quarter of its own
+density six metres out and this walks to twenty-six. The interiors keep their rooms and the corridor keeps its
+corridor, because in those the volume is the thing itself. `wander` still fails everywhere and always will.
+
+**The roads had become the piece.** Nine of them at M4's flat sixteen seconds each is **144 seconds of going
+somewhere against 102 of painting** — more than half the τ axis — and worse, it says every gap in his life is the
+same size. He left Paris on 19 February 1888 and was painting in Arles the week after; between Nuenen and Paris
+there are ten months this piece shows nothing of. A road is now as long as the months it crosses, four seconds at
+least because two stations whose dates overlap still stand six hundred metres apart, twenty-four at most: **22, 4,
+6, 8, 4, 10, 13, 15 and 4 seconds**. The roads fall to 40% of the axis and the longest of them is the one with the
+most missing life in it. The metres stay at six hundred, which answers a question about the paint rather than about
+time — a station's own plain runs to 260 m and two must not stand inside each other — so the speed on a road is
+whatever those two facts require and is not a quantity this piece means anything by.
+
+**Station 9's widening frame does not fall out of the geometry, and it happens anyway for a different reason.**
+DESIGN 7's claim is causal: the canvases go double-square at Auvers, *so* the frame of the world widens. It does
+not. A canvas is hung at a declared field of view — 50°, "a painter at an easel looking at the whole canvas at
+once", named as the one free constant in the geometry since M3 — so a 2:1 canvas covers the same 50° of the world
+as a 1.25:1 one and half the height. It gets shorter, not wider. What would produce the design's effect is holding
+the painter's *distance* fixed instead of the angle, and M6 measures what the fixed angle implies about that
+distance across all thirty canvases: **15 cm to 110 cm, a factor of seven.** Nobody paints a 14 cm panel from
+15 cm away, so the fixed angle is a constant about the presentation and not about the painter, and it has never
+claimed otherwise. Switching to a fixed distance would re-hang every station built so far — the Sower would go from
+50° to 29.5° and its plain would run somewhere else — so it is named here and left to M9.
+
+The frame does widen at station 9, for a reason the design did not give. Measured as the fraction of the horizontal
+ring a station's paint covers: 19% at station 1, 42% at 3 and 4, 46% at 6, 14% at 8, **69% at station 9** and 14% at
+station 10. Station 9 is the widest thing in the piece because he painted five canvases in nine weeks there and they
+are all places, not because any of them is a double square. And then it shuts: the last station is one canvas and
+14%, which is the narrowest painted station in the piece and is the right shape for an ending.
+
+**There is no lamp at station 1, and there should not be one.** DESIGN 7 asks for a low dark room, one oil lamp,
+five figures, and *you can barely see*. The lamp is in the painting. Putting a light source in that room would be
+relighting a Van Gogh, which is precisely the mistake M5 caught and measured at station 5, where lighting built
+surfaces by their own face normals ruled a bright band across the Bedroom at the wall–floor crease. The station is
+dark because the canvas is dark, and the number is above: **lightness 11.9**, a quarter of the corridor's and a
+fifth of the orchards'. It is also short, which is the other half of the risk-table row: 13,036 strokes, **6.5
+seconds, 3.0% of the arc** — the shortest station in the piece that has paint in it.
+
+Its room is authored, as M5 established a room must be, and this file says which of the six numbers came off the
+canvas. Three did: the back wall's corners at 0.06 and 0.93, and the beams meeting it at 0.17. Two could not,
+because the floor of that room is behind the table and is not in the painting: the row where the wall meets it, and
+the row the window's axis crosses. Those two were chosen by running M5's arithmetic backwards until the room came
+out the size a Brabant cottage room is — **4.63 m wide, 3.80 m deep, 2.59 m to the beams**, with the easel 2.23 m
+from the left wall.
+
+**The corridor is the one station where the walk and the scrub are the same axis by construction.** Six canvases
+hung down a hallway, `along` increasing with the date, so walking forward is walking forward in time. Every one of
+the six measures PRESENT on `tools/place.py`'s own test — a wall of paint with no horizon in it — which for once is
+not an override but the reason the station works: DESIGN 7 asked for a hang and there is nothing here to stand
+inside. It is also the only volume in the piece the `look` walker never pushes at.
+
+**Nine things were wrong, and four of them were the same kind of wrong: something that worked because there were
+three stations and stopped working at ten.**
+
+1. **A missing blob ended the streaming queue.** `catch (e) { break; }` — with three stations and one directory of
+   blobs that was invisible, because either everything was built or nothing was. With twenty-five canvases in ten
+   directories, one missing file silently dropped **every canvas after it in τ order**. Found by having two of
+   station 2's six not yet extracted and watching the other four fail to appear. A blob that does not arrive is now
+   skipped, named in `vg.state.missing`, and counted in the streaming line.
+2. **And the first blob failing was fatal.** `pull(0)` had a hard failure path, correctly, when the first canvas of
+   the piece and the only canvas of the piece were the same thing. Now it is the first canvas of station 1, and one
+   missing file there took the whole arc down with a message about running a web server. It tries each in τ order
+   and fails hard only when *nothing* loads, which is what rule 2's failure path is actually for.
+3. **`first = canvases[0]` in the debug API.** With index 0 allowed to be a hole, the `vg.state` getter threw on
+   `first.blob` — so the page rendered perfectly, at 60 fps, with every measurement in the harness gone and
+   `tools/shot.py` reporting only "the page did not reach window.vg". The most expensive twenty minutes of the
+   milestone, and the fix is `canvases.find(c => c)`.
+4. **The eased return ignored the volume's centre.** M5 added an offset volume and taught `edgeDist` about it; the
+   line that actually pushes the body back still measured from the origin. Every station whose volume is centred
+   anywhere else — the Bedroom, the corridor — measured one boundary and enforced another. This is the one that
+   retracted a published number.
+5. **The profile control returned linear light where its caller wanted sRGB bytes.** `as_if_adobe` converted into
+   linear sRGB and handed that back to be decoded as sRGB again, so every canvas appeared to move 22 to 29 units in
+   a plane where the whole flood is 39.6 and the honest bound is 9.2. It would have made the audit fail. Caught
+   because a bound larger than the effect on *every single canvas* is not a bound, it is a bug.
+6. **Two accession numbers in `tools/sources.tsv` were wrong**, and both were found by asking a holder for a date
+   and being answered with an identifier that did not match. The Kröller-Müller publishes the *Café Terrace* as
+   **KM 108.565**; this repository said KM105.462. Joconde's **RF 1954 15** is *Le jardin du docteur Gachet*, a
+   portrait canvas; *Chaumes de Cordeville* is **RF 1954 14**. In both cases the scan's own aspect confirms the
+   picture is the one named, so the number was wrong and never the image. The filenames under `ref/originals/` keep
+   the old numbers, because renaming one changes a source path, which changes a params hash, which rebuilds a
+   canvas to fix a string.
+7. **Eleven params files carried forty identical copies of the same numbers**, and four of them said so in their own
+   notes — *"borrowed rather than re-tuned … if this canvas ever needs its own, that is a finding"*. Thirty canvases
+   would have carried thirty copies and the next re-tune would have been thirty edits. `params/_base.json` holds
+   them; a canvas file holds its slug, its scan, its size and its regions, and anything it overrides is the only
+   tuning in it and reads as tuning. The merged dict is what gets hashed, so **all eleven hashes are unchanged and
+   no blob moved**.
+8. **The band's ten station marks were a second list of dates** beside the station files' own spans, and they had
+   already drifted — station 2 marked June 1886 against a span starting March, station 5 marked 20 September against
+   18 August. Two lists of the same dates is how a station's tick
+   ends up somewhere its own fill does not reach. The marks now come from the spans, with the old list kept only for stations a partial build has
+   not loaded.
+9. **The 1:1 regions were about to be picked nineteen times by eye.** M0a picked the Reaper's three by looking at
+   the canvas, which was right for one canvas and is nineteen chances to pick a flattering one. `tools/tiles.py`
+   picks two — the window carrying the most band-pass energy at stroke scale and the one carrying the least — from
+   an eighth-scale decode, in seconds.
+
+**And one thing that is not a bug and is worse: a blob can be stale and say so to nobody.** The header records the
+scan's hash and the params' hash, so staleness is a fact about the artifact rather than a timestamp — which is right,
+and misses the pipeline itself entirely. M4 fixed a colour decode in `tools/order.py`, in exactly two lines, both of
+them feeding the solver its stroke colours; the commit that carries that fix also carries the goldens, and the
+goldens were accepted from blobs built earlier in the same session. **Nothing was ever force-rebuilt afterwards**,
+because `make.py` correctly found every blob up to date with its source and its params — which had not moved, because
+the code is in neither hash.
+
+M6 force-rebuilt all eleven canvases older than itself, and five of the goldens moved:
+
+| | colour | relief |
+|---|---|---|
+| *Wheatfield with a Reaper* | 0.00624 | 0.01248 |
+| *The Harvest* | 0.00560 | 0.01018 |
+| *The Sower* | 0.00366 | 0.00712 |
+| *Self-Portrait 1887* | 0.00174 | 0.00572 |
+| *The Starry Night* | 0.00386 | 0.00725 |
+
+Every one of those canvases comes back with **the identical stroke count, the identical coverage, identical geometry,
+identical colour and identical height** — and a different order. The difference image is a scatter of individual
+stroke-shaped patches, two or three pixels at the median, over between a third of a percent and two percent of the
+canvas — the Self-Portrait least, the Reaper most — which is precisely what marks swapping over and under their
+neighbours looks like, and the bare canvas between the strokes is the same pixels in every one. Two consecutive
+rebuilds of the same canvas are byte-identical, so the pipeline is deterministic; it was the code between the golden
+and today that moved, and the golden is the thing that was stale.
+
+The canvases M5 built — the three Bedrooms and the Sunflowers — were solved **after** that commit, so they should not
+move, and they do not. M4's own three split along the same line: the Irises and the Olive Grove hold to the pixel, so
+they were solved after the fix, and the Starry Night, which that session had solved before it, moves with the four
+older canvases. And the direct test: put the `/ 255` back into those two lines of today's `order.py`, rebuild the five
+in a scratch directory, and **all five come back identical to their old goldens** — colour and relief, RMS 0.00000,
+every one — so nothing else that has changed in the tools since M4 reaches them. That is the check that makes this a
+diagnosis rather than a story.
+
+`tools/make.py --check` now lists blobs older than the tools that write them. It is a modification time and not a
+hash, so a checkout resets it. After the rebuild it lists seven blobs, all seven the M0a-to-M2 builds in their
+milestone directories, which no station loads and which are exactly as old as it says. The real fix is the
+pipeline's own hash in the blob header, which costs a rebuild of everything to install and is named below rather
+than done.
+
+**And a trap that was four seconds from being sprung.** `tools/make.py <slug>` without `--shell` or `--room` rebuilds
+a canvas without the stage whose input is a station file, and produces a perfectly valid blob with no depth in it and
+nothing downstream that complains — the station just quietly stops having a middle distance. The first version of
+M6's rebuild script omitted both flags and was killed after the first canvas. `make.py` now refuses to rebuild a
+canvas whose existing blob carries `shell` or `room` unless the flag is there.
+
+**Verified.**
+
+| | measured | |
+|---|---|---|
+| τ from 0 to 1 without leaving the piece | all ten stations entered, over 600 samples of `vg.arc()` | exit criterion 1 |
+| the date across the arc | April 1885 → July 1890, monotone except twice | station 6 overlaps 5 by **42 days** and 10 overlaps 9 by **12 days**, because he painted both at once |
+| the flood against a profile mismatch | **4.3×**, and **4.7×** inside one museum | pre-registered 3×, committed before station 1 existed |
+| station 1's darkness | lightness **11.9** against the corridor's 51.5 | exit criterion 2 |
+| station 1's length | **6.5 s, 2.6%** of the arc, one canvas | exit criterion 2 |
+| the stations' lengths | 6.5 s to 23.9 s of paint; the roads 34.4% of the axis | exit criterion 3 |
+| `?flat` parity against `tools/flat.py` | RMS **0.0476** at 1272 px | M5 0.0476, M4 0.0472 |
+| goldens, thirty canvases | identical | five re-baselined for M4's order fix, explained above; the other six older canvases held |
+| `?still` twice, mid-station | byte-identical PNG | seed 18531890 holds |
+| Balanced, worst over the whole arc | **1.27 M triangles, 25 draws, 3.4 ms submit, 10.3 ms GPU, 60 fps** | budget 2.5 M and 120 |
+| strokes resident | **315,638** over 30 canvases | budget 400 k |
+| blob per station | 0.29 to **1.15 MB** | ≤ 6 MB |
+| params discipline | 30 files, **not one override** | the base holds everywhere |
+| the station audit | 10 stations, 7 canvases outside their span, every one with a note | `tools/station.py` exits 0 |
+
+**Still visible, and named rather than fixed.**
+
+- **A `wander` fails every volume in the piece and always will.** Forty seconds of walking in a straightish line is
+  not something any bounded place absorbs. The number that matters is `look` and it is under the bar at the six
+  outdoor stations; at the two interiors and the corridor the volume is the room or the hallway and there is nothing
+  to size.
+- **The room at station 1 has two of its six numbers invented**, and unlike station 5 it is not the ceiling — it is
+  the floor. The Potato Eaters' floor is behind the table and is not in the painting, so the row where the back wall
+  meets it, and the row the window's axis crosses, were chosen by running the arithmetic backwards until the room
+  came out the size a cottage room is.
+- **DESIGN 7 asks for two chairs at station 5, a shell at station 6 and snow at station 3**, and gets none of the
+  three. The chairs and the shell are work this milestone chose not to do; the snow is a canvas — *Landscape with
+  Snow* — that is in DESIGN 8.2's list and was never in `tools/sources.tsv`, so it was never fetched. That is the
+  one gap here that is a hole in the material rather than in the build.
+- **The bright specular on near paint at station 1.** A built room puts the canvas's nearest strokes half a metre
+  from the eye, where a ray normal faces the viewer head-on and the tight lobe is at its strongest. In a canvas this
+  dark the few marks that catch it read as white. It is the correct behaviour of a lighting model chosen at M5 for
+  good reasons and it is conspicuous exactly once, here.
+- **Every canvas's rectangle still has hard edges**, and at station 9 — five lifted canvases around one standpoint,
+  covering 69% of the ring — the gaps between them are more conspicuous than anywhere else in the piece.
+- **`tools/make.py --check` knows a blob's age only by its modification time.** Today it lists seven, the M0a-to-M2
+  builds that no station loads, and is right about all seven; but a checkout resets a modification time, and a blob
+  built before a fix and touched since would pass. The real fix is the pipeline's own hash in the header, which costs
+  a rebuild of everything to install and is named here rather than done.
+- **The goldens are 55 MB.** Thirty canvases at two 1200 px images each, and every legitimate re-baseline adds
+  another 55 MB to the history. The regression is worth it and the cost should be looked at once more at M9.
+- Everything M5 left open that M6 did not touch: the ceiling invented in three Bedrooms, a stroke stretched around a
+  room corner, two Saint-Rémy canvases on Arles cloth, the depth buffer at the dome, the Starry Night's tacking
+  margin, the Harvest's lopsided acts.
+
+**Not started, per scope.** The letters — `text` is null in all ten station files and M7 owns the verification. Sound.
+The far LOD tier, which the resident-stroke row will need before the piece has its full 550,000. Station 11, the
+coda, and station 7's beat beyond the fact that it exists — M8 owns both and expects to get station 7 wrong twice.
+The two chairs, *Van Gogh's Chair* and *Gauguin's Chair*, both fetched and neither extracted. The other four
+*Sunflowers*. Committing a station's blobs, which `.gitignore` says happens once a station is frozen and M6 freezes
+none.

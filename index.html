@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Van Gogh's Universe — M3</title>
+<title>Van Gogh's Universe — M6</title>
 <style>
   :root { color-scheme: dark; }
   html, body { margin: 0; height: 100%; background: #0b0b0d; overflow: hidden; }
@@ -1006,12 +1006,25 @@ const renderer = (() => {
 // volume, acts, pacing, letter. A station is data and this file is the
 // mechanism, which is the only way ten of them get built in the time there is
 // and the only way one can be changed without touching a shader.
-const STATIONS = { 4: 'stations/s04-harvest.json', 5: 'stations/s05-yellow-house.json',
-                  8: 'stations/s08-saint-remy.json' };
-// DESIGN 3.3: the map is the chronology. Three of the ten exist, they are laid
-// out in the order he painted them, and tau runs along that order rather than
-// along France.
-const ORDER = [4, 5, 8];
+const STATIONS = {
+  1: 'stations/s01-the-potato-eaters.json',
+  2: 'stations/s02-the-corridor.json',
+  3: 'stations/s03-snow-then-blossom.json',
+  4: 'stations/s04-harvest.json',
+  5: 'stations/s05-yellow-house.json',
+  6: 'stations/s06-the-night-of-arles.json',
+  7: 'stations/s07-the-strokes-stop.json',
+  8: 'stations/s08-saint-remy.json',
+  9: 'stations/s09-auvers.json',
+  10: 'stations/s10-the-wheatfield.json',
+};
+// DESIGN 3.3: the map is the chronology. All ten, laid out in the order he
+// painted them, and tau runs along that order rather than along France. The
+// arc is dark, flood, yellow, night, stop, stars, green, end -- and the two
+// ends of it, station 0's primed canvas and station 11's nothing, are not
+// entries here: station 0 is the loading screen and what is left when no paint
+// has arrived, and station 11 is what is left when it has all gone by.
+const ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 // One blob with no station around it: what ?blob and ?flat still mean, and what
 // M0b through M2 were. It is a real station of one canvas standing as a wall
@@ -1075,7 +1088,7 @@ async function main() {
   } else if (want !== null && !STATIONS[want]) {
     // A hook that quietly does nothing is worse than one that is missing.
     fail(`There is no station ${want} yet.`,
-         'M4 builds stations 4 and 8, The Harvest and Saint-Remy. The rest come after.',
+         'M6 builds all ten. 0 is the primed canvas you are standing on and 11 is what comes after; neither is a station file.',
          `stations: ${Object.keys(STATIONS).join(', ')}`);
     return;
   } else {
@@ -1089,13 +1102,29 @@ async function main() {
   }
   let st = STS[0];                       // the one tau is inside; the loop moves it
 
-  // How far apart two stations stand, and how long the crossing takes. Neither
-  // is a measurement: DESIGN 3.3 is explicit that the map is the chronology and
-  // not France, so the distance is set by what it has to do -- be further than
-  // either station's own plain runs, so that the two do not stand inside each
-  // other -- and the duration by what a crossing should feel like.
+  // How far apart two stations stand, and how long the crossing takes. The
+  // distance is not a measurement: DESIGN 3.3 is explicit that the map is the
+  // chronology and not France, so it is set by what it has to do -- be further
+  // than either station's own plain runs, so the two do not stand inside each
+  // other.
   const APART = num('apart', 600);
-  const TRANSIT_S = num('transit', 16);
+  // The duration was not a measurement either, and at M6 it had to become one.
+  // With three stations there were two roads at sixteen seconds each and it did
+  // not matter what the number meant. With ten there are nine, and sixteen
+  // seconds nine times is more than half of the whole tau axis spent going
+  // somewhere -- and worse, it says every gap in his life is the same size. He
+  // left Paris on 19 February 1888 and was painting in Arles the week after;
+  // between Nuenen and Paris there are ten months this piece shows nothing of.
+  // So a road is as long as the months it crosses, with a floor, because two
+  // stations whose dates overlap still stand six hundred metres apart and the
+  // body has to cross. ?transit=N puts every road back to one length.
+  const MONTH_MS = 30.44 * 864e5;
+  const ROAD_MIN = num('road', 4), ROAD_RATE = num('roadrate', 2), ROAD_MAX = 24;
+  const roadS = (a, b) => {
+    if (Q.has('transit')) return num('transit', 16);
+    const gap = (Date.parse(b.span?.[0] || 0) - Date.parse(a.span?.[1] || 0)) / MONTH_MS;
+    return Math.min(ROAD_MAX, ROAD_MIN + Math.max(0, gap || 0) * ROAD_RATE);
+  };
 
   STS.forEach((sn, i) => {
     sn._i = i;
@@ -1493,10 +1522,26 @@ async function main() {
     // place has no rays to be on, so it is a wall, and a wall has to be some
     // distance away -- the Sunflowers at station 5 stand a metre and a half
     // behind where he stood, facing back at it.
+    // and how far *along* the station it stands, which only a corridor needs.
+    // Station 2 hangs six canvases down a hallway rather than around a
+    // standpoint, because DESIGN 7 asks for that in those words: he painted
+    // twenty-five self-portraits in two years because he could not afford
+    // models, and you watch him learn colour down the length of it. dist puts
+    // a wall out to the side, `along` puts it further down the corridor, and
+    // forward is negative z everywhere in this file.
     {
-      const dd = spec.dist || 0, yw = (spec.yaw || 0) * Math.PI / 180;
+      // and how far away, when the station does not say. Zero for anything on
+      // rays, because a place *is* the standpoint. For a wall, the honest
+      // default is where the painter stood: hfov already declares how wide the
+      // canvas is taken to be from there, so the distance that makes it that
+      // wide is the same number read the other way round, and it follows the
+      // canvas rather than being typed. Station 5's Sunflowers were typed at
+      // 1.6 m and this rule gives 2.0, which is why it is a default and not a
+      // law.
+      const dd = spec.dist ?? (ray ? 0 : fz * canvasM[1] * scale);
+      const yw = (spec.yaw || 0) * Math.PI / 180;
       group.position.set(sn._origin.x - dd * Math.sin(yw), 0,
-                         sn._origin.y - dd * Math.cos(yw));
+                         sn._origin.y - dd * Math.cos(yw) - (spec.along || 0));
     }
     // a canvas laid on the ground rather than hung on the air: DESIGN 7's
     // Irises as the literal ground at your feet, at the size he painted them.
@@ -1727,13 +1772,26 @@ async function main() {
   const counts = specs.map(c => c.strokes || 1);
   const total = counts.reduce((a, b) => a + b, 0);
   const AXIS = [];
+  // how many seconds of the making a station is: its own strokes over its own
+  // burst rate, or -- with no strokes -- the beat it declares.
+  const stationS = sn => {
+    const n = sn.canvases.reduce((a, c) => a + (c.strokes || 1), 0);
+    return n ? n / (sn.pacing?.burst ?? 2000) : (sn.pacing?.beat ?? 6);
+  };
   {
     let clock = 0;
     STS.forEach((sn, i) => {
-      if (i) AXIS.push({ kind: 'transit', a: i - 1, b: i, t0: clock, t1: clock += TRANSIT_S });
-      const burst = sn.pacing?.burst ?? 2000;
-      const n = sn.canvases.reduce((a, c) => a + (c.strokes || 1), 0);
-      AXIS.push({ kind: 'station', i, t0: clock, t1: clock += n / burst });
+      if (i) {
+        const secs = roadS(STS[i - 1], sn);
+        AXIS.push({ kind: 'transit', a: i - 1, b: i, secs, t0: clock, t1: clock += secs });
+      }
+      // A station with no canvases in it at all. Station 7 is one, and it is
+      // the only one: the strokes stop, and the stopping is what is there.
+      // Its share of tau is a declared number of seconds rather than a stroke
+      // count over a burst rate, because there is no paint for a rate to be a
+      // rate of -- the same arithmetic a transit already uses, and for the same
+      // reason. DESIGN 7 gives it no treatment column at all and it is right.
+      AXIS.push({ kind: 'station', i, t0: clock, t1: clock += stationS(sn) });
     });
     const T = clock || 1;
     for (const a of AXIS) { a.lo = a.t0 / T; a.hi = a.t1 / T; }
@@ -1802,32 +1860,57 @@ async function main() {
     return cv;
   }
 
-  try {
-    await pull(0);
-  } catch (e) {
+  // The first one that will load, rather than the first one. With three
+  // stations the first canvas of the piece and the first canvas of the only
+  // directory of blobs were the same thing; with ten, a single canvas missing
+  // at station 1 would have taken the whole arc down. It still fails hard when
+  // *nothing* loads, because then there is nothing to show and saying so is the
+  // point of rule 2's failure path.
+  const firstFew = [];
+  for (let i = 0; i < specs.length; i++) {
+    try { await pull(i); break; } catch (e) { firstFew.push(`${specs[i].blob}: ${e.message}`); }
+  }
+  if (!arrived) {
     loading = false;
     fail('The strokes did not load.',
-         'The page needs the packed blob that tools/extract.py and tools/pack.py ' +
+         'The page needs the packed blobs that tools/extract.py and tools/pack.py ' +
          'produce, served over http rather than opened from the file system.',
-         `${specs[0].blob}\n${e.message}\n\n  python3 -m http.server 8710`);
+         `${firstFew.join('\n')}\n\n  python3 -m http.server 8710`);
     return;
   }
   loading = false;
 
-  // the rest, nearest to the scrub first
+  // the rest, nearest to the scrub first. A blob that does not arrive is
+  // skipped and named rather than ending the queue: this loop used to break on
+  // the first failure, which with three stations and one directory of blobs was
+  // invisible, and with ten stations and twenty-six canvases means one missing
+  // file silently drops every canvas after it in tau order. M6 found it by
+  // having two of a station's six not built yet and watching the other four
+  // fail to appear.
+  const missing = [];
+  state.missing = missing;
   (async () => {
-    while (arrived < specs.length) {
+    const tried = new Set(specs.map((_, i) => i).filter(i => !fetched[i] &&
+      firstFew.some(m => m.startsWith(specs[i].blob + ':'))));
+    for (const i of tried) missing.push(specs[i].blob);
+    while (arrived + missing.length < specs.length) {
       let best = -1, bd = Infinity;
       for (let i = 0; i < specs.length; i++) {
-        if (fetched[i]) continue;
+        if (fetched[i] || tried.has(i)) continue;
         const d = Math.max(specs[i]._lo - scrub, scrub - specs[i]._hi, 0);
         if (d < bd) { bd = d; best = i; }
       }
       if (best < 0) break;
+      tried.add(best);
       state.streaming = specs[best].blob;
-      try { await pull(best); } catch (e) { console.warn(specs[best].blob, e.message); break; }
+      try {
+        await pull(best);
+      } catch (e) {
+        missing.push(specs[best].blob);
+        console.warn(specs[best].blob, e.message);
+      }
     }
-    state.streaming = 'done';
+    state.streaming = missing.length ? `done, ${missing.length} missing` : 'done';
   })();
 
   // ------------------------------------------------------------ the chunks --
@@ -1908,7 +1991,12 @@ async function main() {
 
   // ------------------------------------------------------- the walk --------
   const keys = new Set();
-  const first = canvases[0];
+  // The first canvas that actually arrived, not the first that was asked for.
+  // This was `canvases[0]` and could not be anything else while pull(0) was
+  // fatal; now that a missing blob is skipped, index 0 can be a hole, and
+  // reading .blob off it threw inside the debug state getter -- which is to say
+  // the page rendered perfectly and every measurement in the harness vanished.
+  const first = canvases.find(c => c) || canvases[0];
 
   const resize = () => {
     renderer.setSize(innerWidth, innerHeight);
@@ -1969,7 +2057,18 @@ async function main() {
   const RETURN = 1.8;                              // m/s, above the walk's 1.45
   const NEAR_EDGE = 0.5, EDGE_LIMIT = 0.20;        // BUILD M3's own numbers
   const edgeDist = (x, z) => Math.min(HX - Math.abs(x - CX), HZ - Math.abs(z - CZ));
-  const walk = { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0 };
+  // M6 adds one more counter, and it is the one DESIGN 15 asked for in the
+  // first place. `near` counts time spent within half a metre of the boundary,
+  // which any walker with a net forward drift accumulates simply by arriving
+  // there and stopping -- and the sweep that said the amble needs a slab 100 by
+  // 80 metres was measuring the *walk*, not the volume: forty seconds at 1.45
+  // m/s is 58 metres, and a box bigger than the walk is a box the walk cannot
+  // reach the edge of. `press` counts something else: time in which the viewer
+  // is holding a key that would take them further out and the ground is taking
+  // them back. That is 'trying to leave' rather than 'standing at the edge',
+  // which is the third of the three answers M3 wrote down and the only one that
+  // is a measurement rather than a decision.
+  const walk = { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0, press: 0 };
 
   const volBox = has('volume') ? new THREE.Group() : null;
   if (volBox) {
@@ -2086,13 +2185,18 @@ async function main() {
     const { a } = axisAt(scrub);
     const span = a.hi - a.lo;
     let step;
-    if (a.kind === 'transit') step = dt / Math.max(TRANSIT_S, 1e-6) * span;
-    else {
-      const sn = STS[a.i];
-      const n = sn.canvases.reduce((x, c) => x + (c.strokes || 1), 0);
-      step = dt * (sn.pacing?.burst ?? 2000) / Math.max(n, 1) * span;
-    }
+    if (a.kind === 'transit') step = dt / Math.max(a.secs, 1e-6) * span;
+    else step = dt / Math.max(stationS(STS[a.i]), 1e-6) * span;
     const next = scrub + step;
+    // and it stops on the way into a station that has no paint in it, once.
+    // DESIGN 7: the brush cuts and the scrub refuses to advance for a beat.
+    // What that costs to build is this, and M8 owns making it land.
+    const into = axisAt(next).a;
+    if (into !== a && into.kind === 'station' && !STS[into.i].canvases.length) {
+      setScrub(into.lo + 1e-6);
+      held = STS[into.i].pacing?.hold ?? HOLD;
+      return;
+    }
     const k = actAt(scrub);
     if (k < actList.length - 1 && next > actList[k].hi) {
       setScrub(actList[k].hi + 1e-6);
@@ -2124,10 +2228,20 @@ async function main() {
   // non-linear mapping, and what makes it non-linear is the record.
   const T0 = Date.UTC(1880, 7, 1), T1 = Date.UTC(1890, 6, 29);
   const frac = iso => (Date.parse(iso) - T0) / (T1 - T0);
-  const MARKS = [['1885-04-01', 1], ['1886-06-01', 2], ['1888-02-15', 3],
-                 ['1888-06-15', 4], ['1888-09-20', 5], ['1888-09-28', 6],
-                 ['1888-12-23', 7], ['1889-05-08', 8], ['1890-05-21', 9],
-                 ['1890-07-27', 10]];
+  // where the ten marks sit in the ten years. A station that is loaded says so
+  // itself -- its span is the same field tools/station.py audits every canvas
+  // against -- and the fallback list is for the ones this build did not load,
+  // so that ?station=4 still draws a band with ten marks on it rather than one.
+  // Two sources of truth for the same dates is how a station ends up in one
+  // place on the band and another in the caption.
+  const FALLBACK = [['1885-04-01', 1], ['1886-03-01', 2], ['1888-02-21', 3],
+                    ['1888-06-05', 4], ['1888-08-18', 5], ['1888-09-05', 6],
+                    ['1888-12-23', 7], ['1889-05-08', 8], ['1890-05-21', 9],
+                    ['1890-07-08', 10]];
+  const MARKS = FALLBACK.map(([iso, n]) => {
+    const sn = STS.find(x => x.id === n);
+    return [sn?.span?.[0] ?? iso, n];
+  });
   const spanOf = sn => {
     if (sn.span) return [frac(sn.span[0]), frac(sn.span[1])];
     const m = MARKS.find(k => k[1] === sn.id);
@@ -2299,13 +2413,23 @@ async function main() {
       // the eased return. It builds over `ease` metres and then holds at a
       // little more than a walking pace, so a viewer who pushes feels the
       // ground take them back rather than a wall arrive.
+      let pushX = 0, pushZ = 0;
       if (!still) {
-        const back = (v, half) => {
-          const o = Math.abs(v) - half;
-          return o <= 0 ? 0 : -Math.sign(v) * Math.min(1, o / EASE) * RETURN * dt;
+        // about the volume's own centre, which M5 added and this line did not
+        // read: edgeDist measured against the centre and the return pushed
+        // against the origin, so a station whose volume is offset -- the
+        // Bedroom, the corridor -- measured one boundary and enforced another.
+        // At station 2 that is a wall sixteen metres from the standpoint and a
+        // corridor thirty-one metres long, and the far half of the hang was
+        // outside a boundary the instrument said it was inside.
+        const back = (v, c, half) => {
+          const o = Math.abs(v - c) - half;
+          return o <= 0 ? 0 : -Math.sign(v - c) * Math.min(1, o / EASE) * RETURN * dt;
         };
-        body.x += back(body.x, HX);
-        body.z += back(body.z, HZ);
+        pushX = back(body.x, CX, HX);
+        pushZ = back(body.z, CZ, HZ);
+        body.x += pushX;
+        body.z += pushZ;
       }
       // DESIGN 15's open question, instrumented. Over a fifth of the time spent
       // within half a metre of the edge and the volume is wrong -- or the idea
@@ -2316,7 +2440,14 @@ async function main() {
         if (e < NEAR_EDGE) walk.near += dt;
         if (e < 0) walk.out += dt;
         walk.far = Math.max(walk.far, -Math.min(e, 0));
-        if (moving) { walk.moving += dt; if (e < NEAR_EDGE) walk.movingNear += dt; }
+        if (moving) {
+          walk.moving += dt;
+          if (e < NEAR_EDGE) walk.movingNear += dt;
+          // pressing: the ground is pushing back and the input is pushing out.
+          const m = 1 / Math.hypot(fwd || 0, str || 0);
+          const ix = (-sy * fwd + cy * str) * m, iz = (-cy * fwd - sy * str) * m;
+          if ((pushX || pushZ) && ix * pushX + iz * pushZ < 0) walk.press += dt;
+        }
       }
 
       lie.v += (body.lying - lie.v) * Math.min(1, dt * 4.5);
@@ -2481,6 +2612,7 @@ async function main() {
                where: axisAt(scrub).a.kind, when: dateText(dateAt(scrub)),
                base: [carry.x, carry.y],
                streaming: state.streaming || 'loading',
+               missing: (state.missing || []).slice(),
                canvases: specs.map((s, i) => ({
                  title: s.title, blob: s.blob, yaw: s.yaw,
                  loaded: !!fetched[i], span: [+s._lo.toFixed(4), +s._hi.toFixed(4)],
@@ -2552,16 +2684,37 @@ async function main() {
           date: [dateText(spanOf(STS[a.i])[0]), dateText(spanOf(STS[a.i])[1])] }
       : { kind: 'transit', from: STS[a.a].id, to: STS[a.b].id,
           tau: [+a.lo.toFixed(5), +a.hi.toFixed(5)],
-          metres: APART, seconds: TRANSIT_S })),
+          metres: APART, seconds: +a.secs.toFixed(1) })),
+    // M6's exit criterion, as a number rather than as a walk: step tau from 0
+    // to 1 and report where the piece is and what the date says at each step.
+    // The arc holds if the date never goes backwards, every station is passed
+    // through, and no step leaves the piece -- which is what the third column
+    // is: the world position the body would be carried to.
+    arc: (n = 400) => {
+      const out = [], p = new THREE.Vector2();
+      for (let k = 0; k <= n; k++) {
+        const t = k / n, a = axisAt(t), sn = stationAt(t);
+        baseAt(t, p);
+        out.push({ tau: +t.toFixed(5), kind: a.a.kind, id: sn.id ?? null,
+                   date: dateText(dateAt(t)), day: +dateAt(t).toFixed(6),
+                   z: +p.y.toFixed(1),
+                   seconds: +(a.a.kind === 'transit' ? a.a.secs : stationS(STS[a.a.i])).toFixed(1) });
+      }
+      return out;
+    },
     volume: () => ({
       half: [HX, HZ], ease: EASE, shape: VOL.shape || 'slab',
       seconds: +walk.t.toFixed(1),
       nearEdge: walk.t > 0 ? +(walk.near / walk.t).toFixed(4) : 0,
       nearEdgeMoving: walk.moving > 0 ? +(walk.movingNear / walk.moving).toFixed(4) : 0,
       outside: walk.t > 0 ? +(walk.out / walk.t).toFixed(4) : 0,
+      pressing: walk.t > 0 ? +(walk.press / walk.t).toFixed(4) : 0,
       furthestOut: +walk.far.toFixed(2), limit: EDGE_LIMIT,
       verdict: walk.t < 20 ? 'not enough walking yet'
                : (walk.near / walk.t) > EDGE_LIMIT ? 'the volume is wrong' : 'the volume holds',
+      pressVerdict: walk.t < 20 ? 'not enough walking yet'
+               : (walk.press / walk.t) > EDGE_LIMIT ? 'they are trying to leave'
+               : 'they are not trying to leave',
     }),
     // Three walkers, so the instrument can be read without a person in the
     // chair. They are not the test DESIGN 15 asks for and they do not pretend
@@ -2578,7 +2731,7 @@ async function main() {
     wander: (kind = 'forward', seconds = 60) => new Promise(res => {
       const t0 = performance.now();
       let prev = t0, aim = body.yaw, next = 0, go = true;
-      Object.assign(walk, { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0 });
+      Object.assign(walk, { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0, press: 0 });
       const step = now => {
         const dt = Math.min(0.05, (now - prev) / 1000), el = (now - t0) / 1000;
         prev = now;

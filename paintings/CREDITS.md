@@ -36,6 +36,16 @@ from Chicago — and *neither side carries a profile*, so neither can be colour-
 assumed sRGB, and that assumption is now written down rather than made silently. `DESIGN.md` §4.1 step 1 and
 `BUILD.md` M0b own the decode; the risk table's "station 2's flood survives a profile audit" is this paragraph.
 
+**Audited at M6, and the flood survives.** Of the thirty canvases actually in the piece, **26 carry no profile at
+all**; the four that do are the Yale *Night Café* (sRGB), *Stairway at Auvers* (Adobe RGB 1998) and both Orsay files
+at stations 6 and 9 (Apple's Generic RGB, gamma 1.8), and all four are converted with the profile they carry. So the
+two alternatives `tools/palette.py` bounds the flood against are not hypotheses about what a museum might have done —
+they are what two museums in this set actually did. The bound is adversarial and on the *difference*: each station
+decoded under whichever of the three pulls the two furthest apart, less the flood that is really there, which is how
+much flood a mismatch could forge out of nothing. It comes to **9.2**, and the flood is **39.6** — 4.3×, and 4.7×
+with the one Art Institute canvas dropped so that both sides are one museum's rig. The pre-registered bar was 3×.
+The risk table's oldest open row closes here.
+
 **Two of the forty are not cropped to the painting.** Whole-canvas coordinates only mean anything if 0 and 1 are the
 edges of the *picture*, and a scan carrying a strip of backdrop or stretcher puts every stroke at the wrong fraction
 of its canvas — an error invisible in any single tile, because it is a translation plus a scale, and visible the day
@@ -80,9 +90,9 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 5 | *The Bedroom (third version)* | Musée d'Orsay — C2RMF scan | `RF1959-2` | Commons · C2RMF research scan | 15016 × 11741 | 176 | 74.0 × 57.5 ◊◊ | **202 ◊◊** |
 | 5 | *The Yellow House (The Street)* | Van Gogh Museum, Amsterdam | `s0032V1962` | museum IIIF (Micrio) | 9234 × 7233 | 67 | 91.5 × 72.0 | **101** |
 | 5 | *Van Gogh's Chair* | National Gallery, London | `NG3862` | Commons | 4678 × 6000 | 28 | — † | **— †** |
-| 6 | *Café Terrace at Night* | Kröller-Müller Museum | `KM105.462` | Commons | 6415 × 8000 | 51 | — † | **— †** |
+| 6 | *Café Terrace at Night* | Kröller-Müller Museum | `KM 108.565` ✕ | Commons | 6415 × 8000 | 51 | 65.3 × 80.7 ‡‡ | **98 ‡‡** |
 | 6 | *Starry Night Over the Rhône* | Musée d'Orsay, Paris | `RF1975-19` | Commons · Google Art Project | 4331 × 3346 | 14 | — † | **— †** |
-| 6 | *The Night Café* | Yale University Art Gallery | `1961.18.34` | Commons | 7408 × 5848 | 43 | — † | **— †** |
+| 6 | *The Night Café* | Yale University Art Gallery | `1961.18.34` | Commons | 7408 × 5848 | 43 | 92.1 × 72.4 ‡‡ | **80 ‡‡** |
 | 8 | *Cypresses* | The Metropolitan Museum of Art | `1949.30` | Commons | 4177 × 5306 | 22 | — † | **— †** |
 | 8 | *Irises* | J. Paul Getty Museum | `90.PA.20` | Commons | 11516 × 8801 | 101 | 94.3 × 74.3 ‡ | **122** |
 | 8 | *Irises (still life)* | Van Gogh Museum, Amsterdam | `s0050V1962` | museum IIIF (Micrio) | 13278 × 16806 | 223 | 73.9 × 92.7 | **180** |
@@ -91,9 +101,9 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 8 | *The Starry Night* | Museum of Modern Art, New York | `472.1941` | Commons · Google Art Project | 44567 × 35291 | 1573 | 92.1 × 73.7 ‡ | **484** |
 | 8 | *Wheat Field with Cypresses* | National Gallery, London | `NG3861` | Commons | 10882 × 8653 | 94 | — † | **— †** |
 | 9 | *Daubigny's Garden* | Van Gogh Museum, Amsterdam | `s0104V1962` | museum IIIF (Micrio) | 6540 × 6460 | 42 | 51.2 × 51.0 | **128** |
-| 9 | *Stairway at Auvers* | Saint Louis Art Museum | `1-1935` | Commons | 6466 × 4569 | 30 | — † | **— †** |
-| 9 | *Thatched Cottages at Cordeville* | Musée d'Orsay, Paris | `RF1954-15` | Commons · Google Art Project | 5067 × 4007 | 20 | — † | **— †** |
-| 9 | *The Church at Auvers* | Musée d'Orsay, Paris | `RF1951-42` | Commons · Google Art Project | 3434 × 4433 | 15 | — † | **— †** |
+| 9 | *Stairway at Auvers* | Saint Louis Art Museum | `1-1935` | Commons | 6466 × 4569 | 30 | 70.5 × 50.0 ‡‡ | **92 ‡‡** |
+| 9 | *Thatched Cottages at Cordeville* | Musée d'Orsay, Paris | `RF 1954-14` ✕ | Commons · Google Art Project | 5067 × 4007 | 20 | 92.0 × 73.0 ‡‡ | **55 ‡‡** |
+| 9 | *The Church at Auvers* | Musée d'Orsay, Paris | `RF1951-42` | Commons · Google Art Project | 3434 × 4433 | 15 | 74.5 × 94.0 ‡‡ | **46 ‡‡** |
 | 9 | *Wheatfield under Thunderclouds* | Van Gogh Museum, Amsterdam | `s0106V1962` | museum IIIF (Micrio) | 4000 × 1962 | 8 | 101.3 × 50.4 | **39** |
 | 10 | *Wheatfield with Crows* | Van Gogh Museum, Amsterdam | `s0149V1962` | museum IIIF (Micrio) | 7762 × 3718 | 29 | 103.0 × 50.5 | **75** |
 
@@ -109,14 +119,38 @@ own paragraph above records that the Micrio endpoint caps a single request at ab
 diffing every row of this table against `sources.tsv`: **one row of forty-one disagreed, and it was the one about to
 be used.** The other forty are right.
 
-◊◊ **Not verified against the holder, and this is the only canvas in the piece of which that is true.** The Musée
-d'Orsay answers a plain request with 403 and publishes nothing usable, which this document already records for two
-other works. 74.0 × 57.5 cm is the figure in general circulation; it is entered here as that and not as the museum's,
-and it is the reason the dagger rule has an exception at all. What depends on it is the working resolution and
+◊◊ **Verified at M6, and not by the museum.** This footnote said through the whole of M5 that the third *Bedroom*
+was the only canvas in the piece whose dimensions no holder confirmed. The Musée d'Orsay still answers a plain
+request with 403 — but the Ministry of Culture publishes the catalogue of every *musée de France* in the **Joconde**
+database, which is the museum's own record rather than a third party's, and its notice for **RF 1959 2** gives
+57.5 cm high by 74 cm wide. That is exactly the figure in general circulation that this footnote entered under
+protest. The same database supplied both Auvers canvases at station 9 and corrected an accession number this
+repository has had wrong since M0b. What it does **not** hold is *Starry Night Over the Rhône*: fourteen notices
+either side of the Orsay's Van Gogh block were read and RF 1975-19 is not among them, so **that** canvas is now the
+only one in the piece with no confirmed size. The original text of this footnote is kept below because the reasoning
+in it is why the figure was allowed in at all. 74.0 × 57.5 cm was the figure in general circulation; it was entered
+as that and not as the museum's, and it was the reason the dagger rule had an exception. What depends on it is the working resolution and
 therefore every stroke width in millimetres this canvas reports. What does **not** depend on it is the room: M5's
 built treatment recovers a room in units of the painter's eye height and the scan's own aspect, so the one
 measurement this canvas is here for survives the dimension being wrong. The scan's aspect after cropping 53 px of
 black surround is 1.2834 against this figure's 1.2870 — consistent, which is not confirmation.
+
+✕ **The accession number in this row was wrong and is corrected here.** Two of the forty-one, found at M6 by
+asking each holder for a date and being answered with an identifier that did not match. The Kröller-Müller's own
+object page for the *Café Terrace* gives **KM 108.565** and no other number; this table and `tools/sources.tsv` both
+said KM105.462. Joconde's **RF 1954 15** is *Le jardin du docteur Gachet*, a portrait canvas 73 × 52 cm; *Chaumes de
+Cordeville* is **RF 1954 14**, 73 × 92 cm, and this table and `sources.tsv` both said RF1954-15. In both cases the
+scan's own aspect confirms the picture is the one this table names, so what was wrong was the number and never the
+image. The **filenames under `ref/originals/` still carry the old numbers**, because `tools/fetch.py` wrote them into
+the name and every `params/*.json` points at them: renaming would change a source path, which changes a params hash,
+which rebuilds forty canvases to fix a string. That is recorded here instead.
+
+‡‡ **Confirmed at M6, when five more canvases entered the piece.** Yale publishes *The Night Café* as 28½ × 36¼ in
+(72.4 × 92.1 cm) and the Kröller-Müller publishes the *Café Terrace* as 80,7 × 65,3 cm, each on its own object page.
+The Saint Louis Art Museum publishes *Stairway at Auvers* as 19 11/16 × 27¾ in (50 × 70.5 cm). The two Orsay canvases
+at station 9 come from the Ministry of Culture's Joconde record, as described under ◊◊: *L'église d'Auvers-sur-Oise*,
+RF 1951 42, 94 × 74.5 cm, and *Chaumes de Cordeville à Auvers-sur-Oise*, RF 1954 14, 73 × 92 cm. Every one of those
+is height × width in the holder's own order; this table's column is width × height.
 
 ‡ **Confirmed at M4, when both canvases entered the piece.** The Getty publishes *Irises* as unframed
 74.3 × 94.3 cm on its own object page for `90.PA.20`; MoMA publishes *The Starry Night* as 29 × 36¼ in
@@ -159,6 +193,34 @@ holder is the authority on how big it is, and neither is asked the other's quest
 be seen — all twelve goldens are byte-identical and every horizon ratio holds to a rounding — and it had to be done
 before station 5, because the claim that three Bedrooms are the same room is argued at a tolerance of 2% and one of
 the three carried a 2.2% error in its own shape.
+
+## When each canvas was painted, and who says so
+
+*Added at M6, when τ stopped being a station-local scrub and became the chronology the whole piece is controlled by.*
+This document has refused since M0b to enter a canvas's dimensions unless the institution that owns it says so.
+Nothing applied that rule to **dates**, which are the axis. `tools/dates.py` asks the Van Gogh Museum's own object
+pages — 24 of the 40 scans are its — and the two Orsay canvases at station 9 come from the Ministry of Culture's
+Joconde record. What that turned up is two dates this repository had wrong in files it had already shipped:
+
+| canvas | this repository said | the holder says |
+|---|---|---|
+| *Sunflowers*, `s0031V1962` | August 1888 | **Arles, January 1889** |
+| *Olive Grove*, `s0045V1962` | June to July 1889 | **Saint-Rémy, November 1889** |
+
+The first is not a slipped month, it is the wrong painting: the Van Gogh Museum's canvas is the **repetition**,
+painted five months after the London version it repeats. Station 5 has been hanging it as the original beside three
+Bedrooms, and it turns out to be a fourth repetition — which makes that station's argument stronger and was not
+designed. The second is a plain error, corrected, and station 8's span was widened to hold the canvas rather than the
+canvas's date narrowed to fit its station.
+
+Two more canvases were found standing outside their station's dates with nobody having written it down: *The Sower*
+is November 1888 at a June 1888 station and has been since M3, and *Orchard in Blossom* is **April 1889** at a
+station about the spring of 1888. `tools/station.py` now refuses a canvas whose date is outside its station's span
+and has no note beside it. Seven are outside; all seven have notes.
+
+Every date in `stations/*.json` is the holder's own words in `date` and an ISO date in `when`. Where the holder
+publishes only a year — the Art Institute for both its canvases, Joconde for the third *Bedroom* — the ISO date is a
+month chosen inside that year and the canvas's note says so.
 
 ## Known gaps
 

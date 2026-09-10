@@ -1,0 +1,24 @@
+{
+ "slug": "stairway",
+ "source": "ref/originals/s09-stairway-at-auvers_SLAM_1-1935_6466x4569.jpg",
+ "canvas_cm": [
+  70.5,
+  50.0
+ ],
+ "tiles": {
+  "paint": [
+   2030,
+   508,
+   3072,
+   3072
+  ],
+  "thin": [
+   5076,
+   2538,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 1.8x thin's energy here."
+}

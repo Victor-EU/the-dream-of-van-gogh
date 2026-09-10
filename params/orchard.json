@@ -1,0 +1,24 @@
+{
+ "slug": "orchard",
+ "source": "ref/originals/s03-orchard-in-blossom_VGM_s0038V1962_7115x5599.jpg",
+ "canvas_cm": [
+  93.1,
+  73.2
+ ],
+ "tiles": {
+  "paint": [
+   2545,
+   3054,
+   3072,
+   3072
+  ],
+  "thin": [
+   7634,
+   0,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 4.4x thin's energy here."
+}

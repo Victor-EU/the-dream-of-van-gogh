@@ -1,0 +1,24 @@
+{
+ "slug": "nightcafe",
+ "source": "ref/originals/s06-the-night-cafe_YALE_1961.18.34_7408x5848.jpg",
+ "canvas_cm": [
+  92.1,
+  72.4
+ ],
+ "tiles": {
+  "paint": [
+   0,
+   3021,
+   3072,
+   3072
+  ],
+  "thin": [
+   4531,
+   5538,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 4.4x thin's energy here."
+}

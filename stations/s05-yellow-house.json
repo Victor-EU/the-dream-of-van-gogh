@@ -1,108 +1,164 @@
 {
-  "_schema": "One station, in the shape M3 fixed and M4 extended. M5 adds four fields and every one is a station's business rather than a canvas's: axis and back, which are the six authored numbers a built room is made of; at, which says how far into the room a canvas *is* the room; and dist, which is how far away a canvas that is not a place stands.",
-  "id": 5,
-  "slug": "yellow-house",
-  "title": "The Yellow House",
-  "where": "2 Place Lamartine, Arles -- upstairs, the room on the right",
-  "when": "August to October 1888",
-  "span": ["1888-08-18", "1888-10-17"],
-  "eye": 1.65,
-
-  "_chronology": "Two of the three Bedrooms are out of place and knowingly so, and it is the same violation station 4 makes with the Reaper. The first Bedroom is Arles, mid-October 1888, and belongs here. The second and third are Saint-Remy, September 1889 -- a year later, painted in the asylum from the first one, after everything at station 8. By DESIGN 7's own chronology they are past station 8 and they are here anyway, because the thing this station exists to do is put the three in one room, and a station is where a room is rather than where a date is. What that costs is recorded rather than hidden: the date readout will say September 1889 while the timeline's handle is inside October 1888, exactly as it does for the Reaper at station 4, and M6 owns settling it when tau becomes a chronology. What it buys is that walking forward in this room takes you from the room he was living in to the room he remembered a year later, from an institution, twice. That is the truest thing this piece can say with a walk, and it was not designed -- it fell out of the dates.",
-
-  "_canvases": "In the order he painted them: the sunflowers in August for the room he was making ready for Gauguin, the first Bedroom in October, the two repetitions the following September. treatment overrides what tools/place.py measured, and where it does, the reason is here.",
-  "canvases": [
-    {
-      "blob": "strokes/s05/sunflowers-canvas.bin",
-      "strokes": 12478,
-      "title": "Sunflowers",
-      "date": "August 1888",
-      "place": "Arles",
-      "collection": "Van Gogh Museum, Amsterdam",
-      "accession": "s0031V1962",
-      "yaw": 180.0,
-      "dist": 1.6,
-      "scale": 2.53,
-      "treatment": "present",
-      "note": "Not an override. This canvas scores 0.7x on the level-against-upright cut -- the lowest number the test has ever returned, below the Getty irises' 1.7x and below a self-portrait's 2.6x -- so there is no horizon in it, it is not a place, and DESIGN 4.4's *present* is exactly what it is. It stands 2.4 m tall a metre and a half behind where he stood, which is the open side of the room, so it is what you meet when you turn round. He painted these in August for the room he was making ready for Gauguin, and they are the only thing at this station that is not the room itself."
-    },
-    {
-      "blob": "strokes/s05/bedroom1-canvas.bin",
-      "strokes": 11813,
-      "title": "The Bedroom",
-      "date": "October 1888",
-      "place": "Arles",
-      "collection": "Van Gogh Museum, Amsterdam",
-      "accession": "s0047V1962",
-      "yaw": 0.0,
-      "hfov": 70.0,
-      "treatment": "built",
-      "at": 0.0,
-      "axis": [0.5, 0.13],
-      "back": [0.11, 0.63, -0.06, 0.47],
-      "_authored": "Six numbers, and every one of them is a person looking at the canvas -- which is not what DESIGN 4.4 expected and is what tools/room.py found. axis is the vanishing point and back is [left, right, ceiling, floor] of the back wall, in canvas fractions. The tool went looking for the vanishing point in the strokes and then in the scan's own detected line segments, and could not put it in the same place twice on any canvas in this piece; what it could do is say what that would have taken, which is a fifth of every mark on the canvas lying on a room line drawn to within six degrees. No painting is like that. So this is authored, in the file a person reads, exactly as station 8's depths are.",
-      "_derived": "What follows from those six is not authored, and this is the half of DESIGN 4.4 that survives intact: the room is 3.18 m wide and 2.57 m to the ceiling, and *neither of those carries a free constant* -- hfov cancels out of both, and they are in units of DESIGN 6's eye height and nothing else. Only the depth needs hfov, and at 70 degrees it is 4.37 m. Seventy rather than the fifty every other canvas uses because a room is painted from inside it: at fifty the same six numbers give a room 6.1 m deep, which is longer than the house was.",
-      "note": "The room he had, and the only place in the ten years that was his. Every stroke stands on the ray it came off the canvas on, so from the standpoint this is exactly the painting and it is the walk that makes it a room."
-    },
-    {
-      "blob": "strokes/s05/bedroom2-canvas.bin",
-      "strokes": 13099,
-      "title": "The Bedroom (second version)",
-      "date": "September 1889",
-      "place": "Saint-Remy",
-      "collection": "Art Institute of Chicago",
-      "accession": "1926.417",
-      "yaw": 0.0,
-      "hfov": 70.0,
-      "treatment": "built",
-      "at": 1.2,
-      "cloth": false,
-      "axis": [0.4945, 0.1342],
-      "back": [0.1045, 0.6245, -0.0558, 0.4742],
-      "_shift": "The same six numbers as the first Bedroom, moved by the offset tools/room.py --register measured between the two canvases: -0.70% across and +0.42% down, in canvas heights. Nothing here was authored twice. The construction uses only differences, so shifting the axis and the back wall together gives the same room -- and what does not cancel is the scan's own aspect, which is why this room comes out 3.23 m wide against the first's 3.18. That 1.7% is the whole disagreement between two canvases painted eleven months and four hundred kilometres apart."
-    },
-    {
-      "blob": "strokes/s05/bedroom3-canvas.bin",
-      "strokes": 6832,
-      "title": "The Bedroom (third version)",
-      "date": "September 1889",
-      "place": "Saint-Remy",
-      "collection": "Musee d'Orsay, Paris",
-      "accession": "RF1959-2",
-      "yaw": 0.0,
-      "hfov": 70.0,
-      "treatment": "built",
-      "at": 2.4,
-      "cloth": false,
-      "axis": [0.5458, 0.1685],
-      "back": [0.1558, 0.6758, -0.0215, 0.5085],
-      "_shift": "Shifted by the measured +5.88% across and +3.85% down. This is the small version, painted for his mother and his sister on a canvas three quarters the size, and he reframed it -- the composition sits nearly six percent to the right and four percent down. That offset is not authored either: it is what the block match returned, and it has an independent check on it. tools/place.py measures each canvas's strongest level colour cut without knowing anything about this, and gets v 0.336, 0.322 and 0.362 for the three. Subtract the measured reframing from the third and the three become 0.336, 0.322 and 0.324 -- from 4.0% apart to 1.4%. Two measurements that share no code agreeing about how far this canvas moved."
-    }
-  ],
-
-  "_ground": "A floor is flat and a room has no sky in it. The dome is kept at station 8's 260 m so the three stations are lit and scaled the same way, and inside the room it is never seen.",
-  "ground": {
-    "dome": 260.0,
-    "swell": { "amp": 0.0, "wave": [23.0, 31.0], "dir": 0.0 }
+ "_schema": "One station, in the shape M3 fixed and M4 extended. M5 adds four fields and every one is a station's business rather than a canvas's: axis and back, which are the six authored numbers a built room is made of; at, which says how far into the room a canvas *is* the room; and dist, which is how far away a canvas that is not a place stands.",
+ "id": 5,
+ "slug": "yellow-house",
+ "title": "The Yellow House",
+ "where": "2 Place Lamartine, Arles -- upstairs, the room on the right",
+ "when": "August to October 1888",
+ "span": [
+  "1888-08-18",
+  "1888-10-17"
+ ],
+ "eye": 1.65,
+ "_chronology": "Two of the three Bedrooms are out of place and knowingly so, and it is the same violation station 4 makes with the Reaper. The first Bedroom is Arles, mid-October 1888, and belongs here. The second and third are Saint-Remy, September 1889 -- a year later, painted in the asylum from the first one, after everything at station 8. By DESIGN 7's own chronology they are past station 8 and they are here anyway, because the thing this station exists to do is put the three in one room, and a station is where a room is rather than where a date is. What that costs is recorded rather than hidden: the date readout will say September 1889 while the timeline's handle is inside October 1888, exactly as it does for the Reaper at station 4, and M6 owns settling it when tau becomes a chronology. What it buys is that walking forward in this room takes you from the room he was living in to the room he remembered a year later, from an institution, twice. That is the truest thing this piece can say with a walk, and it was not designed -- it fell out of the dates.",
+ "_canvases": "In the order he painted them: the sunflowers in August for the room he was making ready for Gauguin, the first Bedroom in October, the two repetitions the following September. treatment overrides what tools/place.py measured, and where it does, the reason is here.",
+ "canvases": [
+  {
+   "blob": "strokes/s05/sunflowers-canvas.bin",
+   "strokes": 12478,
+   "title": "Sunflowers",
+   "date": "Arles, January 1889",
+   "when": "1889-01-15",
+   "place": "Arles",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0031V1962",
+   "yaw": 180.0,
+   "dist": 1.6,
+   "scale": 2.53,
+   "treatment": "present",
+   "note": "Not an override. This canvas scores 0.7x on the level-against-upright cut -- the lowest number the test has ever returned, below the Getty irises' 1.7x and below a self-portrait's 2.6x -- so there is no horizon in it, it is not a place, and DESIGN 4.4's *present* is exactly what it is. It stands 2.4 m tall a metre and a half behind where he stood, which is the open side of the room, so it is what you meet when you turn round. He painted these in August for the room he was making ready for Gauguin, and they are the only thing at this station that is not the room itself.  M6 corrects this canvas's date and, with it, which painting it is. This file said August 1888 through the whole of M5; the Van Gogh Museum's own object page for s0031V1962 says Arles, January 1889. It is not the canvas of the sunflowers -- it is a repetition of one, painted five months later from the version now in London. Which means station 5 is a station of repetitions on all four of its walls and not only three, and that was not designed. It stays where it is, three months outside this station's span, and the band says January 1889."
   },
-
-  "_volume": "The first viewing volume in the piece that is not a compromise, and the first that is not centred on the painter's standpoint -- because a room is not centred on where he put the easel. It is the room, less a margin: the walls stand at 2.39 m to the left, 0.80 m to the right and 4.37 m back, and you may walk from 0.3 m behind the standpoint to 3.5 m into the room. The three canvases hand over at 0, 1.2 and 2.4 m, which puts the last of them two metres short of the back wall rather than against it -- past that the room stays the third version and the last metre is for looking at it. Station 4's lifted plain thins to a quarter by 6 m and station 8's shell tears at 2.34; this one has an actual wall at the edge of it, which is why the ease is short. Nothing is being eased back from a measurement here: it is being stopped by a room.",
-  "volume": { "shape": "box", "half": [1.4, 1.9], "centre": [-0.8, -1.6], "ease": 0.8 },
-
-  "_weave": "Ordinary Tasset canvas, the same as station 4's -- the jute is a year away and belongs to Saint-Remy. Which is a quiet inconsistency worth naming: two of these four canvases were painted at Saint-Remy on whatever was to hand, and they are shown on Arles cloth because the room is Arles. The substrate is a property of the room here rather than of the canvas, and that is the price of putting three canvases in one space.",
-  "weave": { "mm": 0.9, "rough": 0.0 },
-
-  "_pacing": "The same constant as stations 4 and 8, because DESIGN 5.3's whole argument is that one constant is what makes every relative tempo true.",
-  "pacing": { "burst": 2000, "hold": 2.4 },
-
-  "_curl": "Nothing here moves. The curl is measured on every canvas in the piece and spent only where the design says the paint is in motion; a bedroom is the one place in the ten years that is meant to hold still.",
-  "curl": { "gain": 0.0, "rate": 0.42 },
-
-  "_letter": "To Theo, the week he painted the first Bedroom, describing it colour by colour and saying the shadows and the cast shadows are suppressed. The text stays null until M7, which owns the voice and the verification against the Van Gogh Museum and Huygens edition.",
-  "letter": { "n": 705, "to": "Theo van Gogh", "date": "1888-10-16", "text": null },
-
-  "caption": {
-    "title": "The Yellow House",
-    "sub": "His room, October 1888 -- and, if you walk forward, the same room twice more as he remembered it a year later in the asylum at Saint-Remy. The room's shape is authored and the caption says so: this piece went looking for the vanishing point DESIGN 4.4 promised, in the strokes and then in the scan's own line segments, and could not put it in the same place twice. What it can say is what that would have taken -- a fifth of every mark on the canvas lying on a room line drawn to within six degrees -- and no painting is like that. His rooms are not ruled; the perspective is in the objects. What is measured is that these are the same room. Block for block, seven to ten in a hundred find themselves in the next canvas where a wheatfield against another wheatfield finds none at all, and once the third canvas's reframing is taken out -- nearly six percent to the right, which he chose -- what is left is between one and three percent of the canvas. So one room fits all three, and the paint changes around you a mark at a time rather than by fading."
+  {
+   "blob": "strokes/s05/bedroom1-canvas.bin",
+   "strokes": 11813,
+   "title": "The Bedroom",
+   "date": "October 1888",
+   "when": "1888-10-15",
+   "place": "Arles",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0047V1962",
+   "yaw": 0.0,
+   "hfov": 70.0,
+   "treatment": "built",
+   "at": 0.0,
+   "axis": [
+    0.5,
+    0.13
+   ],
+   "back": [
+    0.11,
+    0.63,
+    -0.06,
+    0.47
+   ],
+   "_authored": "Six numbers, and every one of them is a person looking at the canvas -- which is not what DESIGN 4.4 expected and is what tools/room.py found. axis is the vanishing point and back is [left, right, ceiling, floor] of the back wall, in canvas fractions. The tool went looking for the vanishing point in the strokes and then in the scan's own detected line segments, and could not put it in the same place twice on any canvas in this piece; what it could do is say what that would have taken, which is a fifth of every mark on the canvas lying on a room line drawn to within six degrees. No painting is like that. So this is authored, in the file a person reads, exactly as station 8's depths are.",
+   "_derived": "What follows from those six is not authored, and this is the half of DESIGN 4.4 that survives intact: the room is 3.18 m wide and 2.57 m to the ceiling, and *neither of those carries a free constant* -- hfov cancels out of both, and they are in units of DESIGN 6's eye height and nothing else. Only the depth needs hfov, and at 70 degrees it is 4.37 m. Seventy rather than the fifty every other canvas uses because a room is painted from inside it: at fifty the same six numbers give a room 6.1 m deep, which is longer than the house was.",
+   "note": "The room he had, and the only place in the ten years that was his. Every stroke stands on the ray it came off the canvas on, so from the standpoint this is exactly the painting and it is the walk that makes it a room."
+  },
+  {
+   "blob": "strokes/s05/bedroom2-canvas.bin",
+   "strokes": 13099,
+   "title": "The Bedroom (second version)",
+   "date": "September 1889",
+   "when": "1889-09-01",
+   "place": "Saint-Remy",
+   "collection": "Art Institute of Chicago",
+   "accession": "1926.417",
+   "yaw": 0.0,
+   "hfov": 70.0,
+   "treatment": "built",
+   "at": 1.2,
+   "cloth": false,
+   "axis": [
+    0.4945,
+    0.1342
+   ],
+   "back": [
+    0.1045,
+    0.6245,
+    -0.0558,
+    0.4742
+   ],
+   "_shift": "The same six numbers as the first Bedroom, moved by the offset tools/room.py --register measured between the two canvases: -0.70% across and +0.42% down, in canvas heights. Nothing here was authored twice. The construction uses only differences, so shifting the axis and the back wall together gives the same room -- and what does not cancel is the scan's own aspect, which is why this room comes out 3.23 m wide against the first's 3.18. That 1.7% is the whole disagreement between two canvases painted eleven months and four hundred kilometres apart.",
+   "note": "Out of this station's span by ten months, and the reason is _chronology above: the Art Institute dates it 1889 and it was painted in the asylum at Saint-Remy from the first version, a year after the room. It is here because the station exists to put the three in one room, and the band says 1889 while the handle sits in 1888."
+  },
+  {
+   "blob": "strokes/s05/bedroom3-canvas.bin",
+   "strokes": 6832,
+   "title": "The Bedroom (third version)",
+   "date": "September 1889",
+   "when": "1889-09-15",
+   "place": "Saint-Remy",
+   "collection": "Musee d'Orsay, Paris",
+   "accession": "RF1959-2",
+   "yaw": 0.0,
+   "hfov": 70.0,
+   "treatment": "built",
+   "at": 2.4,
+   "cloth": false,
+   "axis": [
+    0.5458,
+    0.1685
+   ],
+   "back": [
+    0.1558,
+    0.6758,
+    -0.0215,
+    0.5085
+   ],
+   "_shift": "Shifted by the measured +5.88% across and +3.85% down. This is the small version, painted for his mother and his sister on a canvas three quarters the size, and he reframed it -- the composition sits nearly six percent to the right and four percent down. That offset is not authored either: it is what the block match returned, and it has an independent check on it. tools/place.py measures each canvas's strongest level colour cut without knowing anything about this, and gets v 0.336, 0.322 and 0.362 for the three. Subtract the measured reframing from the third and the three become 0.336, 0.322 and 0.324 -- from 4.0% apart to 1.4%. Two measurements that share no code agreeing about how far this canvas moved.",
+   "note": "Out of this station's span by eleven months, for the reason in _chronology above. The Ministry of Culture's Joconde record for RF 1959-2 dates it 1889 and gives no month; September is the consensus and this file says so here rather than in the date."
   }
+ ],
+ "_ground": "A floor is flat and a room has no sky in it. The dome is kept at station 8's 260 m so the three stations are lit and scaled the same way, and inside the room it is never seen.",
+ "ground": {
+  "dome": 260.0,
+  "swell": {
+   "amp": 0.0,
+   "wave": [
+    23.0,
+    31.0
+   ],
+   "dir": 0.0
+  }
+ },
+ "_volume": "The first viewing volume in the piece that is not a compromise, and the first that is not centred on the painter's standpoint -- because a room is not centred on where he put the easel. It is the room, less a margin: the walls stand at 2.39 m to the left, 0.80 m to the right and 4.37 m back, and you may walk from 0.3 m behind the standpoint to 3.5 m into the room. The three canvases hand over at 0, 1.2 and 2.4 m, which puts the last of them two metres short of the back wall rather than against it -- past that the room stays the third version and the last metre is for looking at it. Station 4's lifted plain thins to a quarter by 6 m and station 8's shell tears at 2.34; this one has an actual wall at the edge of it, which is why the ease is short. Nothing is being eased back from a measurement here: it is being stopped by a room.",
+ "volume": {
+  "shape": "box",
+  "half": [
+   1.4,
+   1.9
+  ],
+  "centre": [
+   -0.8,
+   -1.6
+  ],
+  "ease": 0.8
+ },
+ "_weave": "Ordinary Tasset canvas, the same as station 4's -- the jute is a year away and belongs to Saint-Remy. Which is a quiet inconsistency worth naming: two of these four canvases were painted at Saint-Remy on whatever was to hand, and they are shown on Arles cloth because the room is Arles. The substrate is a property of the room here rather than of the canvas, and that is the price of putting three canvases in one space.",
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "_pacing": "The same constant as stations 4 and 8, because DESIGN 5.3's whole argument is that one constant is what makes every relative tempo true.",
+ "pacing": {
+  "burst": 2000,
+  "hold": 2.4
+ },
+ "_curl": "Nothing here moves. The curl is measured on every canvas in the piece and spent only where the design says the paint is in motion; a bedroom is the one place in the ten years that is meant to hold still.",
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "_letter": "To Theo, the week he painted the first Bedroom, describing it colour by colour and saying the shadows and the cast shadows are suppressed. The text stays null until M7, which owns the voice and the verification against the Van Gogh Museum and Huygens edition.",
+ "letter": {
+  "n": 705,
+  "to": "Theo van Gogh",
+  "date": "1888-10-16",
+  "text": null
+ },
+ "caption": {
+  "title": "The Yellow House",
+  "sub": "His room, October 1888 -- and, if you walk forward, the same room twice more as he remembered it a year later in the asylum at Saint-Remy. The room's shape is authored and the caption says so: this piece went looking for the vanishing point DESIGN 4.4 promised, in the strokes and then in the scan's own line segments, and could not put it in the same place twice. What it can say is what that would have taken -- a fifth of every mark on the canvas lying on a room line drawn to within six degrees -- and no painting is like that. His rooms are not ruled; the perspective is in the objects. What is measured is that these are the same room. Block for block, seven to ten in a hundred find themselves in the next canvas where a wheatfield against another wheatfield finds none at all, and once the third canvas's reframing is taken out -- nearly six percent to the right, which he chose -- what is left is between one and three percent of the canvas. So one room fits all three, and the paint changes around you a mark at a time rather than by fading."
+ }
 }

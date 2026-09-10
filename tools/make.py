@@ -3,8 +3,8 @@
 
 Three jobs, and the third is the one that pays.
 
-**The params discipline.** Every number lives in params/<slug>.json and nothing
-is tuned by editing Python. That only holds if the file and the extractor agree
+**The params discipline.** Every number lives in params/ -- <slug>.json merged
+over _base.json -- and nothing is tuned by editing Python. That only holds if the file and the extractor agree
 about which numbers exist, so this checks both directions. A key the extractor
 wants and the file lacks is a crash later; a key the file has and the extractor
 never reads is worse, because it looks exactly like tuning and does nothing.
@@ -75,18 +75,63 @@ def blob_hashes(path):
 
 
 def check_all():
+    """Every canvas file, merged over the base, against the extractor's key list.
+
+    The merge is what gets checked because the merge is what runs. A canvas file
+    that overrides a base number is fine and shows up as an override; a canvas
+    file that invents a key is the expensive failure this exists to catch, and
+    the base cannot hide it.
+    """
     d = os.path.join(ROOT, "params")
     bad = 0
     for f in sorted(os.listdir(d)):
-        if not f.endswith(".json"):
+        if not f.endswith(".json") or f.startswith("_"):
             continue
+        slug = f[:-5]
+        p = E.load_params(slug)
+        over = sorted(k for k, v in json.load(open(os.path.join(d, f))).items()
+                      if not k.startswith("_") and k not in
+                      ("slug", "source", "canvas_cm", "tiles", "tile"))
         try:
-            E.check_params(json.load(open(os.path.join(d, f))))
-            print(f"  ok      {f}")
+            E.check_params(p)
+            print(f"  ok      {f}" + (f"   overrides: {', '.join(over)}" if over else ""))
         except SystemExit as e:
             print(f"  BROKEN  {f}: {e}")
             bad += 1
     return bad
+
+
+def stale_blobs():
+    """Blobs older than the code that made them.
+
+    The header records the source's hash and the params' hash, so staleness is
+    a fact about the artifact rather than a timestamp -- which is right, and
+    misses one case entirely. **The pipeline itself is not in either hash.**
+    M6 found `strokes/m2/selfportrait-canvas.bin` claiming to be up to date and
+    carrying M2's stroke order: M4 fixed a colour decode inside order.py, that
+    canvas was not in any station, nobody rebuilt it, and its source and params
+    had not moved so nothing said a word. Its golden then moved the day it
+    entered station 2, by 0.0017 colour and 0.0057 relief, which is a
+    measurement of M4's own fix on the last canvas that could still show it.
+
+    Hashing the tools into the header would catch it properly and would rebuild
+    thirty canvases to install. This is the cheap version and it says so: a
+    modification time, compared against the newest of the tools that write a
+    blob. It is a warning and not a gate, because a checkout resets mtimes.
+    """
+    tools = [os.path.join(ROOT, "tools", f) for f in
+             ("extract.py", "order.py", "place.py", "curl.py", "shell.py",
+              "room.py", "pack.py")]
+    newest = max(os.path.getmtime(t) for t in os.path.exists(tools[0]) and tools)
+    out = []
+    for d in sorted(os.listdir(os.path.join(ROOT, "strokes"))):
+        dd = os.path.join(ROOT, "strokes", d)
+        if not os.path.isdir(dd) or d == "golden":
+            continue
+        for f in sorted(os.listdir(dd)):
+            if f.endswith(".bin") and os.path.getmtime(os.path.join(dd, f)) < newest:
+                out.append(f"strokes/{d}/{f}")
+    return out
 
 
 def rms(a, b):
@@ -120,10 +165,17 @@ def main():
 
     if a.check or not a.slug:
         print("params discipline:")
-        raise SystemExit(1 if check_all() else 0)
+        bad = check_all()
+        old = stale_blobs()
+        if old:
+            print(f"\nolder than the tools that write them ({len(old)}), which the "
+                  "header cannot see:")
+            for f in old:
+                print(f"  {f}")
+        raise SystemExit(1 if bad else 0)
 
     from PIL import Image
-    p = json.load(open(os.path.join(ROOT, "params", a.slug + ".json")))
+    p = E.load_params(a.slug)
     E.check_params(p)
     src = os.path.join(ROOT, p["source"])
     name = a.tile or "canvas"
@@ -134,6 +186,23 @@ def main():
     if a.force or have != want:
         why = "forced" if a.force else ("no blob yet" if have is None else
                                         "source" if have[0] != want[0] else "params")
+        # A rebuild that drops a stage is a valid blob with a hole in it. `shell`
+        # and `room` are the two stages whose input is a station file rather than
+        # a params file, so they only run when asked -- and asking is a flag a
+        # person types. Rebuilding the olive grove without --shell produces twenty
+        # thousand strokes with no depth on any of them, and nothing downstream
+        # complains: the station just quietly stops having a middle distance. M6
+        # came within about four seconds of doing exactly that to four canvases
+        # at once. Only a build can drop a stage, so checking a golden against a
+        # blob that is up to date needs no flag.
+        for stage, flag in (("shell", a.shell), ("room", a.room)):
+            if flag or not os.path.exists(stem + ".json"):
+                continue
+            if stage in json.load(open(stem + ".json")):
+                raise SystemExit(
+                    f"{a.slug}/{name} already carries `{stage}`, and this build would "
+                    f"drop it.\n  Pass --{stage} <station file>, or delete the blob "
+                    f"first if that is what you mean.")
         print(f"building {a.slug}/{name}  ({why} changed)")
         args = ["tools/extract.py", a.slug, "--out", a.out]
         if a.tile:

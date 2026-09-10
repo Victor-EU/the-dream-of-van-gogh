@@ -1,0 +1,153 @@
+{
+ "_schema": "One station, in the shape M3 fixed. M6 adds two fields: `when` on a canvas, the ISO date behind the words the holder prints, so tools/station.py can ask whether a canvas is inside its station's span; and `along`, how far down a corridor a hung canvas stands, which only this station uses.",
+ "id": 2,
+ "slug": "the-corridor",
+ "title": "The corridor of self-portraits",
+ "where": "Paris, Montmartre and Asnieres",
+ "when": "1886 to 1888",
+ "span": [
+  "1886-03-01",
+  "1888-02-19"
+ ],
+ "eye": 1.65,
+ "_canvases": "DESIGN 7 asks for this station in these words: he painted about twenty-five self-portraits in two years because he could not afford models, so hang them as a corridor, each in a different stroke system, because he is learning colour in public and you can watch it happen down the length of a hallway. So this is a hallway. Every one of these six canvases measures PRESENT on tools/place.py's own test -- a wall of paint with no horizon in it -- which for once is not an override but the reason the station works: there is nothing here to stand inside, and the design never asked for one. The four portraits alternate at two metres and a bit on each side; the two Paris landscapes stand further out, which is DESIGN 8.2's 'to either side'. `along` is metres forward down the corridor and it increases with the date, so walking forward is walking forward in time -- which is the only station where the walk and the scrub are the same axis by construction rather than by argument.",
+ "canvases": [
+  {
+   "blob": "strokes/s02/selfgrey-canvas.bin",
+   "strokes": 409,
+   "title": "Self-Portrait",
+   "date": "Paris, March-June 1887",
+   "when": "1887-04-15",
+   "place": "Paris",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0155V1962",
+   "yaw": 90.0,
+   "dist": 3.2,
+   "along": 5.0,
+   "treatment": "present",
+   "note": "19.1 by 14.1 cm on cardboard, the smallest thing in the piece and 409 strokes in the whole of it -- against 18,924 on the Reaper. Its area-weighted mean chroma is 4.6, the lowest of any canvas here by a factor of three. This is the bleach, and it is not staged: it is the first canvas in the corridor because it is the earliest, and it is nearly colourless because he was painting in Paris on cardboard he could afford."
+  },
+  {
+   "blob": "strokes/s02/selfportrait-canvas.bin",
+   "strokes": 3588,
+   "title": "Self-Portrait",
+   "date": "Paris, March-June 1887",
+   "when": "1887-04-20",
+   "place": "Paris",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0065V1962",
+   "yaw": -90.0,
+   "dist": 3.2,
+   "along": 10.0,
+   "treatment": "present",
+   "note": "M2's third canvas, the one the crossing solver was made to face that is not a landscape, and it has been in this repository since before there was a station to put it in."
+  },
+  {
+   "blob": "strokes/s02/seine-canvas.bin",
+   "strokes": 3800,
+   "title": "Bank of the Seine",
+   "date": "Paris, May-July 1887",
+   "when": "1887-06-01",
+   "place": "Asnieres",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0077V1962",
+   "yaw": 90.0,
+   "dist": 7.0,
+   "along": 14.0,
+   "treatment": "present",
+   "note": "Further out to the side than the portraits, because it is not one. It measures 2.5x on the horizon test -- the water's edge is a real level line and it is still nowhere near the 5x that makes a canvas a place."
+  },
+  {
+   "blob": "strokes/s02/selfaic-canvas.bin",
+   "strokes": 4564,
+   "title": "Self-Portrait",
+   "date": "1887",
+   "when": "1887-06-15",
+   "place": "Paris",
+   "collection": "Art Institute of Chicago",
+   "accession": "1954.326",
+   "yaw": -90.0,
+   "dist": 3.2,
+   "along": 19.0,
+   "treatment": "present",
+   "note": "The one canvas in this station that is not a Van Gogh Museum scan, which is why the flood is measured twice in BUILD.md M6 -- once with it and once without. The Art Institute publishes the year and no month, so the date on the band is the middle of 1887 and this note is where that is said."
+  },
+  {
+   "blob": "strokes/s02/montmartre-canvas.bin",
+   "strokes": 15645,
+   "title": "Montmartre: Behind the Moulin de la Galette",
+   "date": "Paris, July 1887",
+   "when": "1887-07-15",
+   "place": "Paris",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0018V1962",
+   "yaw": 90.0,
+   "dist": 7.0,
+   "along": 23.0,
+   "treatment": "present"
+  },
+  {
+   "blob": "strokes/s02/selfpainter-canvas.bin",
+   "strokes": 8428,
+   "title": "Self-Portrait as a Painter",
+   "date": "Paris, December 1887-February 1888",
+   "when": "1888-01-01",
+   "place": "Paris",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0022V1962",
+   "yaw": -90.0,
+   "dist": 3.2,
+   "along": 28.0,
+   "treatment": "present",
+   "note": "The last thing he painted in Paris and the last thing in this corridor: he left for Arles on 19 February 1888, which is the far end of this station's span. Its chroma is 15.1 against the first canvas here at 4.6."
+  }
+ ],
+ "_ground": "No plain and no swell. Nothing in this station is a place, so there is nothing for a ground to be the ground of: it is the primed cloth of station 0, level, with six paintings hung over it.",
+ "ground": {
+  "dome": 200.0,
+  "swell": {
+   "amp": 0.0,
+   "wave": [
+    1.0,
+    1.0
+   ],
+   "dir": 0.0
+  }
+ },
+ "_volume": "A corridor rather than a slab: two and a half metres to each side, which keeps the viewer between the near canvases rather than through them, and sixteen forward, which is the length of the hang. Every canvas is 3.6 m tall, which is the rule the whole piece hangs a wall by and not a decision taken here -- so the little cardboard self-portrait, 19 cm in the world, is the same height on this wall as the metre-wide Montmartre. A gallery hangs to a common centre line too. What it costs is that the corridor does not tell you he was painting on scraps, and BUILD.md M6 says so. Like M5's room, this volume is the thing itself rather than a compromise between what the paint supports and what a body wants.",
+ "volume": {
+  "shape": "slab",
+  "half": [
+   2.6,
+   16.0
+  ],
+  "centre": [
+   0.0,
+   -15.0
+  ],
+  "ease": 1.2
+ },
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "_pacing": "Two years of canvases and six of them, so this station is short in tau however long the corridor is in metres. That is the right shape: DESIGN 7 wants the flood to land as a shock, and a shock is not something you approach slowly.",
+ "pacing": {
+  "burst": 2000,
+  "hold": 2.4
+ },
+ "letter": {
+  "n": 569,
+  "to": "Wilhelmina van Gogh",
+  "date": "1887-10-01",
+  "text": null
+ },
+ "caption": {
+  "title": "The corridor of self-portraits",
+  "sub": "Paris, 1887. Six canvases in the order he painted them, hung down a hallway, and walking forward is walking forward in time. The first has 409 strokes in it and almost no colour; the last has 8,428. BUILD.md M6 measures whether that change is his or the scanner's."
+ }
+}

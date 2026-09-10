@@ -1,0 +1,25 @@
+{
+ "_schema": "A station with no canvases in it at all, which is the only one. Everything the shape requires is here and `canvases` is empty; the runtime gives such a station a share of tau measured in seconds -- pacing.beat -- because there is no paint for a burst rate to be a rate of, and refuses to advance through it for pacing.hold on the way in.",
+ "id": 7,
+ "slug": "the-strokes-stop",
+ "title": "The strokes stop",
+ "where": "Arles",
+ "when": "23 December 1888",
+ "span": ["1888-12-23", "1888-12-24"],
+ "eye": 1.65,
+ "_canvases": "Empty, and that is the station. DESIGN 7: no ear, no blood, no razor -- the painting simply stops mid-canvas, the brush cuts, and the scrub refuses to advance for a beat. The restraint is the entire effect and it will be tempting to ruin. M8 owns making it land and expects to get it wrong twice; what M6 owes it is that the arc runs through here without leaving the piece, and that the date on the band is the right one when it does.",
+ "canvases": [],
+ "_ground": "The primed cloth of station 0 and nothing on it. There is no swell because there is no plain: the two stations either side are six hundred metres away in both directions and this is the middle of the road.",
+ "ground": { "dome": 240.0, "swell": { "amp": 0.0, "wave": [1.0, 1.0], "dir": 0.0 } },
+ "volume": { "shape": "slab", "half": [6.0, 6.0], "ease": 1.5 },
+ "weave": { "mm": 0.9, "rough": 0.0 },
+ "curl": { "gain": 0.0, "rate": 0.42 },
+ "_pacing": "beat is how many seconds of tau this station is, and it is the only station whose share of the axis is a duration rather than a stroke count. hold is how long the scrub refuses to move on the way in. Both are guesses and both are meant to be argued with at M8; they are here so that there is something to argue with.",
+ "pacing": { "burst": 2000, "hold": 4.0, "beat": 9.0 },
+ "_letter": "There is no letter for this and there should not be one.",
+ "letter": { "n": null, "to": null, "date": null, "text": null },
+ "caption": {
+  "title": "23 December 1888",
+  "sub": "Nothing is painted here. The scrub stops for a beat and then goes on, and the next canvas is on rougher cloth in another town."
+ }
+}

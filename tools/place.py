@@ -559,8 +559,9 @@ def main():
     ap.add_argument("json")
     ap.add_argument("--audit", action="store_true", help="measure, write nothing")
     a = ap.parse_args()
+    import extract as E
     doc = json.load(open(a.json))
-    p = json.load(open(os.path.join(ROOT, "params", doc["slug"] + ".json")))
+    p = E.load_params(doc["slug"])
     rep = place(doc, p, a.audit)
     if a.audit:
         print("  --audit: nothing written")

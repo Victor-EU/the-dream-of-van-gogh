@@ -663,9 +663,32 @@ dates: **walking forward in that room takes you from the room he was living in t
 from an institution, twice** — and because a canvas that τ has not reached cannot be walked into, you cannot get there
 early. The chronology is the gate on the walk, which is the closest this piece has come to its two controls being one.*
 
+*M6 builds the other seven and the treatment column stops being a column, because by now the measurement decides it
+almost everywhere. Station 2 is six canvases and every one of them measures PRESENT — a wall of paint with no horizon
+in it — which is not an override but the reason the station works: DESIGN 7 asked for a hang down a hallway and there
+is nothing in a self-portrait to stand inside. Station 9 is five canvases with `treatment: null` on all five, and the
+test finds a place in four of them and a wall in the fifth: the* Church at Auvers *scores **18.3×**, the seventh
+strongest horizon of thirty, because there really is a line where the two paths part from the grass, while*
+Daubigny's Garden *scores 0.9× and is a garden seen close. Two stations override, and both are rooms: the* Potato
+Eaters *and the* Night Café *are `built`, which is what a canvas that is a room gets. Two canvases are hung overhead:
+the* Almond Blossom *at 72° as a canopy at station 3, and the Starry Night at 52° as the sky at station 8.*
+
+*The closest call in the collection is at station 6. * Starry Night Over the Rhône *scores **4.95×** against a
+threshold of 5, and misses being a place by one percent. It is a wall, and the piece does not lean on the scale to
+make it a river.*
+
 The arc: **dark → flood → yellow → night → stop → stars → green → end.** The brightness peaks immediately before
 there is nothing, which is the true shape, and because the scrub is in the viewer's hand **the ending is something
 they did.**
+
+*M6 measures the arc and half of that sentence is wrong. Area-weighted over each station's own stroke record, the
+lightness runs 11.9 at Nuenen, 51.5 in Paris, **64.3** in the orchards, 51.8 at the Harvest, 59.3 in the Yellow
+House, 44.5 at Saint-Rémy, 55.9 at Auvers and **37.1** in the last wheatfield; the chroma runs 11.1, 13.7, 22.5,
+30.7, **35.9**, 21.2, 27.7, **34.7**. So the world **bleaches** in Paris — four times the lightness of the cottage
+for almost no extra colour — and **floods** in Arles, one station later than this section puts it and going on for
+three. And the brightness does not peak before there is nothing: it peaks in the blossom and the last canvas is the
+darkest thing since Nuenen. What peaks at the end is the **colour**, which climbs again through Auvers to the
+wheatfield. The shape is right and it is a shape in chroma rather than in light.*
 
 ---
 
@@ -757,6 +780,21 @@ this document did not anticipate:
   that **the shape comes from the scan and the size from the catalogue** — the scan is the artifact, cropped to the
   picture's own edge by `tools/canvas_edge.py`, and the catalogue is the holder's authority on how big it is. Nothing
   moved when it was corrected: all twelve goldens are byte-identical and every horizon ratio holds to a rounding.*
+- **A date is a measurement too, and two of the ones this piece shipped were wrong.** *Found at M6, the moment τ
+  became a chronology rather than a station-local scrub. `CREDITS.md` has refused since M0b to enter a canvas's
+  dimensions unless the institution that owns it says so; nothing applied that rule to dates, which are the axis
+  the whole piece is controlled by. `tools/dates.py` asks the Van Gogh Museum's own object pages, and the answers
+  moved two canvases in stations already built. The Museum dates its* Sunflowers **January 1889**, *not August
+  1888 — station 5 has been standing a repetition of the London canvas and calling it the original, which makes
+  that station a station of four repetitions rather than three and was not designed. And it dates the* Olive Grove
+  **November 1889**, *not the June-to-July the station file has said since M4, which put the canvas outside its own
+  station's span; the span was widened rather than the date narrowed, because DESIGN 7 calls station 8 'Saint-Rémy,
+  1889' and he was there until May 1890. Two more canvases turned out to be out of place and nobody had written it
+  down:* The Sower *is November 1888 at a June 1888 station and has been since M3, and* Orchard in Blossom *is
+  April **1889** at a station about the spring of 1888. So the rule `tools/station.py` now enforces is not that a
+  canvas must be in its own year — the piece is allowed to put a canvas where the argument wants it —* **but that
+  it may not do so quietly**: *a date outside its station's span with no note beside it is an error, and seven
+  canvases are outside with notes.*
 
 ---
 
@@ -839,6 +877,15 @@ row is revised with the measurement that justifies it. "Strokes at near tier ≤
 ribbon was about 24 triangles; the Light ribbon is now three segments by three columns, so 32,805 of them is 0.49 M
 triangles — less than 20,000 cost when the number was set. The row that means anything is the triangle row.*
 
+*M6 is the first measurement of the whole piece rather than one station: ten stations, thirty canvases, **315,638
+strokes** and every one of them resident. Swept across the arc at Balanced and 2× DPR, τ from 0.02 to 0.995, the
+worst frame anywhere is **1.27 M triangles, 25 draw calls, 3.4 ms of submit and 10.3 ms of GPU, at 60 fps
+throughout** — against a budget of 2.5 M triangles and 120 draws. The triangle count is *lower* than M3's single
+station because the chunk gating now has ten stations' worth of paint to reject: everything six hundred metres down
+the road is dimmed to nothing and then not drawn at all. The resident row is the one under pressure, at 315 k of a
+400 k budget with the piece a little over half its material — DESIGN 5.3 expects about 550,000 strokes — so the
+milestone that has to face it is M9 with the far LOD tier that M4 already said would come back.*
+
 *M4 measures two stations at once — six canvases, 82,627 strokes, 1.90 MB of blob, all resident — and the worst
 frame anywhere in it is **2.07 M triangles and 28 draw calls at 10.3 ms of GPU**, still 60 fps and still inside the
 table. Load: every canvas of both stations is fetched and built by **0.85 s** and the single worst build is 7.7 ms,
@@ -882,10 +929,12 @@ Van Gogh universe/
   DESIGN.md              this document
   BUILD.md               the build plan, then the progress log, one entry per milestone
   index.html             the piece: markup, CSS, one module script
-  strokes/s04/*.bin      extracted stroke blobs, one per canvas, a directory a station
-  strokes/s05/*.bin      ... s05 the Yellow House, s08 Saint-Remy
+  strokes/s01/*.bin      extracted stroke blobs, one per canvas, a directory a station
+  strokes/s02/*.bin      ... s01 the Potato Eaters through s10 the wheatfield, ten of them
   underlayers/*.jpg      the residual wash layers (§4.1 step 7), small
   stations/*.json        station data: canvases, treatment, viewing volume, acts, pacing, letters
+  params/_base.json      every number the extractor tunes with, in one place
+  params/<slug>.json     what is a fact about one canvas: its scan, its size, its regions
   letters/               verified quotations with letter numbers and dates
   paintings/CREDITS.md   every canvas, collection, accession, reproduction and its dimensions
   tools/extract.py       the extraction pipeline — offline, numpy/scipy/opencv
@@ -894,6 +943,10 @@ Van Gogh universe/
   tools/curl.py          how far a stroke may move along its own arc, and its controls
   tools/shell.py         hand-authored per-stroke depth, and where the shell tears
   tools/room.py          the vanishing point that is not there, and the room built anyway
+  tools/palette.py       the flood at station 2, against what a wrong profile could forge
+  tools/station.py       the station files: stroke counts, and whether the arc's time holds
+  tools/dates.py         when each canvas was painted, from the holder's own record
+  tools/tiles.py         the two 1:1 regions a params file names, picked by measurement
   tools/pack.py          blob packing
   ref/                   not in the repository: full-resolution scans
   LICENSE
@@ -904,10 +957,19 @@ Van Gogh universe/
 - **But there is an asset pipeline**, which `monets-universe` did not have, and that is the real structural difference
   between the two repositories. The Python tools are run by hand, rarely, and their output is committed.
 - Station data is data: adding a station should mean a JSON file, a directory of blobs, and nothing else.
+  *Held at M6, which added seven stations. What each of them needed beyond its own file: `along`, so a corridor can
+  hang canvases down a hallway rather than around a standpoint; a station with an empty `canvases` list, so station
+  7 can be a beat rather than a place; and a road whose length comes from the two spans it joins. Three fields and
+  no shader.*
+- **Tuning is data too, and it is in one file.** *M6. Eleven `params/*.json` had each carried the same forty
+  extraction numbers, copied from the Reaper — four of them said so in words. Thirty canvases would have carried
+  thirty copies. `params/_base.json` holds them, `params/<slug>.json` holds what is a fact about that canvas, and
+  anything a canvas overrides is the only tuning in its file and reads as tuning. The merged dict is what is hashed,
+  so writing it down this way moved no blob.*
 - Seeded PRNG for every random choice, seed `18531890`, so the world is identical on every load and a shared frame can
   be found again.
 - A small debug API on `window.vg`: the camera, τ, the current station, stroke counts per tier, fps, and
-  `vg.scrub(τ)`, `vg.station(n)`, `vg.axis()`, `vg.at(x, z, yaw)`, `vg.presence()`, `vg.volume()`,
+  `vg.scrub(τ)`, `vg.station(n)`, `vg.axis()`, `vg.arc(n)`, `vg.at(x, z, yaw)`, `vg.presence()`, `vg.volume()`,
   `vg.wander(kind, seconds)`, `vg.snap()`. And two URL parameters that between them make any frame reproducible:
   `?tau=` says when, `?at=x,z[,yaw]` says where — which M5 needs, because at station 5 the walk is what changes the
   painting.
@@ -973,6 +1035,43 @@ Van Gogh universe/
   room is a thing bodies are already the right size for, and there is nothing to argue about at station 5. A landscape
   does not, and the argument there is entirely about how much invented ground is acceptable behind measured paint.
   M6 now has to answer only the second half.*
+  ***M6 answers it, and first it has to take M5's number back.*** Station 5's volume is a box 2.8 × 3.8 m whose
+  centre is 0.8 m to the left of the standpoint and 1.6 m in front of it, and the eased return that keeps a body
+  inside it was measuring the half-extents from the **origin** while the instrument measured them from the
+  **centre**. So the walker was held inside a box of the right size in the wrong place, comfortably within the
+  boundary being scored, and reported 0.3%. With the return reading the same centre the instrument does, the same
+  three walkers give **95.6%, 99.7% and 95.5%**. No station in this piece passes the edge test, and station 5 never
+  did.
+  **And nothing could have, because the edge test measures the walk rather than the volume.** Forty seconds at
+  1.45 m/s is 58 metres. Any walker with a net forward drift reaches any boundary closer than that and then stands
+  at it, and standing at it is scored as pushing at it — which is exactly why M3's sweep answered *50 × 40 m*: a
+  slab a hundred metres by eighty is simply bigger than the walk. So M6 measures the third of M3's three answers
+  instead of choosing between the first two. **Pressing** is the fraction of the walk spent holding a key that
+  would take the viewer further out while the ground takes them back. Not standing at the edge — trying to leave.
+
+  | | forward | wander | look |
+  |---|---|---|---|
+  | 2 the corridor, 5.2 × 32 m | 51.7% · **42.7%** | 89.1% · **68.1%** | 36.8% · **0.0%** |
+  | 4 the plain, 24 × 14 m | 89.6% · **80.4%** | 86.9% · **77.2%** | 75.2% · **27.1%** |
+  | 5 the room, 2.8 × 3.8 m | 95.6% · **86.2%** | 99.7% · **89.0%** | 95.5% · **32.6%** |
+  | 8 Saint-Rémy, 18 × 12 m | 91.3% · **82.3%** | 89.9% · **80.2%** | 76.8% · **32.7%** |
+
+  *(time at the edge · time pressing)*
+
+  `forward` and `wander` never stop moving and press everywhere, which is a fact about them and not about any room:
+  a walker that holds W for forty seconds is going to arrive at the edge of anything. `look` — walk a few paces,
+  stop, turn, look, walk on, the only one of the three that resembles somebody looking at a painting — presses
+  **0.0%** in the corridor at station 2 and about a third of the time at all three of the others. The corridor is
+  the only volume in the piece longer than a viewer's forty seconds of walking, and it is the only one that holds.
+  So the answer is the third one and it comes with a size: **the volume this piece needs is not what the paint
+  supports and not a hundred metres — it is however far a looking viewer travels before they stop, which is tens of
+  metres, and the instrument to check it with is `pressing` and not `nearEdge`.** Swept at station 4, `look` gives
+  27.0% at the old 12 × 7 half-extents, 20.6% at 18 × 11, **12.7% at 26 × 16** and 0.0% at 40 × 25, so the six
+  outdoor stations are set to 26 × 16 — the first size that comes under the fifth M3 pre-registered, and two to
+  three times the old slab rather than the seven M3 feared. What that costs is a thin far field, because the plain
+  is a quarter of its own density six metres out and this walks to twenty-six. `wander` still fails there at 49.6%
+  and always will. This still wants a person in the chair, and it is still the only open question in this document
+  a person could settle in ten minutes.*
 - **Continuous scrub or quantised to stations?** Current position: continuous, because the transits are part of the
   arc. Revisit if the transits turn out to be dead time.
   *M4 builds one and it is dead time at the moment, honestly so: the eleven months between June 1888 and May 1889
@@ -984,6 +1083,17 @@ Van Gogh universe/
   the one station in the plan whose whole content is that nothing happens. So one of the two remaining stretches of
   dead road is not dead road at all; it is a station that has not been built yet and whose material is silence. The
   question stays open, and it now has one fewer piece of evidence against it.*
+  ***M6 makes the roads mean something, which is not the same as closing this.*** With ten stations there are nine
+  roads, and at M4's flat sixteen seconds each that was **more than half of the whole τ axis spent going somewhere**
+  — and worse, it said every gap in his life was the same size. He left Paris on 19 February 1888 and was painting
+  in Arles the week after; between Nuenen and Paris there are ten months this piece shows nothing of. So a road is
+  now as long as the months it crosses: four seconds at least, because two stations whose dates overlap still stand
+  six hundred metres apart and the body has to cross, and twenty-four at most. They come out **22, 4, 6, 8, 4, 10,
+  13, 15 and 4 seconds**, the longest being Nuenen to Paris, and the roads fall from 57% of the axis to 44% with
+  two stations still missing their paint. The metres stay at six hundred, because that number answers a question
+  about the paint — a station's own plain runs to 260 m and two of them must not stand inside each other — so the
+  *speed* on a road is whatever those two facts require, and it is not a quantity this piece means anything by.
+  The question stays open until M7 puts a letter on the road and M8 decides whether the ending is quantised.*
 - **How much impasto is too much.** The height estimate of §4.1 is weak, and a slightly exaggerated relief will read
   as more Van Gogh than the true one. That way lies the projection show. Position: calibrate against raking-light
   photographs for the two or three canvases where they exist, then apply that calibration everywhere and do not

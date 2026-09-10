@@ -1,0 +1,24 @@
+{
+ "slug": "peachtree",
+ "source": "ref/originals/s03-the-pink-peach-tree_VGM_s0025V1962_5336x7192.jpg",
+ "canvas_cm": [
+  60.2,
+  80.9
+ ],
+ "tiles": {
+  "paint": [
+   2023,
+   3034,
+   3072,
+   3072
+  ],
+  "thin": [
+   4045,
+   0,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 4.8x thin's energy here."
+}

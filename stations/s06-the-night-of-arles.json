@@ -1,0 +1,111 @@
+{
+ "_schema": "One station, in the shape M3 fixed. M6 adds `when` on a canvas: the ISO date behind the holder's own words, so tools/station.py can ask whether a canvas is inside its station's span.",
+ "id": 6,
+ "slug": "the-night-of-arles",
+ "title": "The night of Arles",
+ "where": "Place Lamartine, Place du Forum, and the Rhone",
+ "when": "September 1888",
+ "span": [
+  "1888-09-05",
+  "1888-09-30"
+ ],
+ "eye": 1.65,
+ "_canvases": "Three canvases painted within about three weeks and about three hundred metres of each other, which DESIGN 8.2 calls a gift: the station is geographically honest even though the piece is not. In the order he painted them. DESIGN 7 asks for built and shelled here; what M6 builds is the built half. The Night Cafe is a room and it is standing as one. The other two keep the measurement, because a shell is per-stroke depth typed by a person -- twenty numbers a canvas -- and M6's scope is ten stations roughed in and nothing polished. That the Cafe Terrace has no shell is named in BUILD.md rather than hidden by an override.",
+ "canvases": [
+  {
+   "blob": "strokes/s06/nightcafe-canvas.bin",
+   "strokes": 13133,
+   "title": "The Night Cafe",
+   "date": "September 1888",
+   "when": "1888-09-08",
+   "place": "Arles",
+   "collection": "Yale University Art Gallery",
+   "accession": "1961.18.34",
+   "yaw": 0.0,
+   "hfov": 70.0,
+   "axis": [
+    0.52,
+    0.3
+   ],
+   "back": [
+    0.2,
+    0.78,
+    -0.1,
+    0.62
+   ],
+   "treatment": "built",
+   "note": "92.1 by 72.4 cm, confirmed against Yale's own object page. It is built for the same reason the Bedrooms are: the canvas is a room, and 'the terrible passions of humanity' were painted into a room with a floor that recedes and a ceiling that does not. The six numbers are authored, as M5 established they must be -- tools/room.py cannot find a stable vanishing point in a Van Gogh interior and says so at length. hfov is 70 rather than 50 for M5's reason: a room is painted from inside it."
+  },
+  {
+   "blob": "strokes/s06/cafeterrace-canvas.bin",
+   "strokes": 9796,
+   "title": "Cafe Terrace at Night",
+   "date": "c. 16 September 1888",
+   "when": "1888-09-16",
+   "place": "Arles",
+   "collection": "Kroller-Muller Museum, Otterlo",
+   "accession": "KM 108.565",
+   "yaw": -58.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "The accession number is corrected here and in tools/sources.tsv, which said KM105.462 from M0b: the museum's own object page gives KM 108.565 and no other identifier. 80.7 by 65.3 cm, and the date is the museum's own 'c. 16 September 1888'. DESIGN 7 wants this one shelled and it is not; what it gets is whatever tools/place.py measures, and BUILD.md M6 says so. What it measures is **0.9x** -- no horizon at all, below a self-portrait -- so it is a wall, and it stands at the distance the field of view says the painter stood. A street corner seen down a terrace turns out not to be a place you can walk into, and the test says so without being told, which is worth more here than the shell would have been."
+  },
+  {
+   "blob": "strokes/s06/rhone-canvas.bin",
+   "strokes": 14859,
+   "title": "Starry Night Over the Rhone",
+   "date": "late September 1888",
+   "when": "1888-09-28",
+   "place": "Arles",
+   "collection": "Musee d'Orsay, Paris",
+   "accession": "RF 1975-19",
+   "yaw": 58.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "The one canvas in the piece whose dimensions are not confirmed against anybody. The Orsay answers 403 and the Ministry of Culture's Joconde database, which supplied the church and the cottages at station 9 and closed the Bedroom's own dagger at station 5, has no notice for RF 1975-19 in the block that holds the rest of the Orsay's Van Goghs -- fourteen of them were checked. 92 by 72.5 cm is the figure in general circulation and params/rhone.json says so in the same words. DESIGN 7 asks for each stroke here to be a star or a gaslight, which is the one place in his work where the atom of the paint and the atom of the subject are the same object; the piece does nothing to make that happen, because it is already what the canvas is."
+  }
+ ],
+ "_ground": "Night, and a low dome because a night sky over a town is not the open Crau. The swell is nearly nothing: this is a river bank and a square.",
+ "ground": {
+  "dome": 160.0,
+  "swell": {
+   "amp": 0.16,
+   "wave": [
+    13.0,
+    19.0
+   ],
+   "dir": 8.0
+  }
+ },
+ "volume": {
+  "shape": "slab",
+  "half": [
+   26.0,
+   16.0
+  ],
+  "ease": 1.4
+ },
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "pacing": {
+  "burst": 2000,
+  "hold": 2.4
+ },
+ "letter": {
+  "n": 678,
+  "to": "Theo van Gogh",
+  "date": "1888-09-08",
+  "text": null
+ },
+ "caption": {
+  "title": "The night of Arles",
+  "sub": "September 1888. Three canvases from three weeks and three hundred metres. Two accession numbers in this repository were wrong and are corrected here; one canvas's dimensions still cannot be confirmed by anyone, and it says so."
+ },
+ "_volume": "M6 sets this. DESIGN 15's volume question was open from M3 to M6 with three possible answers written down, and the one that turned out to be true is the third: the instrument was wrong. `nearEdge` counts time spent within half a metre of the boundary, which any walker with a net forward drift accumulates simply by arriving there -- forty seconds at 1.45 m/s is 58 metres, so M3's sweep answering '50 by 40' was measuring the walk and not the volume. `pressing` counts time spent holding a key that would go further out while the ground takes the body back: trying to leave rather than standing at the edge. Swept at station 4 with the `look` walker, which is the only one of the three that stops and turns and looks: 27.0% at 12 by 7, 20.6% at 18 by 11, **12.7% at 26 by 16** and 0.0% at 40 by 25. So this is the first size in the sweep that comes under the fifth M3 pre-registered, and it is two to three times the old slab rather than the seven M3 feared. What it costs is a thin far field: the plain is a quarter of its own density by six metres out and this walks to twenty-six. `wander` still fails here at 49.6% and always will, because an amble in a straight line for forty seconds is not something any bounded place absorbs."
+}

@@ -1304,7 +1304,7 @@ def main():
 
     import extract as E
     doc = json.load(open(a.doc))
-    p = json.load(open(os.path.join(ROOT, "params", doc["slug"] + ".json")))
+    p = E.load_params(doc["slug"])
     work, _ = E.working_image(p, os.path.join(ROOT, p["source"]), verbose=False)
     print(f"{doc['slug']}/{doc['tile']}: {len(doc['strokes'])} strokes", flush=True)
 

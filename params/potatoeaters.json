@@ -1,0 +1,24 @@
+{
+ "slug": "potatoeaters",
+ "source": "ref/originals/s01-potato-eaters_VGM_s0005V1962_7698x5428.jpg",
+ "canvas_cm": [
+  114.0,
+  82.0
+ ],
+ "tiles": {
+  "paint": [
+   5016,
+   1505,
+   3072,
+   3072
+  ],
+  "thin": [
+   1003,
+   0,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 13.7x thin's energy here."
+}

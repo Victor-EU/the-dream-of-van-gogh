@@ -1,0 +1,117 @@
+{
+ "_schema": "One station, in the shape M3 fixed. M6 adds `when` on a canvas: the ISO date behind the words the holder prints, so tools/station.py can ask whether a canvas is inside its station's span and say so when it is not.",
+ "id": 3,
+ "slug": "snow-then-blossom",
+ "title": "Snow, then blossom",
+ "where": "the orchards outside Arles",
+ "when": "February to April 1888",
+ "span": [
+  "1888-02-21",
+  "1888-05-01"
+ ],
+ "eye": 1.65,
+ "_canvases": "DESIGN 7 wants snow first and then fourteen canvases in five weeks, and this station has the blossom and not the snow: Landscape with Snow is in DESIGN 8.2's list and is not in tools/sources.tsv, so it was never fetched and is not here. That is a gap and it is named in BUILD.md M6 rather than filled with something else that is pale. What is here is three orchards and a ceiling, and two of the four are out of this station's span -- knowingly, with the dates on the band saying so.",
+ "canvases": [
+  {
+   "blob": "strokes/s03/whiteorchard-canvas.bin",
+   "strokes": 8393,
+   "title": "The White Orchard",
+   "date": "Arles, April 1888",
+   "when": "1888-04-10",
+   "place": "Arles",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0024V1962",
+   "yaw": 0.0,
+   "hfov": 50.0,
+   "treatment": null
+  },
+  {
+   "blob": "strokes/s03/peachtree-canvas.bin",
+   "strokes": 10496,
+   "title": "The Pink Peach Tree",
+   "date": "Arles, April-May 1888",
+   "when": "1888-04-25",
+   "place": "Arles",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0025V1962",
+   "yaw": -62.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "Measures 6.6x on the level-against-upright cut, so it is a plain and it lifts. An orchard with a horizon in it is not obvious in advance and the test found one."
+  },
+  {
+   "blob": "strokes/s03/orchard-canvas.bin",
+   "strokes": 12510,
+   "title": "Orchard in Blossom",
+   "date": "Arles, April 1889",
+   "when": "1889-04-15",
+   "place": "Arles",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0038V1962",
+   "yaw": 62.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "Out of this station's span by a year, and found by asking the museum rather than by assuming. DESIGN 8.2 lists this canvas under station 3, whose subject is the spring of 1888; the Van Gogh Museum's own object page dates it Arles, April 1889. He painted orchards in both springs. It stays because the station is about the orchards going off and this is one of them, and the date readout says 1889 while the handle is inside 1888 -- which is the third time this has happened in the piece and the first time it was found by an instrument."
+  },
+  {
+   "blob": "strokes/s03/almond-canvas.bin",
+   "strokes": 10337,
+   "title": "Almond Blossom",
+   "date": "Saint-Remy-de-Provence, February 1890",
+   "when": "1890-02-15",
+   "place": "Saint-Remy",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0176V1962",
+   "yaw": 0.0,
+   "pitch": 72.0,
+   "hfov": 60.0,
+   "horizon": 0.5,
+   "treatment": "sky",
+   "note": "Overhead, and out of place by two years, and DESIGN 7 asks for both in one sentence: 'Almond Blossom (1890, painted at Saint-Remy but it belongs overhead here) as the ceiling; flat is fine when it is overhead.' So this is the one violation in the piece that the design itself authored. It is tipped 72 degrees rather than the Starry Night's 52, because it is a canopy and not a sky and station 8 is where the sky is. Hung by its middle, because a picture of branches against light has no horizon in it to hang by."
+  }
+ ],
+ "_ground": "An orchard is an enclosure and not the Crau, so the plane is nearer and the swell is smaller than station 4's. dome is where the sky is capped.",
+ "ground": {
+  "dome": 180.0,
+  "swell": {
+   "amp": 0.3,
+   "wave": [
+    15.0,
+    21.0
+   ],
+   "dir": 40.0
+  }
+ },
+ "volume": {
+  "shape": "slab",
+  "half": [
+   26.0,
+   16.0
+  ],
+  "ease": 1.5
+ },
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "_pacing": "DESIGN 7 calls this the fastest scrub in the piece, and it is -- but not through the burst rate, which stays at M2's measured 2,000 a second like everywhere else. It is fast in *dated* time: five weeks of 1888 go by in the seconds these canvases' strokes earn, where station 4 spends longer on three. The band is where that is visible, and it costs nothing to build because it is what the record says.",
+ "pacing": {
+  "burst": 2000,
+  "hold": 2.4
+ },
+ "letter": {
+  "n": 590,
+  "to": "Theo van Gogh",
+  "date": "1888-03-30",
+  "text": null
+ },
+ "caption": {
+  "title": "Snow, then blossom",
+  "sub": "Arles, spring 1888 -- and the snow is missing, because the canvas the design asks for was never fetched. Two of these four are out of place by their own museum's dates: an orchard from the spring after, and a ceiling from two years later that the design put here on purpose."
+ },
+ "_volume": "M6 sets this. DESIGN 15's volume question was open from M3 to M6 with three possible answers written down, and the one that turned out to be true is the third: the instrument was wrong. `nearEdge` counts time spent within half a metre of the boundary, which any walker with a net forward drift accumulates simply by arriving there -- forty seconds at 1.45 m/s is 58 metres, so M3's sweep answering '50 by 40' was measuring the walk and not the volume. `pressing` counts time spent holding a key that would go further out while the ground takes the body back: trying to leave rather than standing at the edge. Swept at station 4 with the `look` walker, which is the only one of the three that stops and turns and looks: 27.0% at 12 by 7, 20.6% at 18 by 11, **12.7% at 26 by 16** and 0.0% at 40 by 25. So this is the first size in the sweep that comes under the fifth M3 pre-registered, and it is two to three times the old slab rather than the seven M3 feared. What it costs is a thin far field: the plain is a quarter of its own density by six metres out and this walks to twenty-six. `wander` still fails here at 49.6% and always will, because an amble in a straight line for forty seconds is not something any bounded place absorbs."
+}

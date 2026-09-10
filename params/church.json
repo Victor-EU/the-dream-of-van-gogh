@@ -1,0 +1,24 @@
+{
+ "slug": "church",
+ "source": "ref/originals/s09-church-at-auvers_ORSAY_RF1951-42_3434x4433.jpg",
+ "canvas_cm": [
+  74.5,
+  94.0
+ ],
+ "tiles": {
+  "paint": [
+   3546,
+   2533,
+   3072,
+   3072
+  ],
+  "thin": [
+   507,
+   0,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 92.8x thin's energy here."
+}

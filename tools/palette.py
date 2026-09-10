@@ -17,12 +17,12 @@ its working-image metadata and records the *absence* where there is nothing to
 honour, rather than assuming sRGB silently. This reads those back.
 
 **What a wrong assumption could do.** The scans with no profile are decoded as
-sRGB because something has to be assumed. The plausible alternative for a
-museum's own capture is Adobe RGB (1998), which is the wider space: read Adobe
-RGB data as sRGB and every colour comes back *less* saturated than it is; read
-sRGB data as Adobe RGB and it comes back more. Both directions are applied here
-to each canvas's own paint, and the larger of the two is the bound -- the most
-that a profile error could move this canvas's palette.
+sRGB because something has to be assumed. The plausible alternatives are not
+hypothetical: of the nine files in this set that *do* carry a profile, two are
+Adobe RGB (1998) and two are Apple's Generic RGB at gamma 1.8, which is what
+`paintings/CREDITS.md` has recorded since M0b. So both are applied here to each
+canvas's own paint, in both directions, and the largest movement is the bound --
+the most that a profile error could move this canvas's palette.
 
 **What the paint does.** Area-weighted mean lightness and chroma in CIE Lab over
 the stroke record itself: the colours the piece actually draws, weighted by how
@@ -67,6 +67,11 @@ M_SRGB = np.array([[0.4124564, 0.3575761, 0.1804375],
 M_ADOBE = np.array([[0.5767309, 0.1855540, 0.1881852],
                     [0.2973769, 0.6273491, 0.0752741],
                     [0.0270343, 0.0706872, 0.9911085]])
+# and Apple's Generic RGB, gamma 1.8, which is not a hypothetical: both Orsay
+# files in this set carry it, and paintings/CREDITS.md has said so since M0b.
+M_APPLE = np.array([[0.4497288, 0.3162486, 0.1844926],
+                    [0.2446525, 0.6720283, 0.0833192],
+                    [0.0251848, 0.1411824, 0.9224628]])
 
 
 def lab(rgb255):
@@ -97,6 +102,13 @@ def as_if_adobe(rgb255):
     return linear_to_srgb(xyz @ np.linalg.inv(M_SRGB).T)
 
 
+def as_if_apple(rgb255):
+    """These bytes were Apple's Generic RGB -- gamma 1.8 -- and we read them as sRGB."""
+    a = np.clip(np.asarray(rgb255, np.float32) / 255.0, 0, 1)
+    xyz = np.power(a, 1.8) @ M_APPLE.T
+    return linear_to_srgb(xyz @ np.linalg.inv(M_SRGB).T)
+
+
 def as_if_srgb_read_as_adobe(rgb255):
     """The other direction, which is a mismatch the other way and not an inverse."""
     lin = E.srgb_to_linear(np.asarray(rgb255, np.float32))
@@ -122,6 +134,7 @@ def palette(doc):
     out = {}
     for name, f in (("as decoded", lambda x: x),
                     ("if Adobe RGB", as_if_adobe),
+                    ("if Apple RGB", as_if_apple),
                     ("if read as Adobe", as_if_srgb_read_as_adobe)):
         L, A, B = lab(f(rgb)).T
         # chroma is averaged per stroke and not taken off the mean colour. The
@@ -189,9 +202,18 @@ def main():
     for station, slug, p, doc in rows:
         L, C = p["as decoded"]
         d = max(float(np.linalg.norm(np.array(p[k]) - np.array(p["as decoded"])))
-                for k in ("if Adobe RGB", "if read as Adobe"))
+                for k in ("if Adobe RGB", "if Apple RGB", "if read as Adobe"))
         print(f"{slug:16s} {station:2d} {p['n']:7d} {L:6.1f} {C:6.1f} "
               f"{d:21.2f}  {p['profile'] or 'none'}")
+
+    # and the whole arc, station by station, because the flood is only one step
+    # of it and looking at the others is how its shape stops being a surprise.
+    print(f"\n{'station':>7s} {'canvases':>8s} {'lightness':>9s} {'chroma':>7s}")
+    for st in sorted({r[0] for r in rows}):
+        rs = [r for r in rows if r[0] == st]
+        L = float(np.mean([r[2]["as decoded"][0] for r in rs]))
+        C = float(np.mean([r[2]["as decoded"][1] for r in rs]))
+        print(f"{st:7d} {len(rs):8d} {L:9.1f} {C:7.1f}")
 
     one = [r for r in rows if r[0] == 1]
     two = [r for r in rows if r[0] == 2]
@@ -215,7 +237,7 @@ def main():
         # the adversarial bound: decode each station under whichever assumption
         # pulls the two furthest apart, and subtract the flood that is really
         # there. What is left is flood a mismatch could have forged.
-        keys = ("as decoded", "if Adobe RGB", "if read as Adobe")
+        keys = ("as decoded", "if Adobe RGB", "if Apple RGB", "if read as Adobe")
         forged = 0.0
         for ka in keys:
             for kb in keys:

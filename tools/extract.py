@@ -21,7 +21,8 @@ The height field is still DESIGN 4.1 step 6's luminance-above-a-neighbourhood
 estimate, which BUILD.md M1 says is measuring colour rather than relief. It is
 flagged as method 0 in the blob and M1 replaces it.
 
-Every number lives in params/<slug>.json. Nothing is tuned by editing this file.
+Every number lives in params/, in <slug>.json over _base.json. Nothing is tuned
+by editing this file.
 
     tools/extract.py reaper                  # the whole canvas, tiled
     tools/extract.py reaper --tile gate      # one named region, for tuning
@@ -38,7 +39,8 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 EPS = 1e-12
 DS = 8                      # downsample for the canvas-wide low-frequency work
 
-# Every key params/<slug>.json may contain. make.py checks a params file against
+# Every key a params file may contain, once <slug>.json is merged over _base.json.
+# make.py checks the merged dict against
 # this, both ways: a key here that the file lacks is a missing number, and a key
 # in the file that is not here is a number that silently does nothing -- which
 # is the more expensive of the two, because it looks like it is tuning.
@@ -609,6 +611,25 @@ def stroke_colour(pts, srgb, hfield, width, p):
 
 # ------------------------------------------------------------ the working ---
 
+def load_params(slug):
+    """params/<slug>.json merged over params/_base.json.
+
+    None of the forty numbers the extractor tunes with is a fact about a canvas.
+    They are all expressed at one fixed working resolution, so a brush stroke is
+    the same physical object everywhere and a smoothing scale transfers
+    unchanged -- which four params files already said in words by M5, having
+    each copied the Reaper's numbers verbatim. The base holds them; a canvas
+    file holds its slug, its scan, its size and the regions worth looking at at
+    1:1, and anything else in it is an override and is the only tuning in the
+    file. The merged dict is what check_params and params_hash see, so writing
+    it down this way moved no blob.
+    """
+    d = os.path.join(ROOT, "params")
+    p = json.load(open(os.path.join(d, "_base.json")))
+    p.update(json.load(open(os.path.join(d, slug + ".json"))))
+    return p
+
+
 def params_hash(p):
     clean = {k: v for k, v in sorted(p.items()) if not k.startswith("_")}
     return hashlib.sha256(json.dumps(clean, sort_keys=True).encode()).hexdigest()
@@ -1035,7 +1056,7 @@ def main():
     args = ap.parse_args()
 
     t_start = time.time()
-    p = json.load(open(os.path.join(ROOT, "params", args.slug + ".json")))
+    p = load_params(args.slug)
     check_params(p)
     src = os.path.join(ROOT, p["source"])
     work, meta = working_image(p, src)

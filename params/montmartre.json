@@ -1,0 +1,24 @@
+{
+ "slug": "montmartre",
+ "source": "ref/originals/s02-montmartre-moulin-de-la-galette_VGM_s0018V1962_7229x5816.jpg",
+ "canvas_cm": [
+  100.0,
+  81.0
+ ],
+ "tiles": {
+  "paint": [
+   8613,
+   4053,
+   3072,
+   3072
+  ],
+  "thin": [
+   8107,
+   0,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 13.0x thin's energy here."
+}
