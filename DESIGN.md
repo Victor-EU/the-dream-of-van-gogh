@@ -320,12 +320,25 @@ Four treatments:
 - **Shelled.** Middle distance. Each stroke gets a `depth` from a monocular depth estimate of the painting plus hand
   correction, so the scene becomes a shell with real parallax over a limited range. Convincing for a few metres of
   movement, grotesque beyond that.
+
+  *M4 builds it, hand-authored as §15 expects, and measures the last sentence. Two strokes that are neighbours on
+  the canvas sit on almost the same ray, so from the painter's position they touch; put them at depths d₁ and d₂,
+  step sideways by δ, and the angle between them opens by δ|1/d₁ − 1/d₂| while a stroke still subtends what it
+  subtends. The paint has a hole in it when the first exceeds the second, which is one division per pair and no
+  simulation at all. On the olive grove a twentieth of the neighbouring pairs have opened a stroke-wide gap at
+  **2.34 m**, a tenth at 3.4 m and a fifth at 5.4 m. "A few metres" is two and a third.*
 - **Built.** A few interiors where you genuinely have to be inside: the Yellow House, the Bedroom, the Night Café.
   These are cheap to build because **his interiors are already one-point perspective** — the vanishing point gives you
   the room's proportions directly off the canvas. The strokes then bind to the built surfaces keeping their canvas
   direction.
 - **Present.** Some paintings are not places and should not be made into places. The self-portraits, the Sunflowers.
   They stand in space, enormous, close, as walls of paint.
+
+*M4 adds two names to that vocabulary and neither is a new mechanism — both are the lifted treatment's own rays with
+something else deciding how far along them a stroke sits, which is exactly what M3's γ decides. **Sky**: the window
+tipped up, every stroke on the dome, for a canvas of a sky. **Ground**: the wall laid flat, for a canvas that is a
+picture of the ground. Both are chosen by the same measurement that chooses between lifted and present, and where a
+station overrides that measurement the station file carries the reason.*
 
 *M3 builds the lifted treatment and finds that only half of what it assumes is in the paint. The **horizon is
 measured**: the row that best splits the canvas into two colour populations, and what says it is a horizon rather
@@ -395,6 +408,22 @@ failure mode that ate `monets-universe`'s schedule.
   each at its own rate, which is a per-stroke rotation about its arc centre and nothing like a scrolling texture. The
   mistral moves the cypresses and the wheat. Finished paint otherwise holds still. A Van Gogh does not shimmer.
 
+  *M4 measures that sentence and half of it does not survive. The measurable part is **how far a stroke may go**:
+  slide it along the circle through its two ends and its own midpoint, sample the scan underneath, and stop where
+  the colour it lands on stops being a colour the tracer would have accepted as part of it. That is a distance in
+  millimetres per stroke and it is what the runtime spends — a mark in the crowded middle of a vortex barely moves,
+  a long one in the open sky moves further, and neither number was chosen.*
+
+  *What does not survive is "nothing like a scrolling texture". Against a straight slide along the tangent, the arc
+  wins by 1.29× on the Starry Night — and by 1.35× on a bed of irises and 1.38× on an olive grove, which are not
+  vortices. It separates nothing: sliding a curved stroke along its own curve beats sliding it straight on any
+  canvas of curved strokes. What does separate is the **mirrored** arc, which breaks 1.4× to 2.1× sooner
+  everywhere, so the direction of the curl is real paint. And a test of whether neighbouring strokes agree about
+  where the centre is puts the Starry Night at 2.04× its own shuffled null against the irises' 2.19×. So: the curl
+  is real, and it is not special to this canvas. His mark-making is locally coherent everywhere and the swirls are
+  a composition out of that habit rather than a different local statistic. The rate is not in the paint at all —
+  there is no time in a painting — and it is one declared number per station.*
+
 ---
 
 ## 5. The scrub: time as the primary control
@@ -408,6 +437,14 @@ timeline at the bottom edge. `←` `→` step by a week, `,` `.` by a day.
 τ drives two things: **which station you are in** (and the transit between them), and **how far the making has got**
 within that station. Both from one number, because in this piece they are the same thing — the world is painted in the
 order it was painted in, and walking forward in time is walking north.
+
+*M4 builds that axis and the non-linearity turns out to need no curve: **a station's share of τ is its own strokes
+over its own burst rate**, which is how long the making takes, and between two stations is a transit of a flat
+sixteen seconds because nothing is being painted on one. With stations 4 and 8 built, two weeks of June 1888 get 33%
+of τ and the eleven months after them get 28%. The band along the bottom edge is the ten real years, linear, so the
+handle crosses it in lurches — and that is the mapping the paragraph above asks for, with the record making it
+non-linear rather than a curve. The two axes must not be confused: τ is time in the piece and the band is time in
+his life. Dragging the band inverts the map by bisection.*
 
 ### 5.2 Acts
 
@@ -459,6 +496,14 @@ which is both true of him and a much better transition than a fade.
 - The viewing volume (§4.4) bounds the walk. Its boundary is a gentle return, never a wall and never an invisible
   collider — if the viewer is fighting the edge, the volume is the wrong size.
 
+*M4 makes the transit real and it costs one line: `body.x, body.z` stop being world coordinates and become where
+you are inside a station, the base is which station, and on the road the base is between two. Adding them is the
+whole transit — τ moves the base, the walk moves the body, neither knows about the other, and the sum is continuous
+in both, so τ cannot jump. The road runs out of the back of a station, where nothing is painted, so a viewer facing
+forward watches the plain he has just made recede and arrives at the next station already facing its first canvas.
+A station's paint goes dark by distance from its own standpoint, because paint laid to be seen from six metres and
+seen from a hundred is DESIGN 4.4's own word for it, grotesque.*
+
 *M3 instruments that last sentence and it is not comfortable reading. Station 4's slab is 12 × 7 m, its depth taken
 from where the lifted paint thins to a quarter of the density it has underfoot — six metres on the Harvest. Three
 scripted walkers spend 93%, 83% and 72% of their time within half a metre of the boundary, because any walker with a
@@ -466,6 +511,11 @@ net forward drift arrives at the edge and then stays, and a body walks 87 m in a
 comes under a fifth at **50 × 40 m** — a hundred metres by eighty. So the volume the canvas can justify and the
 volume a walking body wants differ by about seven times in each direction, and one of the two has to give. This is
 §15's open question with numbers on it; a person is still what decides it.*
+
+*M4 puts a second number beside it from a treatment that fails differently. A shell does not thin, it tears, and the
+step that opens a stroke-wide hole in a twentieth of the olive grove's neighbouring pairs is **2.34 m**. Station 8
+ships at 9 × 6 m and its walkers return 94%, 84% and 84%. So the three numbers are 2.3 m shelled, 6 m lifted, and
+fifty for an ambling body. The gap did not close; it widened.*
 
 ---
 
@@ -527,6 +577,24 @@ this table it belongs at station 8 — §8.2's own list asks for* Haystacks in P
 because it is the canvas the whole pipeline was built and measured on. The station file records that, and the date
 readout says September 1889 while the timeline's handle is still inside June 1888. It has to be settled at M6, when τ
 becomes a chronology.*
+
+*M4 builds station 8 and its treatment column becomes three columns, because the station's three canvases get three
+different answers out of one rule. **Irises** scores 1.7× on the level-against-upright cut — the lowest in the whole
+collection, below a self-portrait's 2.6× — so there is no horizon in it and it is not a place; it is a picture of
+the ground, so it is laid flat at 1:1 and it is where your feet are. **The Starry Night** scores 2.0×, which is
+what a self-portrait scores, so by the same rule it is not a place either: it is hung by its middle rather than by
+a horizon it has not got, tipped up 52°, and it is the sky. **The Olive Grove** scores 105×, the strongest in the
+collection, and is shelled anyway — the override is a fact about the station rather than about the canvas, because
+station 8 already has a sky overhead and a ground underfoot and what it has not got is a middle distance. The
+horizon the measurement found is still what puts it at eye level.*
+
+*Tipping the sky up is the one decision at this station that is not a measurement, and it has a cost worth writing
+down. A canvas is about forty degrees of the world and a sky is a hundred and eighty, so a canvas cannot go
+overhead without either being stretched or being put somewhere it is not. Hanging it by angle — a fixed number of
+degrees per centimetre — makes it read the same from any direction and stops it being the painting from any single
+one. Keeping M3's window makes it exactly the painting from wherever the window points. So the window points where
+a lying viewer looks, and standing up the sky is above you and you have to lie down for it, which is §6's whole
+argument arrived at by having to choose.*
 
 The arc: **dark → flood → yellow → night → stop → stars → green → end.** The brightness peaks immediately before
 there is nothing, which is the true shape, and because the scrub is in the viewer's hand **the ending is something
@@ -595,7 +663,7 @@ Everything is public domain; he died in 1890. Reproduction access is considerabl
 the reproduction used, its pixel dimensions, and any reason one source was preferred over another. That file was one
 of the best things about the Monet project and it should be written as the scans are gathered, not afterwards.
 
-**Written, and the gathering is done: 40 scans, 4.41 gigapixels, in `ref/originals/`.** Three findings from it that
+**Written, and the gathering is done: 40 scans, 4.41 gigapixels, in `ref/originals/`.** Four findings from it that
 this document did not anticipate:
 
 - **Judge a scan by px/cm, not megapixels.** A 42 MP scan of a 114 cm *Potato Eaters* is a far worse source than a
@@ -603,6 +671,12 @@ this document did not anticipate:
 - **The Van Gogh Museum's IIIF caps a single request at ~42 MP and says nothing.** Its gigapixel scans arrive
   silently downsampled — *Daubigny's Garden* at 42 MP when the source is 449 MP. Region requests are uncapped, so
   `tools/micrio_stitch.py` tiles and reassembles; seven works were recovered that way.
+- **A gigapixel scan does not have to be decoded to be used.** *The Starry Night* is 44,567 × 35,291 and 4.7 GB of
+  pixels, which does not fit in the machine this is built on. A JPEG can be decoded straight out of its DCT
+  coefficients at a half, a quarter or an eighth, so the working image comes out at 120 px/cm without the full
+  decode ever existing. The rule that keeps it honest is that the DCT step must never become the resampler: ask for
+  at least twice the working width, so the LANCZOS pass that follows is still a downsample by two. Every other scan
+  in the set is already inside that factor and reduces by nothing, which is why no golden moved.
 - **The Musée d'Orsay serves 850 px maximum**, and holds two canvases the piece cannot do without
   (*Starry Night Over the Rhône*, *The Church at Auvers*). Both fall back to ~46 px/cm. This is the one sourcing
   problem with no solution in hand; the C2RMF laboratory scan of the third *Bedroom* suggests where to look next.
@@ -688,6 +762,12 @@ row is revised with the measurement that justifies it. "Strokes at near tier ≤
 ribbon was about 24 triangles; the Light ribbon is now three segments by three columns, so 32,805 of them is 0.49 M
 triangles — less than 20,000 cost when the number was set. The row that means anything is the triangle row.*
 
+*M4 measures two stations at once — six canvases, 82,627 strokes, 1.90 MB of blob, all resident — and the worst
+frame anywhere in it is **2.07 M triangles and 28 draw calls at 10.3 ms of GPU**, still 60 fps and still inside the
+table. Load: every canvas of both stations is fetched and built by **0.85 s** and the single worst build is 7.7 ms,
+so "entering a station never stalls the frame" is true because by then there is nothing left to do. The scrub is a
+prefetch signal and at this size it does not have to be.*
+
 *What the tessellation cannot fix is that at a lifted station **the level-of-detail never fires from where the viewer
 starts**. A lifted canvas puts every stroke back on the ray it came off the canvas on, so a stroke subtends exactly
 what it subtends on the canvas — about eight pixels, at the horizon and at your feet alike — and a screen-space
@@ -710,13 +790,16 @@ Van Gogh universe/
   DESIGN.md              this document
   BUILD.md               the build plan, then the progress log, one entry per milestone
   index.html             the piece: markup, CSS, one module script
-  strokes/<station>/*.bin   extracted stroke blobs, one per canvas
+  strokes/s04/*.bin      extracted stroke blobs, one per canvas, a directory a station
   underlayers/*.jpg      the residual wash layers (§4.1 step 7), small
   stations/*.json        station data: canvases, treatment, viewing volume, acts, pacing, letters
   letters/               verified quotations with letter numbers and dates
   paintings/CREDITS.md   every canvas, collection, accession, reproduction and its dimensions
   tools/extract.py       the extraction pipeline — offline, numpy/scipy/opencv
   tools/order.py         the crossing-order solver
+  tools/place.py         where a canvas stands: the horizon test and its controls
+  tools/curl.py          how far a stroke may move along its own arc, and its controls
+  tools/shell.py         hand-authored per-stroke depth, and where the shell tears
   tools/pack.py          blob packing
   ref/                   not in the repository: full-resolution scans
   LICENSE
@@ -730,7 +813,7 @@ Van Gogh universe/
 - Seeded PRNG for every random choice, seed `18531890`, so the world is identical on every load and a shared frame can
   be found again.
 - A small debug API on `window.vg`: the camera, τ, the current station, stroke counts per tier, fps, and
-  `vg.scrub(τ)`, `vg.station(n)`, `vg.snap()`.
+  `vg.scrub(τ)`, `vg.station(n)`, `vg.axis()`, `vg.volume()`, `vg.wander(kind, seconds)`, `vg.snap()`.
 - No analytics, no fetched fonts, no network traffic after the blobs.
 
 ---
@@ -781,8 +864,15 @@ Van Gogh universe/
   far field is thin; or the walk is not a free walk and the boundary should be something other than a return; or the
   metric is wrong because it counts standing at the edge as pushing at it, and what should be counted is a viewer
   who is trying to leave.*
+  *M4 adds the shelled treatment's own limit, which is sharper and smaller: 2.34 m, where a twentieth of the
+  neighbouring stroke pairs have opened a gap a stroke wide. Three answers stand; the second one gained weight,
+  because a boundary at two metres is not a volume a free walk can be had in at all.*
 - **Continuous scrub or quantised to stations?** Current position: continuous, because the transits are part of the
   arc. Revisit if the transits turn out to be dead time.
+  *M4 builds one and it is dead time at the moment, honestly so: the eleven months between June 1888 and May 1889
+  are stations 5, 6 and 7 and none of them exists, so the road is six hundred metres of dark with the date running
+  under it. That is not an argument for quantising — it is an argument for M5 and M6, after which the road is short
+  and has things on it. The question stays open until there is a road worth judging.*
 - **How much impasto is too much.** The height estimate of §4.1 is weak, and a slightly exaggerated relief will read
   as more Van Gogh than the true one. That way lies the projection show. Position: calibrate against raking-light
   photographs for the two or three canvases where they exist, then apply that calibration everywhere and do not
@@ -797,6 +887,11 @@ Van Gogh universe/
   held uncomfortably long, then the crows. The museum coda is the safer choice and the worse one.
 - **Depth estimation.** Monocular depth on a Van Gogh is outside the training distribution of every model worth using.
   Expect to hand-author most depth and to treat the estimate as a first draft.
+  *M4 hand-authored it — twenty-seven control points in canvas coordinates with a depth in metres each, interpolated
+  by inverse distance, written in the station file where a person can read and argue with them. No estimate was
+  attempted and the position above is unchanged. What the milestone adds is that the authoring does not have to be
+  good for the number that follows from it to be honest: where a shell tears is a closed form over the authored
+  depths, so a worse authoring gives a worse volume rather than a wrong measurement.*
 - **Title.** "Van Gogh's Universe" is the folder, and it is the sibling of `monets-universe`. Something about the hand
   would be truer. Not urgent.
 

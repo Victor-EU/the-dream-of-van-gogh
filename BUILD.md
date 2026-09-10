@@ -480,6 +480,14 @@ single most-scrutinised effect in the piece), and the *shelled* treatment with p
 Depth is hand-authored first. §15 is right that monocular depth estimation on a Van Gogh is outside the training
 distribution of every model worth using; the estimate is a first draft at best and it is not on the critical path.
 
+*Done, and the motion is real but not special. The Progress entry below carries the numbers; the short version is
+that a stroke can be measured for how far it may slide along its own arc before the paint it lands on stops being a
+colour it could have been traced from, that this beats sliding along the mirrored arc on every canvas by 1.4x to
+2.1x, and that it beats sliding straight by 1.29x on the Starry Night and by 1.35x on a bed of irises -- so the
+per-stroke amplitude is measured and DESIGN 4.5's "nothing like a scrolling texture" is not. The shell's own limit
+comes out in closed form at **2.34 m**, which is smaller than the lifted plain's 6 m, so M3's open question got
+worse rather than better.*
+
 **Exit criteria.**
 - Lie down under the Starry Night. This is the shot the piece is for.
 - Spirals turn along their curl at per-stroke rates; at `?still` they freeze; nothing shimmers.
@@ -626,7 +634,15 @@ turned out to buy is local order — two marks that touch, put the right way rou
 the solved sequence still correlates 0.89 with the habits it started from. The claim stands and is now stated at
 that size, in §4.3 and in the caption, rather than at the size the design first gave it.*
 
-| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes** |
+*M4 runs the same held-out audit on three canvases M2 never saw and re-runs it on the Harvest, so the row now rests
+on six rather than three. Starry Night **+6.4**, Olive Grove **+6.3**, Getty Irises **+7.9**, the Harvest **+5.4** —
+against the Sower's +13.0, the Self-Portrait's +11.4 and the Reaper's +6.8. Every one of the six is above the kill
+line and two are above the exit line, which is the same verdict at twice the evidence, and the spread is a fact
+about the canvases: the two that clear +10 are the two whose marks cross at every angle, and the four that sit near
++6 are fields of long nearly-parallel strokes where a crossing is shallow and the colour cue has less to work with.
+The claim did not need revising. It needed to be tried somewhere it might have failed.*
+
+| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes**, M4 — **and it got worse** |
 
 *The instrument is built and reads out; the tester is not, and a person is what the criterion actually asks for. What
 it returns for three scripted ways of moving is 93%, 83% and 72% of the time within half a metre of the boundary —
@@ -637,6 +653,15 @@ and the volume a walking body wants differ by about seven times in each directio
 answered as far as it can be without a person in the chair, and it is a real result rather than a missing feature:
 either the volumes are much larger than the paint supports and the far field is thin, or the walk is not a free walk.
 The decision belongs to M6, with these numbers in front of it.*
+
+*M4 puts a second number beside it, from a treatment that fails differently. A shelled canvas does not thin, it
+tears: two strokes that are neighbours on the canvas sit on almost the same ray, so stepping sideways by δ opens an
+angle of δ|1/d₁ − 1/d₂| between them, and the paint has a hole in it when that exceeds what a stroke subtends. That
+is one division per pair and no simulation. On the olive grove a twentieth of the neighbouring pairs have opened a
+stroke-wide gap at **2.34 m**, a tenth at 3.4 m and a fifth at 5.4 m. The walkers at station 8 return 94%, 84% and
+84%. So the three numbers now read: the paint justifies 2.3 m shelled and 6 m lifted, and an ambling body wants 50.
+The gap did not close.*
+
 | We drift into modelling Provence | the world stops being made of strokes | `?noStrokes` shows a scene | every |
 | Station 1 loses the viewer | too dark, too long, and no reason to continue | tested at M6, not argued about before | M6 |
 
@@ -1471,3 +1496,215 @@ a clean null that was entirely an artefact of the walker.
 
 **Not started, per scope:** the far LOD tier, the shelled treatment and per-stroke depth, any other station, the
 transit, interiors, the voice, sound, mobile, photo mode, the sound button.
+
+---
+
+### M4 — Two stations and the transit
+
+**Asked.** Station 8, Saint-Rémy: *The Starry Night* as a sky overhead with each spiral turning along its own curl,
+the *shelled* treatment with per-stroke depth, lie down, the substrate change to jute, and τ as a global axis with
+the transit between stations 4 and 8.
+
+**The question this milestone actually turns on.** DESIGN 4.5 gives the piece exactly one moving thing and describes
+it in one sentence: *the Starry Night spirals turn along their own curl, each at its own rate, which is a per-stroke
+rotation about its arc centre and nothing like a scrolling texture.* Every clause of that is a claim about the
+canvas rather than about the renderer, and `tools/curl.py` is written the way M1 wrote the light, M2 the order and
+M3 the place — the thing that makes the effect and the thing that could refute it are the same code, and canvases
+that are not vortices go through it as controls.
+
+**The measurement.** A stroke is already a quadratic through three points, so the circle through its two ends and
+its own midpoint gives a centre, a radius and a total turn for nothing. Slide the stroke along that circle and
+sample the scan underneath: as long as the colour it lands on is a colour it could have been traced from, the
+picture survives the motion. So the question *how far may this stroke move* has an answer in millimetres, per
+stroke, and the threshold is not a new number — it is the extractor's own `de_max`, the tolerance the tracer used to
+decide that a piece of paint belonged to this stroke in the first place. The same slide is then run two more ways:
+along the arc **mirrored** through the stroke's midpoint, which is the same radius and the same speed and the wrong
+curl, and straight along the **tangent**, which is a scrolling texture.
+
+| | strokes | turn ≥ 0.25 | **arc** | mirror | tangent | **arc / tangent** | arc / mirror |
+|---|---|---|---|---|---|---|---|
+| *The Starry Night* | 13,999 | 11,461 | 0.29 | 0.16 | 0.22 | **1.29×** | 1.78× |
+| *Olive Grove* | 20,734 | 17,518 | 0.66 | 0.33 | 0.47 | **1.38×** | 2.00× |
+| *Irises*, Getty — control | 10,359 | 8,340 | 0.45 | 0.22 | 0.33 | **1.35×** | 2.05× |
+| *Wheatfield with a Reaper* — control | 18,924 | 16,518 | 0.47 | 0.27 | 0.36 | **1.29×** | 1.72× |
+| *Self-Portrait 1887* — control | 3,588 | 3,166 | 0.97 | 0.59 | 0.79 | **1.23×** | 1.65× |
+| *The Harvest* — control | 14,934 | 12,320 | 0.72 | 0.47 | 0.63 | **1.15×** | 1.53× |
+| *The Sower* — control | 3,677 | 3,141 | 0.61 | 0.43 | 0.54 | **1.13×** | 1.43× |
+
+Lengths are in the stroke's own length: 0.29 means a mark may slide by 29% of itself before the paint it is standing
+on stops being paint it could have come from.
+
+**Half the sentence is true and it is not the half the design leans on.** The pre-registered bar was 1.3× over the
+tangent among strokes that actually turn, with the prediction that the ratio should *grow* with the turn. The
+prediction holds cleanly — on the Starry Night the ratio runs 1.01, 0.99, 1.14, 1.25, **1.33** across bins of
+increasing turn, and a mark that barely bends cannot tell its arc from its tangent, exactly as it should not be able
+to. The bar does not. The Starry Night comes in at **1.29×**, a hundredth under it, and **a bed of irises clears it
+at 1.35×** — as does the olive grove at 1.38×. So the tangent comparison separates nothing: sliding a curved stroke
+along its own curve beats sliding it straight on every canvas of curved strokes, and the vortices do it *less* than
+the flowers do.
+
+**What does separate is the mirror.** Every canvas breaks 1.4× to 2.1× sooner along the arc curving the wrong way,
+and there the Starry Night sits mid-table too. The reading that survives all seven rows is: **the curl is real and
+it is not special to this canvas.** Van Gogh's mark-making is locally coherent everywhere, so a stroke's own
+continuation is where its own colour is, and the swirls of the Starry Night are a *composition* out of that habit
+rather than a different local statistic. The second structural test says the same thing from another direction —
+whether neighbouring curved strokes agree about where the centre is, against a null that permutes which stroke got
+which curvature — and it returns 2.04× on the Starry Night against 2.19× on the irises, 2.01× on the Harvest and
+2.35× on the Sower. There is no measurable sense in which this sky's strokes agree about centres more than any
+other canvas's do.
+
+**One number does come out of it that is worth having, and it is the one the runtime uses.** The Starry Night has
+the *shortest* coherence length in the set: 0.29 of a stroke against 0.45 for the irises and 0.97 for the
+self-portrait. The sky that looks like it is moving is the one whose paint can move least, because it is the most
+crowded. So the amplitude is per stroke, measured, and packed in byte 19 of the record; a mark in the middle of a
+vortex barely moves and a long lazy one in the open sky moves further, and neither number was chosen. What is
+invention is the rate, and there is no version of this where it is not: **there is no time in a painting.** It is
+one number in the station file and it says so.
+
+**The shelled treatment, and how far you can walk before it tears.** DESIGN 4.4 says a shell is *convincing for a
+few metres of movement, grotesque beyond that*, and how many metres is a measurement. Two strokes that are
+neighbours on the canvas sit on almost the same ray, so from the painter's position they touch; put them at depths
+d₁ and d₂, step sideways by δ, and the angle between them opens by δ|1/d₁ − 1/d₂| while a stroke still subtends
+what it subtends. The paint has a hole in it when the first exceeds the second, so every neighbouring pair has a
+tear distance and it is one division. No simulation, no sampling, and the only judgement in it is how much tearing
+is too much.
+
+| torn pairs | 1% | 2% | **5%** | 10% | 20% | 40% |
+|---|---|---|---|---|---|---|
+| the step that does it | 1.27 m | 1.60 m | **2.34 m** | 3.38 m | 5.41 m | 11.62 m |
+
+**So M3's open question got worse, not better.** The lifted plain of station 4 thins to a quarter of its density by
+6 m. A shell tears at **2.3 m**. Three scripted walkers at station 8 spend 94%, 84% and 84% of their time within
+half a metre of the boundary of a 9 × 6 m slab, against the pre-registered 20%. The paint justifies two metres and
+change; a walking body wants fifty. M6 still owns the decision and it now has two treatments' worth of evidence
+that the decision has to be made rather than designed around.
+
+**A bug in a measurement M3 had already published.** `srgb_to_linear` in the extractor takes bytes, every caller
+inside that file hands it a scan, and it never said so. Three callers outside had divided by 255 first — which puts
+every value under the sRGB toe, makes the whole transfer curve linear and quietly turns "Lab" into a linear map of
+sRGB. `place.py`'s horizon test was one of them. It was found by writing the fourth such caller, watching a stroke
+slide two lengths across a canvas without its colour changing by a single ΔE, and going to look at why.
+
+| | M3, as published | M4, with the decode fixed |
+|---|---|---|
+| *The Harvest* | 71.8× | **71.6×** |
+| *Wheatfield with a Reaper* | 38.9× | **53.8×** |
+| *The Sower* | 11.1× | **10.6×** |
+| *Self-Portrait 1887* — control | 2.4× | **2.6×** |
+| *Irises*, Getty — control | 2.1× | **1.7×** |
+
+**The finding survived the bug**, which is worth as much as the correction: the threshold of 5× still sits in the
+gap between the controls and the landscapes, and the gap is wider than it was. The other two misuses were in
+`order.py` and one of them does nothing at all — its result goes through a rank transform, which is invariant under
+any monotone map — while the other only moves where the act boundaries fall. The docstring now says what the input
+is, which is the actual fix.
+
+**Two canvases went through the same measurement for the first time.** *The Starry Night* returns **2.0×** on the
+horizon test — the company it keeps is the self-portrait at 2.6× and the irises at 1.7×, and by M3's own rule it is
+**not a place**: there is no horizontal boundary in it worth hanging it by. The *Olive Grove* returns **105×**, the
+strongest in the whole collection. So the station's three canvases are decided against the same rule that decided
+station 4's, and two of the three then have that decision overridden by the station file with the reason written
+next to it: a canvas that is not a place and is a picture of the ground is laid flat at 1:1 (*Irises*), and a canvas
+that is a place but is the only middle distance the station has is shelled rather than lifted (*Olive Grove*).
+
+**τ is now the axis and the two halves of it are not the same axis.** τ is time in the *piece* and it is spent where
+the painting is: a station's share is its own strokes over its burst rate, a transit's is a flat sixteen seconds,
+and station 4's two weeks of June 1888 get 33% of the whole while the eleven months after it get 28%. The band along
+the bottom is the ten real years, linear, with the ten station marks where they fall — so the handle crosses it in
+lurches, and that is DESIGN 5.1's non-linear mapping with the record rather than a curve making it non-linear.
+Dragging the band inverts it by bisection.
+
+**The transit is a walk and the arithmetic of it is one line.** `body.x, body.z` stopped being world coordinates and
+became where you are *inside* a station; the base is which station, and on the road it is between two. Adding them
+in the frame loop is the entire transit — τ moves the base, the walk moves the body, neither knows about the other,
+and the sum is continuous in both, so τ cannot jump. Six hundred metres, sixteen seconds, out of the **back** of
+station 4, because its three canvases stand at 0° and ±68° and the way out with nothing painted across it is behind
+you. A viewer facing forward then watches the plain he has just made recede and arrives at the next station already
+facing its first canvas, and both of those came free from a sign.
+
+**Seven bugs.**
+
+1. **The road ran straight through the painting.** With the stations laid out along −z the transit went out through
+   the far half of the Harvest's plain — 260 m of ground strokes laid to be seen from six metres, seen from a
+   hundred and edge-on, forty metres long each. Fixed twice over: the road now leaves out the back, and a station's
+   paint goes dark by distance from its own standpoint rather than by anything about the transit, which costs
+   nothing inside a volume and needs no special case for a station that does not exist yet.
+2. **A dark station is a silhouette.** Dimming to black was not enough. Standing at Saint-Rémy before it has been
+   painted, the world is the primed white cloth of station 0 — and station 4, six hundred metres back and dimmed to
+   nothing, was a set of black shapes on it, more conspicuous than the lit thing had been. A station's canvases are
+   now not drawn at all once its dim reaches zero, which happens a hundred metres out and in the dark.
+3. **A rotation by zero degrees is not the identity in floating point.** At `?still` the curl's displacement is
+   exactly zero, so the still should have been the painting — and it came back at RMS 0.0128 against the same frame
+   with the motion switched off, at *every* amplitude including a millionth. It is not the arithmetic: at the dome a
+   canvas short edge is two hundred metres, so the depth buffer's own resolution out there is about a tenth of a
+   metre while two strokes laid one after the other are separated by a tenth of a millimetre, and which one wins is
+   decided by whatever the last bit rounded to. The fix is to leave the points alone when there is nothing to move.
+   The depth precision at the dome is real and is **not** fixed; see *Still visible*.
+4. **The swell was centred on the world.** `terrain()` fell off with distance from the origin, which stopped being
+   the same as distance from the station the moment there were two of them. It now carries its own centre, and the
+   floor's centre follows whichever station τ is inside — which is exact rather than a blend, because each swell
+   dies out at 38 m and the stations are 600 apart.
+5. **The floor sank by its distance from the world origin**, at 6 mm a metre. That was indistinguishable from
+   distance-from-the-eye while there was one station at the origin; at station 8 it was 3.6 metres of sink. It is
+   measured from the eye now, which is what the comment above it always said it was for.
+6. **The Getty *Irises* had no acts.** It was built at M3 as a negative control, never as a canvas in the piece, so
+   nothing had ever asked it for a sequence — and the station showed one act called `all`, which is the fallback
+   working exactly as intended and saying so. Re-run: contour 722, subject 9,072, light 389, and a second subject of 176.
+7. **The station-8 standpoint had nothing in front of it.** The olive grove was at −46°, the sky was overhead and
+   the irises were underfoot, so standing and looking ahead was an empty dark garden. Moved to −18°.
+
+**One thing that looked like a bug and was a stale file.** An audit output left over from an earlier session
+reported the Reaper's held-out margin as −0.1 from 1,224 confident crossings, and two paragraphs were written on top
+of that before it was checked against the blob, which records 8,172 crossings and +6.8. Re-run, every canvas agrees
+with what is packed in its own header. A number from a log is not a number from the artifact.
+
+**The one design decision that is not a measurement, and what it cost.** A canvas is about 40° of the world and a
+sky is 180°, so a canvas cannot be put overhead without either stretching it or lying about where it is. Two ways
+out: hang it by angle, so that a centimetre of canvas is the same number of degrees everywhere and it reads the
+same from any direction — which stops it being the painting from any single position, and at 96° wide the edges bow
+visibly. Or keep M3's window, which is exactly the painting from wherever its axis points, and **point the axis
+where a lying viewer looks.** The second is what ships: tipped up 52°, which is 6° off where lying down puts the
+eye, so from the floor of the garden the Starry Night is the painting and from standing it is above you and you have
+to lie down. That is DESIGN 6's whole argument for lying down, arrived at by having to choose rather than by wanting
+it.
+
+**§12's Balanced budget holds.** Two stations, six canvases, 82,627 strokes and 1.90 MB of blob, all of it resident.
+
+| | worst measured | §12 Balanced |
+|---|---|---|
+| triangles | **2.07 M** | ≤ 2.5 M |
+| draw calls | **28** | ≤ 120 |
+| blob streamed | **1.90 MB**, both stations | ≤ 6 MB a station |
+| strokes resident | **82,627** | 400 k |
+| GPU | **10.3 ms** | 60 fps |
+
+**Prefetch, measured rather than asserted.** Every one of the six canvases is fetched and built by **0.85 s**, and
+the worst single build — the one synchronous hitch in the piece — is **7.7 ms**, under half a frame. At playback
+rate the scrub reaches station 8 nineteen seconds later. Entering a station does not stall the frame because by
+then there is nothing left to do.
+
+**Verified.** `?flat` parity RMS **0.0472** against `tools/flat.py`, unchanged from M3. All twelve goldens
+identical, colour and relief, across six canvases. `?still` twice, byte-identical by sha256; `?still` with the
+motion on and with it off, RMS **0.000000**, so a still is the painting rather than a frame of an animation.
+Two moments nine seconds apart differ by RMS 0.052, so the motion is there. The jute reads against the linen
+without being pointed at. Params discipline ok for seven files. `?station=4` and `?station=8` each stand alone;
+`?station=9` still fails in text.
+
+**Still visible.**
+
+- **The depth buffer gives up at the dome.** 260 m out with a 4 cm near plane leaves about a tenth of a metre of
+  depth resolution, and the per-stroke order lift out there is a tenth of a millimetre. So which of two overlapping
+  sky strokes is on top is not decided by the order they were painted in. It has been true since M3 and M4 is the
+  milestone that measured it. The fix is a logarithmic depth buffer or a per-canvas depth range and it is not M4's.
+- **The canvases still have hard rectangular edges against the void**, and the shell makes it worse: strokes are
+  traced past the frame and the cloth stops at it, so the olive grove's bottom edge is scalloped with paint hanging
+  below it. The extractor already flags those strokes as edge-spill; nothing yet uses the flag.
+- **The Starry Night's scan carries a strip of unpainted tacking margin at its left edge** that `canvas_edge.py`
+  does not catch, because it is paint-adjacent rather than quiet. It is about 1.5% of the canvas.
+- **The Harvest's acts are still lopsided** — M2's cutter gives one act 89% of that canvas — and nothing at station
+  4 moves, because the mistral is a wind and not a curl.
+- **Station 8's standpoint is thin.** Ahead is one canvas, above is one canvas, below is a 94 cm bed of irises, and
+  the rest of the walled garden is dark ground.
+
+**Not started, per scope.** Station 5 and the built treatment. The letters (`text` is still null in both station
+files). The far LOD tier. Sound. Any station but 4 and 8.

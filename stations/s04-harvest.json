@@ -5,12 +5,14 @@
   "title": "The Harvest",
   "where": "La Crau, from the Montmajour road",
   "when": "June 1888",
+  "_span": "Where this station sits in the ten years. M4 makes tau a global axis, and a station's share of it is its own making -- its strokes over its burst rate -- while the band underneath is the ten real years. This is what ties the two together.",
+  "span": ["1888-06-05", "1888-06-25"],
   "eye": 1.65,
 
   "_canvases": "In the order he painted them, and strokes is the count cached here so the spans are known before a single blob is fetched -- which is what makes the scrub a prefetch signal rather than a report. The runtime checks it against the blob that arrives and says so in the console if it is stale, which is also the order they arrive. yaw is where the canvas stands in the ring around the standpoint, in degrees, 0 dead ahead. treatment is null when the canvas's own measurement decides it -- tools/place.py writes lifted or present into the blob -- and a string here overrides that, in which case the override carries its reason.",
   "canvases": [
     {
-      "blob": "strokes/m3/harvest-canvas.bin",
+      "blob": "strokes/s04/harvest-canvas.bin",
       "strokes": 14934,
       "title": "The Harvest (The Blue Cart)",
       "date": "June 1888",
@@ -22,7 +24,7 @@
       "treatment": null
     },
     {
-      "blob": "strokes/m3/sower-canvas.bin",
+      "blob": "strokes/s04/sower-canvas.bin",
       "strokes": 3677,
       "title": "The Sower",
       "date": "November 1888",
@@ -34,7 +36,7 @@
       "treatment": null
     },
     {
-      "blob": "strokes/m3/reaper-canvas.bin",
+      "blob": "strokes/s04/reaper-canvas.bin",
       "strokes": 18924,
       "title": "Wheatfield with a Reaper",
       "date": "September 1889",
@@ -61,6 +63,9 @@
 
   "_weave": "The cloth under the world. Arles is ordinary primed linen; the jute of Saint-Remy arrives at station 8 as 2.4 mm and rough 1.",
   "weave": { "mm": 0.9, "rough": 0.0 },
+
+  "_curl": "M4 measures how far every stroke on every canvas can slide along its own arc, and packs it. Nothing at this station spends it: DESIGN 4.5's moving things here are the mistral in the wheat and the cypresses, which is a wind rather than a curl and is not M4's. The gain is zero and the amplitudes are in the blobs, so turning it on is one number.",
+  "curl": { "gain": 0.0, "rate": 0.42 },
 
   "_pacing": "DESIGN 5.3, with M2's measured constant. burst is strokes a second, hold is the punctuation between acts in seconds, and the canvases are painted one after another in the order above, each getting the share of the scrub its stroke count earns so that the rate is constant across the station.",
   "pacing": { "burst": 2000, "hold": 2.4 },

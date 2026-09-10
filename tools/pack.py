@@ -19,7 +19,7 @@ to bind the thing:
       16      1   height                    u8, impasto, 0 = flat wash
       17      1   act                       u8
       18      1   flags                     u8  1 contour 2 highlight
-      19      1   (pad)                         4 chain-continues 8 edge-spill
+      19      1   curl                      u8  4 chain-continues 8 edge-spill
       20      2   order                     u16 fraction of the sequence
       22      2   depth                     f16
 
@@ -59,6 +59,19 @@ are stored separately on purpose -- the second one is near zero on every
 canvas here, so the first is a construction and a blob that quoted only the
 number it was built with would be hiding that.
 
+Version 6 adds what M4 found out about the motion and the depth, and it is the
+first version to spend the record's one spare byte. `curl` is per stroke: how
+far that stroke can slide along its own arc before the paint it lands on stops
+being a colour it could have been traced from, which is the amplitude the
+runtime is allowed and is measured rather than chosen. The header carries what
+the measurement was worth -- the coherence length along the arc against the
+same slide along the tangent and along the mirrored arc, and the pre-registered
+bar it was tested against -- because that comparison did not come out the way
+DESIGN 4.5 assumes and a blob that carried only the amplitude would be hiding
+it. `depth` at byte 22 has been in the record since M0b and is finally written:
+metres along the stroke's own ray, hand-authored in the station file, with the
+displacement at which the shell tears beside it.
+
 Every reader takes hdr_len from the header rather than assuming it, so the
 growth costs nothing.
 
@@ -68,8 +81,8 @@ import json, os, struct, sys
 import numpy as np
 
 MAGIC = b"VGST"
-VERSION = 5
-HDR = 448
+VERSION = 6
+HDR = 512
 STRIDE = 24
 CSTRIDE = 24
 ASTRIDE = 24
@@ -148,6 +161,9 @@ def pack(doc, dest):
     k = float(np.ceil(wid.max() * 255.0) / 255.0) if n else 1.0
     k = max(k, 1e-6)
 
+    cur = np.array([r.get("curl", 0.0) for r in s], np.float64)   # of the short edge
+    ck = max(float(cur.max()) if n else 0.0, 1e-6)
+
     acts = doc.get("acts") or []
     coff = HDR + n * STRIDE
     aoff = coff + len(table) * CSTRIDE
@@ -164,7 +180,7 @@ def pack(doc, dest):
         rec[o + 16] = int(np.clip(round(r["h"] * 255.0), 0, 255))
         rec[o + 17] = int(r["act"]) & 0xFF
         rec[o + 18] = int(r["flags"]) & 0xFF
-        rec[o + 19] = 0
+        rec[o + 19] = int(np.clip(round(cur[i] / ck * 255.0), 0, 255))
         struct.pack_into("<H", rec, o + 20,
                          int(np.clip(round(r["o"] * 65535.0), 0, 65535)))
         rec[o + 22:o + 24] = np.float16(r["depth"]).tobytes()
@@ -229,6 +245,22 @@ def pack(doc, dest):
     struct.pack_into("<ffff", buf, 384, float(pl.get("far", 0.0)),
                      float(pl.get("near", 0.0)), float(pl.get("reach", 0.0)),
                      float(pl.get("dmax", 0.0)))
+
+    cu = doc.get("curl") or {}
+    ag = cu.get("agree") or {}
+    struct.pack_into("<f", buf, 448, ck)
+    struct.pack_into("<ffff", buf, 452, float(cu.get("ratio", 0.0)),
+                     float(cu.get("mirror_ratio", 0.0)), float(cu.get("arc_len", 0.0)),
+                     float(cu.get("line_len", 0.0)))
+    struct.pack_into("<fI", buf, 468, float(ag.get("ratio", 0.0)),
+                     int(cu.get("turning", 0)))
+    struct.pack_into("<B", buf, 476, 1 if cu.get("motion") == "arc" else 0)
+    sh = doc.get("shell") or {}
+    struct.pack_into("<fff", buf, 480, float(sh.get("half", 0.0)),
+                     float(sh.get("near", 0.0)), float(sh.get("far", 0.0)))
+    struct.pack_into("<I", buf, 492, int(sh.get("points", 0)))
+    struct.pack_into("<ff", buf, 496, float(cu.get("de_at_rest", 0.0)),
+                     float(cu.get("ratio_min", 0.0)))
     for j, t in enumerate(table):
         o = coff + j * CSTRIDE
         struct.pack_into("<II", buf, o, t["first"], t["count"])
@@ -283,6 +315,18 @@ def main():
               f"  ({pl['horizon_ratio']:.0f}x the best upright cut)"
               f"   gamma {pl['gamma']:.2f} built, {pl['gamma_measured']:+.2f} measured"
               f"   sky/ground {pl['sky_strokes']}/{pl['ground_strokes']}")
+    cu = doc.get("curl") or {}
+    if cu:
+        print(f"  curl    {cu['motion']}   {cu['turning']} strokes turn"
+              f"   slides {cu['arc_len']:.2f} of its own length along its arc,"
+              f" {cu['line_len']:.2f} along its tangent"
+              f"  ({cu['ratio']:.2f}x, {cu['mirror_ratio']:.2f}x the mirrored arc)"
+              f"   amplitude <= {cu['amp_max']*1000:.0f} thousandths of the short edge")
+    sh = doc.get("shell") or {}
+    if sh:
+        print(f"  shell   {sh['points']} authored depths"
+              f"   {sh['near']:.1f} to {sh['far']:.0f} m"
+              f"   tears at {sh['half']:.2f} m ({sh['tear_frac']*100:.0f}% of pairs)")
     print(f"  relief  method {doc.get('height_method', 0)}"
           f"   cap {doc.get('height_mm', 0):.2f} mm"
           f"   light {math.degrees(math.atan2(-lt[1], lt[0])):+.0f} deg"

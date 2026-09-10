@@ -17,7 +17,10 @@ fifteen seconds instead of six minutes, and `--no-order` builds the same canvas
 with M1's heuristic sequence for comparison. `place` is separate for the same
 reason and it is cheaper still: two seconds to ask a canvas where its horizon
 is and whether it is a place at all, which is a question worth being able to
-re-ask. The header carries both hashes,
+re-ask. `curl` and `shell` are separate for the third time for the same reason,
+and `shell` is separate for a fourth: its input is a station file rather than a
+params file, because a hand-authored depth is a decision about a station and
+not a fact about a canvas. The header carries both hashes,
 so staleness is a fact about the artifact rather than a timestamp.
 
 **The regression.** Two golden images at 1200 px, both committed: the flat
@@ -101,6 +104,10 @@ def main():
                     help="leave M1's heuristic sequence in place")
     ap.add_argument("--no-place", action="store_true",
                     help="do not ask the canvas where it stands")
+    ap.add_argument("--no-curl", action="store_true",
+                    help="do not ask how far a stroke can move")
+    ap.add_argument("--shell", default=None, metavar="STATION",
+                    help="bake the per-stroke depth this station authors for it")
     a = ap.parse_args()
 
     if a.check or not a.slug:
@@ -128,6 +135,10 @@ def main():
             run("tools/order.py", stem + ".json")
         if not a.no_place:
             run("tools/place.py", stem + ".json")
+        if not a.no_curl:
+            run("tools/curl.py", stem + ".json")
+        if a.shell:
+            run("tools/shell.py", stem + ".json", a.shell)
         run("tools/pack.py", stem + ".json")
     else:
         print(f"{a.slug}/{name} is up to date with its source and params")

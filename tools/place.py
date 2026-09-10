@@ -118,7 +118,7 @@ def features(doc):
     arc = np.array([r["arc"] for r in s], np.float64)           # px
     wid = np.array([r["w"] for r in s], np.float64)             # of the short edge
     flags = np.array([r["flags"] for r in s], np.int32)
-    rgb = np.array([r["rgb"] for r in s], np.float64)[None] / 255.0
+    rgb = np.array([r["rgb"] for r in s], np.float64)[None]   # 0..255, see srgb_to_linear
     lab = E.linear_to_lab(E.srgb_to_linear(rgb))[0]
     keep = ((flags & 1) == 0) & ((flags & 8) == 0)
     return dict(mid=mid, u=mid[:, 0], v=mid[:, 1], arc=arc, wid=wid,

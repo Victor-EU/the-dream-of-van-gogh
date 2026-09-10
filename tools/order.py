@@ -867,7 +867,7 @@ def heuristic(strokes):
     """
     import extract as E
     w = np.array([r["w"] for r in strokes], np.float32)
-    lin = E.srgb_to_linear(np.array([r["rgb"] for r in strokes], np.float32)[None] / 255.0)
+    lin = E.srgb_to_linear(np.array([r["rgb"] for r in strokes], np.float32)[None])
     lv = E.lightness(lin)[0]
     return ranks(0.5 * ranks(w) + 0.5 * ranks(lv))
 
@@ -1315,7 +1315,7 @@ def main():
     S = doc["strokes"]
     y = np.array([r["p"][1][1] for r in S], np.float32)
     x = np.array([r["p"][1][0] for r in S], np.float32)
-    lin = E.srgb_to_linear(np.array([r["rgb"] for r in S], np.float32)[None] / 255.0)
+    lin = E.srgb_to_linear(np.array([r["rgb"] for r in S], np.float32)[None])
     light = E.lightness(lin)[0]
     width = np.array([r["w"] for r in S], np.float32)
     contour = np.array([(r["flags"] & 1) > 0 for r in S], np.float32)

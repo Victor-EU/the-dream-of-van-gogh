@@ -59,6 +59,14 @@ PARAMS = (
 # ---------------------------------------------------------------- colour ----
 
 def srgb_to_linear(a):
+    """sRGB 0..255 -> linear 0..1. The input is *bytes*, not a 0..1 fraction.
+
+    Written this way because every caller inside this file hands it a scan, and
+    it stayed that way through M3 without saying so. Three callers outside had
+    divided by 255 first, which lands every value under the sRGB toe, makes the
+    whole transfer curve linear and quietly turns Lab into a linear map of sRGB.
+    M4 found it in place.py and order.py and it is recorded there.
+    """
     a = a.astype(np.float32) / 255.0
     return np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
 
@@ -84,7 +92,7 @@ def lightness(lin):
     return np.power(np.maximum(y, 0.0), 1.0 / 2.4).astype(np.float32)
 
 
-def decode(path):
+def decode(path, min_width=0):
     """Open a scan and get it to sRGB, honouring its profile if it has one.
 
     DESIGN 4.1 step 1. BUILD.md makes this a cross-station problem rather than a
@@ -98,6 +106,17 @@ def decode(path):
     from PIL import Image
     Image.MAX_IMAGE_PIXELS = None
     im = Image.open(path)
+    # A JPEG can be decoded straight out of the DCT at a half, a quarter or an
+    # eighth, which is what makes a 1.6 gigapixel scan openable at all: the
+    # Starry Night is 44,567 px wide and 4.7 GB decoded whole. The rule is that
+    # this must never become the resampler -- ask for at least twice the
+    # working width, so the LANCZOS step below is still a downsample by two and
+    # the coefficient truncation stays a factor of two away from the output.
+    # Every scan in this set but that one is already inside 2x and reduces by
+    # nothing, which is why no golden moves.
+    if min_width and im.size[0] > 2 * min_width:
+        w2 = 2 * min_width
+        im.draft("RGB", (w2, round(im.size[1] * w2 / im.size[0])))
     icc = im.info.get("icc_profile")
     if im.mode != "RGB":
         im = im.convert("RGB")
@@ -619,13 +638,17 @@ def working_image(p, src, verbose=True):
         if all(meta.get(k) == v for k, v in want.items()):
             return np.load(cache, mmap_mode="r"), meta
 
-    im, profile, cflags = decode(src)
+    w = int(round(p["canvas_cm"][0] * p["px_per_cm"]))
+    im, profile, cflags = decode(src, min_width=w)
     (cx, cy, cw_s, ch_s), (W, H) = canvas_edge.rect(src)
     if (cx, cy, cw_s, ch_s) != (0, 0, W, H):
         if verbose:
             print(f"  canvas edge: cropping {W}x{H} to {cw_s}x{ch_s} at ({cx},{cy})")
-        im = im.crop((cx, cy, cx + cw_s, cy + ch_s))
-    w = int(round(p["canvas_cm"][0] * p["px_per_cm"]))
+        # the edge detector reads the scan; the decoder may already have halved
+        # it under us, so the box comes back in scan pixels and is scaled here.
+        k = im.size[0] / W
+        im = im.crop(tuple(int(round(t * k))
+                           for t in (cx, cy, cx + cw_s, cy + ch_s)))
     h = int(round(im.size[1] * w / im.size[0]))
     if verbose:
         print(f"  working image {w}x{h} at {p['px_per_cm']:.0f} px/cm"

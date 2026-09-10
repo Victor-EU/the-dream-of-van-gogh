@@ -84,11 +84,11 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 6 | *Starry Night Over the Rhône* | Musée d'Orsay, Paris | `RF1975-19` | Commons · Google Art Project | 4331 × 3346 | 14 | — † | **— †** |
 | 6 | *The Night Café* | Yale University Art Gallery | `1961.18.34` | Commons | 7408 × 5848 | 43 | — † | **— †** |
 | 8 | *Cypresses* | The Metropolitan Museum of Art | `1949.30` | Commons | 4177 × 5306 | 22 | — † | **— †** |
-| 8 | *Irises* | J. Paul Getty Museum | `90.PA.20` | Commons | 11516 × 8801 | 101 | — † | **— †** |
+| 8 | *Irises* | J. Paul Getty Museum | `90.PA.20` | Commons | 11516 × 8801 | 101 | 94.3 × 74.3 ‡ | **122** |
 | 8 | *Irises (still life)* | Van Gogh Museum, Amsterdam | `s0050V1962` | museum IIIF (Micrio) | 13278 × 16806 | 223 | 73.9 × 92.7 | **180** |
 | 8 | *Olive Grove* | Van Gogh Museum, Amsterdam | `s0045V1962` | museum IIIF (Micrio) | 12801 × 9998 | 128 | 92.2 × 73.2 | **139** |
 | 8 | *The Garden of Saint-Paul's Hospital* | Van Gogh Museum, Amsterdam | `s0046V1962` | museum IIIF (Micrio) | 5619 × 6892 | 39 | 60.8 × 73.8 | **92** |
-| 8 | *The Starry Night* | Museum of Modern Art, New York | `472.1941` | Commons · Google Art Project | 44567 × 35291 | 1573 | — † | **— †** |
+| 8 | *The Starry Night* | Museum of Modern Art, New York | `472.1941` | Commons · Google Art Project | 44567 × 35291 | 1573 | 92.1 × 73.7 ‡ | **484** |
 | 8 | *Wheat Field with Cypresses* | National Gallery, London | `NG3861` | Commons | 10882 × 8653 | 94 | — † | **— †** |
 | 9 | *Daubigny's Garden* | Van Gogh Museum, Amsterdam | `s0104V1962` | museum IIIF (Micrio) | 6540 × 6460 | 42 | 51.2 × 51.0 | **128** |
 | 9 | *Stairway at Auvers* | Saint Louis Art Museum | `1-1935` | Commons | 6466 × 4569 | 30 | — † | **— †** |
@@ -103,13 +103,18 @@ the National Gallery, Kröller-Müller, Saint Louis, the Stedelijk — dimension
 holder's own catalogue** and are left blank rather than filled in from Wikidata, which returns series-level entities
 for the three Bedrooms and would have put the same wrong figure against all of them.
 
-*One exception, and it is an exception on purpose. `params/irises.json` carries 94.3 × 74.3 cm for the Getty
-*Irises*, which is **not** verified against the Getty's catalogue and is not entered in the table above. The canvas
-is not in any station: it is M3's negative control, a picture that is all ground and has no horizon in it at all, run
-through `tools/place.py` to find out whether the horizon test is measuring a horizon or merely the strongest edge in
-any picture. The dimension enters that answer only through px/cm, which sets the tracer's smoothing scales; the test
-itself is a ratio of two colour splits and is scale-free. If the canvas is ever wanted for the piece, the dimension
-has to be confirmed first like every other.*
+‡ **Confirmed at M4, when both canvases entered the piece.** The Getty publishes *Irises* as unframed
+74.3 × 94.3 cm on its own object page for `90.PA.20`; MoMA publishes *The Starry Night* as 29 × 36¼ in
+(73.7 × 92.1 cm) in its own open collection dataset, which is the museum's data rather than a third party's. Both
+are entered here on the holder's authority, and neither is from Wikidata. The rule of the dagger stands for the
+rest: a dimension goes in this table when the institution that owns the canvas says so.
+
+*M3 made one exception on purpose and M4 has closed it. `params/irises.json` carried 94.3 × 74.3 cm unverified,
+because the canvas was not in any station — it was M3's negative control, a picture that is all ground and has no
+horizon in it at all, run through `tools/place.py` to find out whether the horizon test measures a horizon or merely
+the strongest edge in any picture. It scored 1.7×, the lowest in the collection. M4 puts it in station 8 as the
+ground at your feet, at 1:1, which is a use that depends on the dimension being right rather than only on px/cm —
+so it was confirmed against the Getty first, and the figure the museum publishes is the figure the file already had.*
 
 ## Known gaps
 
