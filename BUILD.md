@@ -374,6 +374,11 @@ with real height the depth buffer handles most of it, but two strokes laid flat 
 sequence, far below the relief cap and invisible. The z-fighting goes away and the paint is then physically stacked in
 the order it was laid, which is the thing the piece is about.
 
+*Done. The Progress entry below carries the numbers; the short version is that the antisymmetric cue was tested
+against its own null and found to be one, the symmetric cue turned out to be the ridge finder's selection bias, and
+what ships is a geometric model that never reads a colour. The three LOD tiers are two: chunks and near/mid are
+built and measured, and the far tier stays deferred with its trigger unchanged.*
+
 **Exit criteria.**
 - **Relief is calibrated and capped in millimetres, not in taste.** Van Gogh's heaviest impasto runs a few millimetres;
   the cap is measured against the raking-light or photometric-stereo images that exist for a handful of canvases, and
@@ -561,7 +566,10 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
   rests on ~10,000 strokes per canvas, so **the trigger is M0b's measured count**, not a later milestone. Above ~25,000
   a station passes 100,000 strokes and the far tier comes back into M1 immediately. Otherwise re-open at M4 if one
   station is visible from another and costs more than 2 ms.
-  *M0b measured 18,924 on the Reaper: the trigger fired and did not trip. Still deferred, and re-open at M4 as above.*
+  *M0b measured 18,924 on the Reaper: the trigger fired and did not trip. Still deferred, and re-open at M4 as
+  above. M1 built the chunk table and the near/mid tiers on top of it, and measured that **mid is never selected at
+  one canvas** — a stroke stays above the threshold out to about forty metres. The machinery the far tier would need
+  is therefore already in the blob and in the runtime; what is missing is a reason.*
 - **Monocular depth estimation.** Hand-authored depth first. Re-open if M5's interiors need more shells than hand
   authoring can carry.
 - **The other four Sunflowers.** One version at M5. The rest are a data file each once the pipeline is frozen.
@@ -581,7 +589,12 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
 | The strokes do not read as Van Gogh | fragmentation, uniform width, or a wrong height field | the gate, and arc length 250–700 px | M0a |
 | The residual carries the picture | the underlayer does the work and the ribbons are sprinkles | band-pass energy ratio < 0.6 | M0b |
 | The stations do not sit on one colour footing | forty scans, twelve institutions, loose profile handling | station 2's flood survives a profile audit | M0b, M6 |
-| Impasto is measuring colour, not relief | flat-field museum photography has erased the signal | ℓ scatters across the VGM scans | M1 |
+| Impasto is measuring colour, not relief | flat-field museum photography has erased the signal | ℓ scatters across the VGM scans | M1 — **it had** |
+
+*That last row fired. The 24 VGM scans return a resultant of 0.029, which is inside the 0.020–0.058 the same
+estimator gives on canvases with no light at all, and the same estimator recovers a real light to 0.7°. So the
+signal is not weak, it is absent, and the milestone's declared fallback is what ships: a geometric relief model that
+never reads a colour, whose variance explained by colour is 0.005 against 0.814 for the design's own estimate.*
 | The order claim is unearned | the solver only reproduces "light over dark" | margin over heuristic control < 5 points | M2 |
 | The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 |
 | We drift into modelling Provence | the world stops being made of strokes | `?noStrokes` shows a scene | every |
@@ -870,3 +883,131 @@ tripped.
 
 **Not started, per scope:** M1's cross-profile height, M2's order solver, the LOD tiers, any station past 0, the
 transit, interiors, the voice, sound, mobile.
+
+---
+
+### M1 — Paint
+
+**Asked.** The impasto height, which the design calls its own weakest link; the underlayer beneath the ribbons; the
+canvas weave with the parameters that let it roughen into jute; and the LOD tiers.
+
+**The headline is a negative result with a number attached, and it is worth more than the positive one would have
+been.** DESIGN §4.1 step 6 derives height from local luminance above a wide neighbourhood. False-colour that field
+over the Reaper and you can read the composition in it, sheaf by sheaf: **81% of its variance is explained by the
+stroke's own colour alone.** It is a picture of the palette.
+
+So M1 tried the physics the plan specifies — the cross-profile of the stroke, sampled perpendicular to its own
+direction, with its two cues. And the plan's own test is the one that settles it.
+
+| the antisymmetric cue | resultant R | direction |
+|---|---|---|
+| 24 Van Gogh Museum scans, one rig | median **0.029** | scattered, circular sd 72° |
+| five synthetic canvases with **no light at all**, contrast matched to the Reaper | 0.020 – 0.058 | scattered |
+| the same synthetic under one lamp at 45°, tan(incidence) 1.0 | 0.223 | recovered to **0.7°** |
+| tan(incidence) 0.30 | 0.028 | 45° out |
+| tan(incidence) ≤ 0.10 | at or below the null | random |
+
+**The museum's canvases are indistinguishable from unlit ones**, and the method demonstrably works when there is
+something to find. That is a sharper answer than the plan's "ℓ scatters": we know the estimator is sound, we know
+its threshold, and we know the rig sits at least twenty times below it. Flat-field photography is built to kill
+relief shadows and on this evidence it has done it. `tools/light_audit.py --synthetic` runs the control.
+
+**The symmetric cue fails differently and worse, and only a polarity split shows it.** It is not weak — 2.3% deep at
+the feet of a bright ridge — but split by polarity it is **+2.33% on bright ridges and −2.01% on dark ones**, near
+perfectly opposite. That is the ridge finder's own selection: a bright ridge is chosen *because* its neighbours are
+lower. The polarity-independent half, which is the only part that could be relief, is 0.16%.
+
+**What ships is a model, and it is labelled as one.** A stroke stands as high as the film it lays down, which goes
+with its width, plus the paint it was laid on, which the raster sums as it draws. Both terms are geometry and
+neither reads a colour. The two exponents are set against the one anchor here that is physical: the height-to-width
+aspect of a paint ridge, ordinary brushed oil near 0.03–0.05 and loaded impasto 0.15–0.25.
+
+Paint **adds**. The first version multiplied the two terms, which gives a big isolated loaded mark almost no height
+at all because nothing crosses it — and on this canvas that is the sheaves.
+
+**Exit criteria.**
+
+| | measured | target |
+|---|---|---|
+| `?heights` follows the paint, not the palette | **variance explained by colour: 0.005**, against 0.814 for the design's estimate | no bright-on-dark stroke proud unless thick |
+| Relief capped in millimetres, applied everywhere | 1.25 mm cap, 0.54 mm mean, never exceeded, in the header | calibrated, not taste |
+| ℓ agrees across the VGM scans, **or** the fallback is in place and §4.1 step 6 amended | fallback, and the design is patched with the numbers | either |
+| Close-up gate: 1:1 crop beside the scan | it reads as loaded, furrowed paint | does it look like oil? |
+| Half-finished gate at τ = 0.5 | an unfinished painting, ground and sky laid in, wheat half built | not a loading bar |
+| The M0a gate re-run, now with height | passes; the "plastic" diagnosis M0a left open is closed | — |
+| 60 fps at 2× DPR | **60 fps, GPU 8.1 ms of 16.7**, 10 draws, 2.50 M triangles | 60 fps |
+
+**The millimetre cap is the weakest number in this milestone and it should be read as such.** The criterion asks for
+it to be measured against raking-light or photometric-stereo images, and **no scan in this set carries any** — all
+forty are flat-field colour photographs. So the cap is set so the relief field's *range* matches the one published
+scan of Van Gogh-style impasto this build could check: 1.1 mm peak-to-valley at 25 µm in-plane
+([arXiv:1910.10836](https://arxiv.org/abs/1910.10836)), on paintings made in his manner for that study rather than
+on his own canvases. Better than taste, short of a measurement, and written into `params/reaper.json` as such. The
+thing that would settle it is height data from the Van Gogh Museum's own 3D scanning, and the day it exists the cap
+becomes one number in one file.
+
+**The tiers are built and the far one is still deferred, both for measured reasons.** Chunks are fixed at pack time —
+a median cut on the longer side until each holds ≤ 2,500 strokes, order-sorted inside — and the runtime frustum-culls
+and picks a tier per chunk. WebGL 2 has no `baseInstance`, so a chunk is drawn by binding the same interleaved buffer
+at an offset; no copy and no second upload.
+
+| | strokes | triangles | GPU |
+|---|---|---|---|
+| whole canvas, standing back | 18,924 | 2.50 M | 8.1 ms |
+| the scrub at τ = 0.30 | **5,677** | **749 k** | **5.1 ms** |
+| at 1:1, four of eight chunks in frustum | 9,463 | 1.25 M | 2.2 ms |
+| mid tier forced (`?midpx=99`) | 18,924 | 151 k | 1.5 ms |
+
+**The scrub shortens the draw rather than hiding it**, which is what order-sorting inside a chunk buys. The mid tier
+works and is **never selected at one canvas** — a stroke stays above the 5 px threshold out to about 42 m, which is
+correction 4's prediction arriving in a different form. The far tier stays deferred; re-open at M4.
+
+**M0b's "the substrate is the frame" no longer holds, and that is this milestone's doing.** `?noStrokes` costs
+3.9 ms against the full canvas's 8.1. Seven columns and a furrowed shader moved the cost onto the paint, where it
+should be. Rule 2 still passes: `?noStrokes` renders **4 triangles**.
+
+**Colour still agrees end to end.** Scan 177.3 / 162.0 / 91.7, `tools/flat.py` 182.1 / 166.7 / 92.9, runtime `?flat`
+178.3 / 162.5 / 90.2; RMS between the two rasterisers 0.051 against 0.047 at M0b. Extraction 5 min 26 s, peak RSS
+2.0 GB, and the stroke count, seam z and band-pass ratio are unchanged from M0b to the digit — which is the point,
+because M1 was not supposed to touch them.
+
+**Twelve things were wrong. The ones worth writing down:**
+
+1. **My own control had the Lambertian sign inverted.** The normal of a height field is (−∂z/∂x, −∂z/∂y, 1), and I
+   lit the synthetic with the opposite sign — so the estimator came back *exactly* 180° out and looked broken. It
+   was the one part of the experiment that could not be wrong and was.
+2. **Crop overlap put a null result in a finding's clothes.** Eight random 1536 px crops of a canvas photographed at
+   376 px/cm — which comes down to 1693 × 2300 at the working resolution — are eight views of nearly the same paint.
+   The votes are correlated and the resultant sits well above its nominal chance level for no reason but the
+   sampling. Non-overlapping crops took the museum's median R from **0.055 to 0.029**, which is half the apparent
+   signal.
+3. **And the chance level itself was nine times too low**, because nine stations along one 64 px run were counted as
+   nine independent votes. One vote per ridge point.
+4. **The profile walk ran on unsmoothed luminance** and terminated on canvas weave, so the window collapsed to its
+   clamp on every stroke — the feet were "found" at 0.35 of the expected half-width everywhere.
+5. **Three columns across the ribbon is a triangular prism.** M0a and M0b ran that way and it never showed, because
+   their ribbons were nearly flat. Give a stroke real height and it is a tent with a ridge line down the middle and
+   a silhouette made of straight edges — the "plastic" M0a's gate named and deferred to here.
+6. **A specular lobe at exponent 120 never fires on a surface whose normal turns 19°.** The scan's brightest one
+   percent sits at luma 208 and the render's at 165. What fixed it was not the lobe but the furrows.
+7. **Furrows at amplitude 0.85 are corduroy.** A hair furrow is tens of microns deep on a half-millimetre pitch: it
+   tilts the surface by about a tenth, not by half.
+8. **And their fade cut them to a third of strength at seven pixels a furrow**, which is three times Nyquist and
+   plainly resolvable.
+9. **`?flat` fell to the mid tier in every frame**, because an orthographic camera has no `fov`, and NaN compares
+   false. In the one mode whose entire job is to agree with `tools/flat.py` pixel for pixel.
+10. **The flat golden is blind to relief.** M1 replaced the height field outright and the golden came back identical
+    to five decimal places — correct, and exactly the blind spot. There are now two goldens, colour and relief.
+
+**Still visible, and named rather than fixed.**
+
+- **The mm scale is asserted, not measured.** Above.
+- **At 1:1 the scan shows bare grey weave between the marks and the render shows a smooth ground.** The underlayer is
+  a σ = 220 px field and cannot carry cloth; the weave shader can, but it is behind the paint rather than between it.
+- **No craquelure, and no granularity within a colour.** Both are visible in a 1:1 scan and neither is in the record.
+- **The relief field follows density**, so a passage worked over reads thick and an isolated thin drag reads thin.
+  That is the model's claim and it is a claim, not a measurement.
+- **The order is still the heuristic.** M2.
+
+**Not started, per scope:** M2's order solver, the far LOD tier, any station past 0, the transit, interiors, the
+voice, sound, mobile.

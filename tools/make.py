@@ -13,11 +13,17 @@ never reads is worse, because it looks exactly like tuning and does nothing.
 records this source file and these parameters. The header carries both hashes,
 so staleness is a fact about the artifact rather than a timestamp.
 
-**The regression.** The flat reconstruction at 1200 px is committed as a golden
-image and every build reports its RMS difference against it. A change that moves
-that number without meaning to is caught in seconds instead of in a milestone --
-which matters most for the changes that are supposed to move nothing at all: a
-refactor, a memory fix, a faster merge.
+**The regression.** Two golden images at 1200 px, both committed: the flat
+reconstruction and the false-coloured relief field. Every build reports the RMS
+difference against each. A change that moves either without meaning to is caught
+in seconds instead of in a milestone -- which matters most for the changes that
+are supposed to move nothing at all: a refactor, a memory fix, a faster merge.
+
+The relief golden is there because the flat one cannot see relief at all. M1
+replaced the height field entirely and the flat golden came back identical to
+five decimal places, which is correct and is also exactly the blind spot: with
+one image the harness watches the geometry and the colour and nothing watches
+the paint standing off the cloth.
 
     tools/make.py reaper              # build if stale, then check the golden
     tools/make.py reaper --force      # build regardless
@@ -80,7 +86,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("slug", nargs="?")
     ap.add_argument("--tile", default=None)
-    ap.add_argument("--out", default="strokes/m0b")
+    ap.add_argument("--out", default="strokes/m1")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--golden", action="store_true")
     ap.add_argument("--check", action="store_true")
@@ -111,31 +117,33 @@ def main():
     else:
         print(f"{a.slug}/{name} is up to date with its source and params")
 
-    run("tools/flat.py", stem + ".bin", "--px", 1200)
-    shot = Image.open(stem + "-flat.png").convert("RGB")
-
     os.makedirs(GOLD, exist_ok=True)
-    gold_path = os.path.join(GOLD, f"{a.slug}-{name}-1200.png")
-    if a.golden:
-        shot.save(gold_path)
-        print(f"golden accepted -> {os.path.relpath(gold_path, ROOT)}")
-        return
-    if not os.path.exists(gold_path):
-        shot.save(gold_path)
-        print(f"golden created -> {os.path.relpath(gold_path, ROOT)}  (nothing to "
-              f"compare against yet; the next build has a baseline)")
-        return
-
-    d = rms(shot, Image.open(gold_path).convert("RGB"))
-    if d is None:
-        print("golden differs in size: the canvas or its crop changed. "
-              "Re-accept it with --golden if that was intended.")
-        raise SystemExit(1)
-    verdict = ("identical" if d == 0 else
-               "unchanged to the eye" if d < 0.002 else
-               "MOVED" if d > 0.01 else "moved slightly")
-    print(f"golden RMS {d:.5f}   {verdict}")
-    if d > 0.01:
+    run("tools/flat.py", stem + ".bin", "--px", 1200)
+    run("tools/flat.py", stem + ".bin", "--px", 1200, "--heights")
+    bad = False
+    for tag, what in (("flat", "colour"), ("heights", "relief")):
+        shot = Image.open(f"{stem}-{tag}.png").convert("RGB")
+        gold_path = os.path.join(GOLD, f"{a.slug}-{name}-{tag}-1200.png")
+        if a.golden:
+            shot.save(gold_path)
+            print(f"golden {what} accepted -> {os.path.relpath(gold_path, ROOT)}")
+            continue
+        if not os.path.exists(gold_path):
+            shot.save(gold_path)
+            print(f"golden {what} created -> {os.path.relpath(gold_path, ROOT)}"
+                  f"  (nothing to compare against yet; the next build has a baseline)")
+            continue
+        d = rms(shot, Image.open(gold_path).convert("RGB"))
+        if d is None:
+            print(f"golden {what} differs in size: the canvas or its crop changed. "
+                  "Re-accept it with --golden if that was intended.")
+            raise SystemExit(1)
+        verdict = ("identical" if d == 0 else
+                   "unchanged to the eye" if d < 0.002 else
+                   "MOVED" if d > 0.01 else "moved slightly")
+        print(f"golden {what:7s} RMS {d:.5f}   {verdict}")
+        bad = bad or d > 0.01
+    if bad:
         print("  If that was the point, accept it with --golden. If it was not, "
               "this is the regression the golden exists to catch.")
         raise SystemExit(2)

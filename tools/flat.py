@@ -29,12 +29,15 @@ def read(path):
     k, = struct.unpack_from("<f", b, 60)
     hmm, = struct.unpack_from("<f", b, 64)
     under_ds = struct.unpack_from("<H", b, 70)[0] if ver >= 2 else 0
+    hmethod = struct.unpack_from("<B", b, 68)[0] if ver >= 2 else 0
+    light = struct.unpack_from("<ffff", b, 212) if ver >= 3 else (0, 0, 0, 0)
     profile = bytes(b[168:192]).split(b"\x00")[0].decode("utf-8", "replace") if ver >= 2 else ""
     r = b[hdr:hdr + n * STRIDE].reshape(n, STRIDE)
     p = r[:, 0:12].copy().view("<u2").reshape(n, 3, 2).astype(np.float32)
     p = p / 65535.0 * (hi - lo) + lo
     return dict(n=n, cw=cw, ch=ch, cm=(cwcm, chcm), ppcm=ppcm, tile=tile,
                 ver=ver, under_ds=under_ds, profile=profile,
+                hmethod=hmethod, light=light,
                 p=p, rgb=r[:, 12:15], width=r[:, 15].astype(np.float32) / 255.0 * k,
                 height=r[:, 16].astype(np.float32) / 255.0, act=r[:, 17],
                 flags=r[:, 18], hmm=hmm,
@@ -42,7 +45,14 @@ def read(path):
                 depth=r[:, 22:24].copy().view("<f2").ravel().astype(np.float32))
 
 
-def render(d, px, tau=1.0, xray=False, under=None):
+def heat(h):
+    """The same false colour the runtime's ?heights uses, so the two agree."""
+    sm = lambda a, b, x: np.clip((x - a) / (b - a), 0, 1) ** 2 * (3 - 2 * np.clip((x - a) / (b - a), 0, 1))
+    return np.stack([sm(0.35, 1.0, h), sm(0.0, 0.6, h) * 0.8,
+                     1.0 - sm(0.0, 0.5, h)], -1) * 0.9
+
+
+def render(d, px, tau=1.0, xray=False, under=None, heights=False):
     tx, ty, tw, th = d["tile"]
     if tw == 0:
         tx, ty, tw, th = 0, 0, d["cw"], d["ch"]
@@ -50,7 +60,10 @@ def render(d, px, tau=1.0, xray=False, under=None):
     H = max(1, int(round(px * th / tw)))
     sc = W / tw
     img = np.zeros((H, W, 3), np.float32)
-    if under is not None:
+    if heights:
+        # the false-colour field stands on its own ground, not on the painting's
+        img[:] = np.array([0.04, 0.04, 0.05], np.float32)
+    elif under is not None:
         # the ground the strokes lie on, from the underlayer M0b extracts.
         # Compositing over it rather than over a flat tone is what makes this
         # the same image the runtime draws -- which is the whole point of the
@@ -96,6 +109,8 @@ def render(d, px, tau=1.0, xray=False, under=None):
         col = d["rgb"][i].astype(np.float32) / 255.0
         if xray:
             col = np.array([1.0, 0.1, 0.05], np.float32)
+        if heights:
+            col = heat(np.float32(d["height"][i]))
         sub = img[y0:y1, x0:x1]
         img[y0:y1, x0:x1] = sub * (1 - a[..., None]) + col * a[..., None]
         cov[y0:y1, x0:x1] = np.maximum(cov[y0:y1, x0:x1], a)
@@ -108,15 +123,19 @@ def main():
     ap.add_argument("--px", type=int, default=1200)
     ap.add_argument("--tau", type=float, default=1.0)
     ap.add_argument("--xray", action="store_true")
+    ap.add_argument("--heights", action="store_true",
+                    help="false-colour the impasto field, as the runtime does")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     d = read(a.blob)
     up = os.path.splitext(a.blob)[0] + "-under.png"
     under = np.asarray(Image.open(up)) if os.path.exists(up) else None
-    img, cov = render(d, a.px, a.tau, a.xray, under)
-    out = a.out or os.path.splitext(a.blob)[0] + ("-xray" if a.xray else "-flat") + ".png"
+    img, cov = render(d, a.px, a.tau, a.xray, under, a.heights)
+    tag = "-xray" if a.xray else ("-heights" if a.heights else "-flat")
+    out = a.out or os.path.splitext(a.blob)[0] + tag + ".png"
     Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).save(out)
-    print(f"{d['n']} strokes, tau {a.tau:.2f}, covered {cov*100:.1f}%"
+    print(f"{d['n']} strokes, height method {d.get('hmethod', 0)}, "
+          f"tau {a.tau:.2f}, covered {cov*100:.1f}%"
           f"{'' if under is not None else '  (no underlayer, flat ground)'}  -> {out}")
 
 

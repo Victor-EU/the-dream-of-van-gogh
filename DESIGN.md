@@ -179,6 +179,31 @@ open-access masters.
    correlation is imperfect and it is the weakest link in the pipeline; the correct source is raking-light or
    photometric-stereo height data, which exists for a handful of canvases and not for most. Flag the estimate as an
    estimate and allow a hand multiplier per station.
+
+   *Replaced at M1, and this section was right to call itself the weakest link. Local luminance above a wide
+   neighbourhood is a picture of the palette: false-colour it over the Reaper and the sheaves are legible in it,
+   stroke for stroke. Measured, **81% of its variance is explained by the stroke's own colour alone.***
+
+   *M1 tried the physics first. The cross-profile of a stroke carries two cues — one flank lit and the other shaded,
+   which depends on the light; and both feet darkened by self-shadowing, which does not. The antisymmetric cue was
+   tested the way BUILD.md M1 specifies, by asking whether the recovered light agrees across the 24 Van Gogh Museum
+   scans, which were shot on one rig. **It does not, and the interesting part is that we can say how badly.** The
+   same estimator recovers a known light to within 0.7° on synthetic canvases whose flank statistics match the
+   Reaper's, and fails completely below tan(incidence) ≈ 0.3; on canvases with **no light at all** it returns a
+   resultant of 0.02 to 0.06 with the direction scattered. The museum's 24 scans return a median of 0.029. They are
+   indistinguishable from unlit. Flat-field photography is built to do exactly this and it has done it.*
+
+   *The symmetric cue fails differently and worse. It is not weak — it is 2.3% deep on a bright ridge — but splitting
+   it by polarity shows +2.33% on bright ridges against −2.01% on dark ones, near-perfectly opposite: it is the ridge
+   finder's own selection, because a bright ridge is chosen **because** its neighbours are lower. The relief-carrying
+   part, which is the polarity-independent half, is 0.16%.*
+
+   *So the shipped height is neither. It is a model, built from geometry and never from colour: a stroke stands as
+   high as the film it lays down, which goes with its width, plus the paint it was laid on, which the raster sums as
+   it draws. Its variance explained by colour is **0.5%**. It is labelled method 2 in the blob header, beside the
+   recovered light and its resultant, so any blob can be asked what its relief is worth; `--height 0` and `--height 1`
+   reproduce the other two for anyone who wants to look. What would make this a measurement rather than a model is
+   raking-light or photometric-stereo height data, and **no scan in this set carries any**.*
 7. **Residual.** Whatever the strokes do not account for — thin washes, blended passages, the ground — becomes a
    low-frequency **underlayer**: the residual image after the fitted strokes are subtracted, blurred, rendered as a
    thin flat surface beneath the ribbons, plus the canvas weave. The underlayer is what makes the half-finished state
@@ -286,6 +311,10 @@ failure mode that ate `monets-universe`'s schedule.
 
 - **Geometry.** One instanced draw per (station, act). The instance is a unit ribbon; a vertex shader sweeps it along
   the stroke's Bézier, applying width, height and a slight twist. Six segments near, two mid.
+
+  *M1: segments **along** the ribbon were never the problem; columns **across** it were. Three columns is a
+  triangular prism, which is invisible while the ribbons are nearly flat and is a tent with a ridge line down it the
+  moment they have real height. Near is now seven columns and eleven segments, mid is three and two.*
 - **The scrub is one uniform.** `uScrubOrder`. Strokes with `order > uScrubOrder` are collapsed to degenerate
   triangles in the vertex shader. Strokes inside the arrival window extrude partially. **Nothing is ever rebuilt, no
   buffer is ever re-uploaded, and the entire ten-year timeline is a single float.** This is the same trick
@@ -293,6 +322,14 @@ failure mode that ate `monets-universe`'s schedule.
 - **Impasto.** The ribbon carries a normal that bows across its width, so the paint has a rounded top and catches a
   rim. One tight specular lobe, one broad. Contact shadow approximated per-stroke from `height` and the light
   direction rather than with a shadow map — cheap, and at this scale indistinguishable.
+
+  *M1 adds one thing this list does not have, and the 1:1 gate would not pass without it: **a brush has hairs, and
+  they leave furrows running along the mark.** A ribbon whose normal only bows across its width turns through about
+  19°, which is too little for any specular lobe to catch, and the scan's brightest one percent sits at luma 208
+  against the render's 165 — the whole difference between wet paint and wax. Furrows turn the surface through that
+  much every half millimetre, and they are where the sheen lives. Two frequencies, a per-stroke phase, an amplitude
+  of about a tenth (a furrow is tens of microns deep on a half-millimetre pitch), and faded by how fast the phase
+  moves across the screen or it becomes corduroy at the second step backwards.*
 - **The substrate is a character.** The weave shows where paint is thin, and it **changes over the ten years**: he ran
   out of canvas at Saint-Rémy and painted on coarse jute, so the cloth under the world visibly roughens in 1889. True,
   free, and nobody has ever shown it.

@@ -33,8 +33,14 @@
   "sigma_tensor": 24.0,
   "sigma_ridge": 14.0,
   "sigma_height": 140.0,
-  "_height": "peak impasto in mm, the hand multiplier DESIGN 4.1 step 6 allows. 4 mm on an 8 mm stroke made every mark taller than it was wide.",
-  "height_mm": 2.4,
+  "_relief": "BUILD.md M1. sigma_relief is the smoothing under the cross-profile: above the 9 px weave and the 6 px brush striation, well below a stroke's flank. The relief_* numbers are height method 2, which is geometry and never colour: a stroke stands as high as its own film, which goes with its width, plus the paint it was laid on, which the raster sums as it draws. They add -- multiplying them gives a big isolated loaded mark no height at all, because nothing crosses it, and on this canvas that is the sheaves. floor is because a stroke with no height is a decal. height_mm is the cap, applied everywhere and never exceeded, and it is the weakest number in this file: no scan in this set carries raking-light or photometric-stereo data, so it is set so the field's range matches the one published scan of Van Gogh-style impasto this build could check, which measured 1.1 mm peak to valley at 25 um. The width distribution here spans only 2.8x and cannot make a plausible relief alone; the stack spans six and does. order_lift_mm is the z-fight offset across the whole sequence, far below the cap and invisible. relief_sym_w only matters under --height 1.",
+  "sigma_relief": 4.0,
+  "height_mm": 1.25,
+  "relief_width_pow": 2.0,
+  "relief_stack_w": 1.0,
+  "relief_floor": 0.12,
+  "relief_sym_w": 1.0,
+  "order_lift_mm": 0.04,
   "_chroma": "DESIGN 4.1 step 3: his strokes are very often one loaded colour beside another at the same value, which no luminance ridge can see. But taken as a plain union of the ridge maps it finds the same stroke three times -- measured on the gate tile, 99% of chroma traces ran within one stroke width of a luminance trace, for 2.3 points of coverage at 2.75x the strokes. veto_px is the radius around a luminance ridge inside which a chroma seed is refused: half a stroke width here, so chroma is seeded only where luminance is actually blind, which is what the design says. gain 0.01 puts a full-swing colour opposition at about the same number as a full-swing change in light. The energy floor stops coherence -- a ratio -- being asked where there is nothing to divide, so JPEG chroma noise in a flat passage cannot look like a stroke.",
   "chroma_gain": 0.01,
   "chroma_tensor_w": 0.35,
@@ -72,5 +78,6 @@
   "tile_step": 2048,
   "_under": "the ground seen between the strokes, extended beneath them. sigma is about twice a stroke width: broad enough that it cannot carry the picture (which the band-pass ratio checks), narrow enough to hold the tonal zones of the field.",
   "sigma_under": 220.0,
-  "under_ds": 16
+  "under_ds": 16,
+  "_sigma_height": "only --height 0 reads this: it is the wide neighbourhood of DESIGN 4.1 step 6, kept so that the estimate M1 replaced can still be reproduced and looked at."
 }

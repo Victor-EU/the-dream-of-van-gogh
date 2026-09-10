@@ -23,12 +23,23 @@ to bind the thing:
       20      2   order                     u16 fraction of the sequence
       22      2   depth                     f16
 
-The header is 256 bytes at version 2. It grew from 192 to carry what M0b added:
+The header is 256 bytes and at version 3. It grew from 192 at M0b to carry
 which colour profile the scan had, or that it had none, so a blob can never be
 silently assumed sRGB later; what was cropped off the scan to reach the edge of
 the painting; the underlayer's scale; and the band-pass ratio, which is the
-number that says whether the strokes carry the picture. Every reader takes
-hdr_len from the header rather than assuming it, so the growth costs nothing.
+number that says whether the strokes carry the picture.
+
+Version 3 adds what M1 found out about the light. `height_method` says which of
+the three estimates the heights in this blob came from, and the light fields say
+why: the direction the cross-profile recovered, how much the canvas agreed on it,
+and the relief that direction would imply at the most generous rig the physics
+allows. On these scans that last number lands well under a millimetre and the
+agreement lands inside the range the same estimator returns on a canvas with no
+light at all, which is what put the shipped heights on method 2. A blob can
+therefore always be asked what its relief is worth.
+
+Every reader takes hdr_len from the header rather than assuming it, so the
+growth costs nothing.
 
     tools/pack.py strokes/m0b/reaper-canvas.json
 """
@@ -36,9 +47,11 @@ import json, os, struct, sys
 import numpy as np
 
 MAGIC = b"VGST"
-VERSION = 2
+VERSION = 3
 HDR = 256
 STRIDE = 24
+CSTRIDE = 24
+CHUNK_MAX = 2500
 COORD_LO, COORD_HI = -0.05, 1.05
 
 
@@ -48,8 +61,63 @@ def q_coord(v):
     return np.clip(np.rint(t * 65535.0), 0, 65535).astype("<u2")
 
 
+def chunks(s, limit=CHUNK_MAX):
+    """Split the strokes into spatial chunks, order-sorted inside each one.
+
+    BUILD.md M1 argues this out and the argument is worth keeping: the tempting
+    LOD design mirrors `uScrubOrder` and rejects the wrong tier in the vertex
+    shader, but a rejected instance still spawns its whole vertex count, so
+    three passes over the buffer is millions of vertices a frame spent entirely
+    on geometry that collapses. So the tier is chosen per chunk, on the CPU, and
+    a few dozen chunks is a loop that never touches a stroke.
+
+    Order-sorted inside the chunk is what makes the scrub *shorten* the draw
+    rather than hide it: the arrived strokes are then a prefix, so the scrub
+    sets the draw's instance count and early in a station the GPU is issued the
+    work that exists rather than the work that will exist.
+
+    The split is a median cut on the longer side, recursively, so the chunks
+    follow where the paint actually is instead of a fixed grid putting four
+    hundred strokes in one cell and nine thousand in the next.
+    """
+    def mid(r):
+        p = np.array(r["p"], np.float64)
+        return (1 / 4) * p[0] + (1 / 2) * p[1] + (1 / 4) * p[2]
+
+    c = np.array([mid(r) for r in s]) if s else np.zeros((0, 2))
+    out = []
+
+    def cut(idx):
+        if len(idx) <= limit:
+            out.append(idx)
+            return
+        q = c[idx]
+        ax = 0 if np.ptp(q[:, 0]) >= np.ptp(q[:, 1]) else 1
+        o = idx[np.argsort(q[:, ax], kind="stable")]
+        h = len(o) // 2
+        cut(o[:h])
+        cut(o[h:])
+
+    if len(s):
+        cut(np.arange(len(s)))
+    order = np.array([r["o"] for r in s], np.float64) if s else np.zeros(0)
+    table, perm = [], []
+    for idx in out:
+        idx = idx[np.argsort(order[idx], kind="stable")]     # a prefix, by order
+        p = np.array([r["p"] for r in (s[i] for i in idx)], np.float64)
+        w = max((s[i]["w"] for i in idx), default=0.0)
+        table.append(dict(first=len(perm), count=len(idx),
+                          box=(p[..., 0].min(), p[..., 1].min(),
+                               p[..., 0].max(), p[..., 1].max()),
+                          olo=order[idx].min(), ohi=order[idx].max(), wmax=w))
+        perm.extend(int(i) for i in idx)
+    return perm, table
+
+
 def pack(doc, dest):
     s = doc["strokes"]
+    perm, table = chunks(s)
+    s = [s[i] for i in perm]
     n = len(s)
     cw, ch = doc["canvas_px"]
     short = min(cw, ch)
@@ -58,8 +126,9 @@ def pack(doc, dest):
     k = float(np.ceil(wid.max() * 255.0) / 255.0) if n else 1.0
     k = max(k, 1e-6)
 
-    buf = bytearray(HDR + n * STRIDE)
-    rec = memoryview(buf)[HDR:]
+    coff = HDR + n * STRIDE
+    buf = bytearray(coff + len(table) * CSTRIDE)
+    rec = memoryview(buf)[HDR:coff]
     for i, r in enumerate(s):
         o = i * STRIDE
         p = np.array(r["p"], np.float64).ravel()
@@ -77,7 +146,7 @@ def pack(doc, dest):
         rec[o + 22:o + 24] = np.float16(r["depth"]).tobytes()
 
     struct.pack_into("<4sHHHHI", buf, 0, MAGIC, VERSION, HDR, STRIDE,
-                     1 if doc.get("height_method", 0) == 0 else 0, n)
+                     1 if doc.get("height_method", 0) == 0 else 0, n)   # flags bit 0: estimated height
     struct.pack_into("<II", buf, 16, cw, ch)
     struct.pack_into("<fff", buf, 24, doc["canvas_cm"][0], doc["canvas_cm"][1],
                      doc["px_per_cm"])
@@ -96,22 +165,44 @@ def pack(doc, dest):
     buf[168:168 + len(prof)] = prof
     struct.pack_into("<IIII", buf, 192, *(doc.get("crop_rect") or [0, 0, 0, 0]))
     struct.pack_into("<f", buf, 208, float(doc.get("bandpass", 0.0)))
+    lt = doc.get("light") or [0.0, 0.0]
+    struct.pack_into("<ffff", buf, 212, float(lt[0]), float(lt[1]),
+                     float(doc.get("light_R", 0.0)), float(doc.get("light_mm", 0.0)))
+    struct.pack_into("<f", buf, 228, float(doc.get("order_lift_mm", 0.0)))
+    struct.pack_into("<IIH", buf, 232, len(table), coff, CSTRIDE)
+    for j, t in enumerate(table):
+        o = coff + j * CSTRIDE
+        struct.pack_into("<II", buf, o, t["first"], t["count"])
+        buf[o + 8:o + 16] = q_coord(t["box"]).tobytes()
+        struct.pack_into("<HHH", buf, o + 16,
+                         int(np.clip(round(t["olo"] * 65535), 0, 65535)),
+                         int(np.clip(round(t["ohi"] * 65535), 0, 65535)),
+                         int(np.clip(round(t["wmax"] / k * 65535), 0, 65535)))
 
     with open(dest, "wb") as f:
         f.write(buf)
-    return n, k, len(buf)
+    return n, k, len(buf), len(table)
 
 
 def main():
     src = sys.argv[1]
     doc = json.load(open(src))
     dest = os.path.splitext(src)[0] + ".bin"
-    n, k, size = pack(doc, dest)
+    n, k, size, nch = pack(doc, dest)
     print(f"{n} strokes  width_k {k:.5f}  {size/1024:.1f} KB  -> {dest}")
+    print(f"  chunks  {nch} spatial, order-sorted inside"
+          f"   {n/max(nch,1):.0f} strokes a chunk")
     print(f"  source  {doc['source_sha256'][:16]}...")
     print(f"  params  {doc['params_sha256'][:16]}...")
     print(f"  colour  {doc.get('profile') or 'no profile embedded in the scan'}"
           f"  (flags {doc.get('colour_flags', 0)})")
+    import math
+    lt = doc.get("light") or [1.0, 0.0]
+    print(f"  relief  method {doc.get('height_method', 0)}"
+          f"   cap {doc.get('height_mm', 0):.2f} mm"
+          f"   light {math.degrees(math.atan2(-lt[1], lt[0])):+.0f} deg"
+          f" at R {doc.get('light_R', 0):.4f}"
+          f" (implies <= {doc.get('light_mm', 0):.2f} mm)")
 
 
 if __name__ == "__main__":

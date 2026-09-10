@@ -30,6 +30,9 @@ import argparse, hashlib, io, json, os, resource, sys, time
 import numpy as np
 from scipy.ndimage import gaussian_filter, map_coordinates, maximum_filter
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import relief
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 EPS = 1e-12
@@ -41,7 +44,8 @@ DS = 8                      # downsample for the canvas-wide low-frequency work
 # is the more expensive of the two, because it looks like it is tuning.
 PARAMS = (
     "slug source canvas_cm px_per_cm tiles tile "
-    "sigma_grad sigma_tensor sigma_ridge sigma_height height_mm "
+    "sigma_grad sigma_tensor sigma_ridge sigma_height sigma_relief height_mm "
+    "relief_width_pow relief_stack_w relief_floor relief_sym_w order_lift_mm "
     "chroma_gain chroma_tensor_w chroma_priority chroma_veto_px "
     "tensor_energy_frac "
     "seed_spacing seed_strength_pct coherence_min "
@@ -563,8 +567,12 @@ def trough_is_paint(pts, lab, width, p):
     return float(np.median(np.minimum(dl, dr))) >= p["trough_chroma_min"]
 
 
-def stroke_colour_height(pts, srgb, hfield, width, p):
-    """Median (never mean: the mean eats the neighbour at every crossing)."""
+def stroke_colour(pts, srgb, hfield, width, p):
+    """Median (never mean: the mean eats the neighbour at every crossing).
+
+    `hfield` is DESIGN 4.1 step 6's height estimate and is None unless
+    --height 0 asked for it; M1 replaced it and the reason is in relief.py.
+    """
     m = max(1, len(pts) // 24)
     q = pts[::m]
     d = np.gradient(q, axis=0) if len(q) > 2 else np.diff(q, axis=0, prepend=q[:1])
@@ -574,6 +582,8 @@ def stroke_colour_height(pts, srgb, hfield, width, p):
     sx = (q[:, 0:1] + ax[:, None] * band).ravel()
     sy = (q[:, 1:2] + ay[:, None] * band).ravel()
     cols = samp3(srgb, sx, sy)                       # straight off the memmap
+    if hfield is None:
+        return np.median(cols, axis=0), 0.0
     hs = samp3(hfield[..., None], sx / HDS, sy / HDS)[:, 0].astype(np.float32)
     return np.median(cols, axis=0), float(np.median(hs))
 
@@ -794,6 +804,7 @@ def raster(recs, cw, ch, scale, colour=True, base=None):
         img[:] = base[np.clip(yy0 * base.shape[0] // H, 0, base.shape[0] - 1),
                       np.clip(xx0 * base.shape[1] // W, 0, base.shape[1] - 1)]
     cov = np.zeros((H, W), np.float32)
+    lay = np.zeros((H, W), np.float32)
     short = min(cw, ch)
     seq = np.argsort([r["o"] for r in recs])           # painter's algorithm
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -813,11 +824,12 @@ def raster(recs, cw, ch, scale, colour=True, base=None):
                     (yy[ya:yb, xa:xb, None] - c[None, None, :, 1]) ** 2).min(-1)
         a = np.clip((wpx - d) / 1.2, 0, 1)          # antialias, not feather
         cov[ya:yb, xa:xb] = np.maximum(cov[ya:yb, xa:xb], a)
+        lay[ya:yb, xa:xb] += a * wpx
         if colour:
             col = np.array(r["rgb"], np.float32) / 255.0
             sub = img[ya:yb, xa:xb]
             img[ya:yb, xa:xb] = sub * (1 - a[..., None]) + col * a[..., None]
-    return img, cov
+    return img, cov, lay
 
 
 def underlayer(work, cov, p):
@@ -875,7 +887,7 @@ def bandpass_ratio(work, recs, cw, ch, med_w, region=None, under=None, scale=4):
     the canvas and the ratio came out at 4.07 -- measuring the holes, not the
     paint.
     """
-    img, _ = raster(recs, cw, ch, scale, base=under)
+    img = raster(recs, cw, ch, scale, base=under)[0]
     src = np.asarray(work[::scale, ::scale]).astype(np.float32) / 255.0
     h = min(img.shape[0], src.shape[0])
     w = min(img.shape[1], src.shape[1])
@@ -992,7 +1004,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("slug")
     ap.add_argument("--tile", default=None, help="one named region, for tuning")
-    ap.add_argument("--out", default="strokes/m0b")
+    ap.add_argument("--out", default="strokes/m1")
+    ap.add_argument("--height", type=int, default=2, choices=(0, 1, 2),
+                    help="0 the design's luminance estimate, 1 the cross-profile "
+                         "measurement, 2 the geometric model (default)")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -1016,9 +1031,8 @@ def main():
           f"{len(tiles)} tile(s)", flush=True)
 
     t = time.time()
-    hbase = low_frequency(work, p)
     cal = calibrate(work, p)
-    hfield = height_field(work, hbase, p)
+    hfield = height_field(work, low_frequency(work, p), p) if args.height == 0 else None
     print(f"  calibrated {time.time()-t:.0f}s   energy ref {cal['energy_ref']:.4g}"
           f"   seed thresholds {['%.3g' % v for v in cal['seed_thr']]}", flush=True)
 
@@ -1043,7 +1057,7 @@ def main():
     print(f"  {len(kept)} traces after merge {time.time()-t:.0f}s", flush=True)
 
     t = time.time()
-    out = []
+    out, P, NRM = [], [], []
     for i in kept:
         tr = traces[i]
         pts, wid = tr["pts"], tr["width"]
@@ -1052,7 +1066,12 @@ def main():
         for j, (seg, bez) in enumerate(arcs):
             if arclen(seg) < p["min_arc"] * 0.5:
                 continue
-            col, hgt = stroke_colour_height(seg, work, hfield, wid, p)
+            st = relief.stations(seg)
+            if st is None:
+                continue
+            col, hgt = stroke_colour(seg, work, hfield, wid, p)
+            P.append(st[0])
+            NRM.append(st[1])
             out.append(dict(bez=bez, colour=col, width=wid, height=hgt,
                             arc=arclen(seg), pol=tr["pol"], chan=tr["chan"],
                             mark=i, chain=1 if j < len(arcs) - 1 else 0,
@@ -1068,9 +1087,29 @@ def main():
     ordv = np.zeros(len(out), np.float32)
     ordv[seq] = np.arange(len(out)) / max(1, len(out) - 1)
 
-    hv = np.array([s["height"] for s in out], np.float32)
-    lo, hi = (np.percentile(hv, 5), np.percentile(hv, 98)) if len(hv) else (0, 1)
-    hn = np.clip((hv - lo) / max(hi - lo, EPS), 0, 1)
+    # ---- the cross-profile, measured on every canvas whether or not it is what
+    # ships. It is the evidence for the choice of height method, and it is per
+    # canvas because the next canvas may be off a rig that did not cancel it.
+    t = time.time()
+    P = np.concatenate(P).astype(np.float32)
+    NRM = np.concatenate(NRM).astype(np.float32)
+    hw = np.repeat(wv * 0.5, relief.STATIONS).astype(np.float32)
+    pol = np.repeat(np.array([s["pol"] for s in out], np.float32), relief.STATIONS)
+    surf = relief.surface(work, float(p["sigma_relief"]))
+    anti, sym, hvv, live = relief.cues(surf, P, NRM, hw, pol,
+                                       float(p["width_drop_frac"]))
+    del surf
+    light, Rres, _ = relief.solve_light(anti, NRM, live)
+    kk, syy, den = relief.per_stroke(anti, sym, NRM, live, relief.STATIONS, light)
+    # what the antisymmetric cue implies for the tallest strokes, at the most
+    # generous rig the physics allows -- a single lamp at 45 degrees, Lambertian,
+    # no cancellation. Any real rig gives less, so this is a lower bound, and if
+    # it comes out far under a millimetre the cue is not carrying relief.
+    mm = float(np.percentile(np.abs(kk) * wv * 0.5, 99.5)) / p["px_per_cm"] * 10
+    print(f"  cross-profile {time.time()-t:.0f}s   light "
+          f"{np.degrees(np.arctan2(-light[1], light[0])):+.1f} deg   R {Rres:.4f}"
+          f" vs {relief.chance_R(len(out)):.4f} chance"
+          f"   implies <= {mm:.2f} mm", flush=True)
 
     med_w = float(np.median(wv)) if len(wv) else 1.0
     lv85 = float(np.percentile(lv, 85)) if len(lv) else 1.0
@@ -1078,20 +1117,42 @@ def main():
     for k, s in enumerate(out):
         dark = s["pol"] < 0
         flags = 1 if (s["chan"] == 0 and dark and s["width"] < 0.7 * med_w) else 0
-        flags |= 2 if (s["chan"] == 0 and not dark and lv[k] > lv85
-                       and hn[k] > 0.6) else 0
         flags |= 4 if s["chain"] else 0
         flags |= 8 if s["spill"] else 0
         b = s["bez"]
         recs.append(dict(
             p=[[float(b[i, 0] / cw), float(b[i, 1] / ch)] for i in range(3)],
             rgb=[int(v) for v in s["colour"]],
-            w=float(s["width"] / min(cw, ch)), h=float(hn[k]), o=float(ordv[k]),
+            w=float(s["width"] / min(cw, ch)), h=0.0, o=float(ordv[k]),
             act=0, flags=int(flags), depth=0.0, arc=float(s["arc"]),
             chan=int(s["chan"])))
 
     t = time.time()
-    _, cov = raster(recs, cw, ch, DS, colour=False)
+    _, cov, lay = raster(recs, cw, ch, DS, colour=False)
+    if args.height == 2:
+        cp = np.array([r["p"] for r in recs], np.float32)
+        layers = np.zeros(len(recs), np.float32)
+        for tt in (0.25, 0.5, 0.75):
+            b = ((1 - tt) ** 2 * cp[:, 0] + 2 * tt * (1 - tt) * cp[:, 1]
+                 + tt ** 2 * cp[:, 2]) * [cw, ch] / DS
+            layers += lay[np.clip(b[:, 1], 0, lay.shape[0] - 1).astype(np.int32),
+                          np.clip(b[:, 0], 0, lay.shape[1] - 1).astype(np.int32)] / 3
+        layers /= max(float(np.percentile(layers, 99.5)), EPS)
+        hn = relief.model(wv, layers, p)
+    elif args.height == 1:
+        h1 = relief.measured(kk, syy, den, float(p["relief_sym_w"]))
+        lo, hi = np.percentile(h1, 5), np.percentile(h1, 99.5)
+        hn = np.clip((h1 - lo) / max(hi - lo, EPS), 0, 1)
+        layers = np.zeros(len(recs), np.float32)
+    else:
+        hv = np.array([s["height"] for s in out], np.float32)
+        lo, hi = (np.percentile(hv, 5), np.percentile(hv, 98)) if len(hv) else (0, 1)
+        hn = np.clip((hv - lo) / max(hi - lo, EPS), 0, 1)
+        layers = np.zeros(len(recs), np.float32)
+    for k, r in enumerate(recs):
+        r["h"] = float(hn[k])
+        r["flags"] |= 2 if (out[k]["chan"] == 0 and out[k]["pol"] > 0
+                            and lv[k] > lv85 and hn[k] > 0.6) else 0
     under = underlayer(work, cov, p)
     region = list(p["tiles"][args.tile]) if args.tile else None
     ratio = bandpass_ratio(work, recs, cw, ch, med_w, region, under)
@@ -1115,8 +1176,10 @@ def main():
         tile_rect=list(p["tiles"][args.tile]) if args.tile else [0, 0, 0, 0],
         canvas_px=[cw, ch], canvas_cm=p["canvas_cm"], px_per_cm=p["px_per_cm"],
         source=p["source"], source_sha256=file_sha256(src),
-        params_sha256=params_hash(p), height_method=0,
+        params_sha256=params_hash(p), height_method=int(args.height),
         height_mm=p.get("height_mm", 2.4),
+        light=[float(light[0]), float(light[1])], light_R=float(Rres),
+        light_mm=float(mm), order_lift_mm=float(p["order_lift_mm"]),
         profile=meta.get("profile", ""), colour_flags=meta.get("colour_flags", 0),
         crop_rect=meta.get("crop_rect", [0, 0, 0, 0]),
         under_ds=int(p["under_ds"]), bandpass=float(ratio), strokes=recs)
@@ -1139,6 +1202,15 @@ def main():
     print(f"  longest mark       {mk.max():.0f} px   (hard cap {p['max_arc']:.0f})")
     print(f"  median width       {med_w:.0f} px   = {med_w/p['px_per_cm']*10:.1f} mm")
     print(f"  coverage           {cov_frac*100:.1f}%")
+    hh = np.array([r["h"] for r in recs], np.float32)
+    print(f"  relief             method {args.height}"
+          f"   {hh.mean()*p['height_mm']:.2f} mm mean, "
+          f"{hh.max()*p['height_mm']:.2f} mm peak"
+          f"   (cap {p['height_mm']:.2f})")
+    if args.height == 2:
+        print(f"  paint under a mark {layers.mean():.2f} mean, "
+              f"{np.percentile(layers, 99):.2f} at the 99th"
+              f"   (1.00 = the 99.5th percentile of the canvas)")
     print(f"  band-pass ratio    {ratio:.2f}          (target >= 0.60)")
     if not args.tile:
         print(f"  ends near boundary {seams['ends_near_boundary']} against "

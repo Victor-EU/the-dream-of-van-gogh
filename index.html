@@ -71,6 +71,7 @@ addEventListener('error', e => fail('The page stopped.', e.message, e.filename |
 const Q = new URLSearchParams(location.search);
 const has = k => Q.has(k);
 const num = (k, d) => (Q.has(k) ? parseFloat(Q.get(k)) : d);
+const clamp01 = x => Math.max(0, Math.min(1, isFinite(x) ? x : 0));
 
 // Seeded PRNG, 18531890 (DESIGN 13): the world is identical on every load.
 let _s = 18531890 >>> 0;
@@ -114,6 +115,18 @@ function readBlob(buf) {
     cropRect: version >= 2 ? [v.getUint32(192, true), v.getUint32(196, true),
                               v.getUint32(200, true), v.getUint32(204, true)] : [0, 0, 0, 0],
     bandpass: version >= 2 ? v.getFloat32(208, true) : 0,
+    // M1: which of the three height estimates this blob carries, and the
+    // evidence for the choice. lightR is the resultant of the cross-profile's
+    // antisymmetric cue; on a flat-field museum scan it lands inside the range
+    // the same estimator returns with no light at all, which is why heightMethod
+    // is 2 -- geometry -- and not 1.
+    light: version >= 3 ? [v.getFloat32(212, true), v.getFloat32(216, true)] : [0, 0],
+    lightR: version >= 3 ? v.getFloat32(220, true) : 0,
+    lightMm: version >= 3 ? v.getFloat32(224, true) : 0,
+    orderLiftMm: version >= 3 ? v.getFloat32(228, true) : 0,
+    chunkCount: version >= 3 ? v.getUint32(232, true) : 0,
+    chunkOff: version >= 3 ? v.getUint32(236, true) : 0,
+    chunkStride: version >= 3 ? v.getUint16(240, true) : 24,
     srcSha: hex(72), paramSha: hex(104),
     bytes: buf,
   };
@@ -127,9 +140,15 @@ function readBlob(buf) {
 // everything visible fits at the near tier, so this is tessellation and pixel
 // ratio rather than the baked-texture far tier, which stays deferred until a
 // measured stroke count says otherwise.
-const TIERS = { light: { seg: 3, dpr: 1 }, balanced: { seg: 6, dpr: 2 },
-                rich: { seg: 10, dpr: 2 } };
-const NCOL = 3;
+// Columns across the ribbon as well as segments along it. M0a and M0b ran at
+// three columns and it never showed, because their ribbons were nearly flat --
+// give a stroke real height and three columns is a triangular prism, with a
+// ridge line down the middle and a silhouette made of straight edges. At 1:1
+// against the scan it reads as moulded plastic, which is exactly the failure
+// M0a's gate named and left for here.
+const TIERS = { light: { seg: 4, col: 4, dpr: 1 }, balanced: { seg: 7, col: 5, dpr: 2 },
+                rich: { seg: 11, col: 7, dpr: 2 } };
+
 
 function measureTier() {
   const mem = navigator.deviceMemory || 8;
@@ -138,11 +157,14 @@ function measureTier() {
   return mem >= 8 ? 'rich' : 'balanced';
 }
 
-function ribbonBase(nseg) {
+function ribbonBase(nseg, NCOL) {
   const rows = nseg + 1, n = rows * NCOL;
   const row = new Float32Array(n), col = new Float32Array(n);
   for (let i = 0; i < rows; i++)
-    for (let j = 0; j < NCOL; j++) { row[i * NCOL + j] = i / nseg; col[i * NCOL + j] = j - 1; }
+    for (let j = 0; j < NCOL; j++) {
+      row[i * NCOL + j] = i / nseg;
+      col[i * NCOL + j] = j / (NCOL - 1) * 2 - 1;      // -1 .. +1 across
+    }
   const idx = [];
   for (let i = 0; i < nseg; i++)
     for (let j = 0; j < NCOL - 1; j++) {
@@ -162,23 +184,50 @@ function ribbonBase(nseg) {
 // The record is bound straight off the packed bytes -- no unpacking pass, no
 // second copy. This is what BUILD.md's correction 5 buys: every u16 field sits
 // at an even offset, so vertexAttribPointer can address it as it stands.
-function bindStrokes(g, blob) {
-  const n = blob.count;
-  const body = blob.bytes.slice(blob.hdr, blob.hdr + n * STRIDE);
-  const u16 = new THREE.InstancedInterleavedBuffer(new Uint16Array(body), STRIDE / 2, 1);
-  const u8 = new THREE.InstancedInterleavedBuffer(new Uint8Array(body), STRIDE, 1);
-  const put = (name, b, size, off, norm) =>
-    g.setAttribute(name, new THREE.InterleavedBufferAttribute(b, size, off, norm));
-  put('aP0', u16, 2, 0, true);
-  put('aP1', u16, 2, 2, true);
-  put('aP2', u16, 2, 4, true);
-  put('aOrder', u16, 1, 10, true);
-  put('aColor', u8, 3, 12, true);
-  put('aWidth', u8, 1, 15, true);
-  put('aHeight', u8, 1, 16, true);
-  put('aFlags', u8, 1, 18, false);
-  g.instanceCount = n;
+function strokeBuffers(blob) {
+  const body = blob.bytes.slice(blob.hdr, blob.hdr + blob.count * STRIDE);
+  return { u16: new THREE.InstancedInterleavedBuffer(new Uint16Array(body), STRIDE / 2, 1),
+           u8: new THREE.InstancedInterleavedBuffer(new Uint8Array(body), STRIDE, 1) };
+}
+
+// WebGL 2 has no baseInstance, so a chunk cannot be drawn as a range of one
+// buffer by asking for one. What it can do is bind the same buffer at an
+// offset: an InterleavedBufferAttribute carries its own start, so a chunk's
+// geometry is the shared vertex data pointed `first` records in. No copy, no
+// second upload, and instanceCount then means "from this chunk's beginning".
+function bindStrokes(g, bufs, first) {
+  const put = (name, b, size, off, norm, per) =>
+    g.setAttribute(name, new THREE.InterleavedBufferAttribute(b, size, off + first * per, norm));
+  put('aP0', bufs.u16, 2, 0, true, STRIDE / 2);
+  put('aP1', bufs.u16, 2, 2, true, STRIDE / 2);
+  put('aP2', bufs.u16, 2, 4, true, STRIDE / 2);
+  put('aOrder', bufs.u16, 1, 10, true, STRIDE / 2);
+  put('aColor', bufs.u8, 3, 12, true, STRIDE);
+  put('aWidth', bufs.u8, 1, 15, true, STRIDE);
+  put('aHeight', bufs.u8, 1, 16, true, STRIDE);
+  put('aFlags', bufs.u8, 1, 18, false, STRIDE);
   return g;
+}
+
+// The chunk table, read straight out of the blob. One row a chunk: where its
+// records start, how many, its bounds, its order range and its widest stroke.
+function readChunks(blob) {
+  const v = new DataView(blob.bytes);
+  const out = [];
+  const q = u => u / 65535 * (blob.coordHi - blob.coordLo) + blob.coordLo;
+  for (let i = 0; i < blob.chunkCount; i++) {
+    const o = blob.chunkOff + i * blob.chunkStride;
+    out.push({
+      first: v.getUint32(o, true), count: v.getUint32(o + 4, true),
+      box: [q(v.getUint16(o + 8, true)), q(v.getUint16(o + 10, true)),
+            q(v.getUint16(o + 12, true)), q(v.getUint16(o + 14, true))],
+      olo: v.getUint16(o + 16, true) / 65535, ohi: v.getUint16(o + 18, true) / 65535,
+      wmax: v.getUint16(o + 20, true) / 65535,
+    });
+  }
+  if (!out.length) out.push({ first: 0, count: blob.count, box: [0, 0, 1, 1],
+                              olo: 0, ohi: 1, wmax: 1 });
+  return out;
 }
 
 // ---------------------------------------------------------------- shaders --
@@ -202,12 +251,12 @@ const STROKE_VERT = /* glsl */`
   uniform float uCoordLo, uCoordSpan;
   uniform vec2  uCanvasM;        // the whole canvas in metres
   uniform vec2  uTileCentre;     // canvas-normalised centre of the tile shown
-  uniform float uShortM, uWidthK, uHeightM, uScale, uHang;
+  uniform float uShortM, uWidthK, uHeightM, uScale, uHang, uOrderLift;
   uniform float uScrub, uArrive, uXray, uGhost;
 
   varying vec3 vColor, vWorld;
   varying vec2 vNrm;
-  varying float vAcross, vHeight, vArrive, vSlope, vGhostF;
+  varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
 
   ${COMMON}
 
@@ -251,8 +300,15 @@ const STROKE_VERT = /* glsl */`
     float u = aCol;
 
     float across = u * 0.5 * w * taper;
-    float lift = h * (1.0 - u * u) * taper;          // rounded top across the width
-    vec3 p = vec3(pos + nrm * across, lift);
+    // the top of a loaded stroke is a shoulder, not a tent and not a slab:
+    // full at the crown, falling away steeply only at the very edge
+    float lift = h * pow(max(0.0, 1.0 - u * u), 0.62) * taper;
+    // and every stroke sits a little above the one laid before it. A few
+    // hundredths of a millimetre across the whole sequence -- far below the
+    // relief cap and invisible -- but it means two strokes laid flat in the
+    // same pass cannot z-fight, and the paint is then physically stacked in
+    // the order it was laid, which is the thing this piece is about.
+    vec3 p = vec3(pos + nrm * across, lift + aOrder * uOrderLift);
 
     vColor = mix(srgbToLinear(aColor), vec3(0.020, 0.019, 0.021), ghost);
     vGhostF = ghost;
@@ -260,6 +316,8 @@ const STROKE_VERT = /* glsl */`
     // the bow's slope constant; the fragment builds the normal from it, so the
     // paint has a rounded top rather than three flat facets
     vSlope = (w > 1e-6) ? (4.0 * h * taper / w) : 0.0;
+    vWidth = w;
+    vPhase = aOrder * 47.3;              // the hairs do not line up between marks
     vWorld = p;
     vAcross = u;
     vHeight = aHeight;
@@ -272,13 +330,26 @@ const STROKE_FRAG = /* glsl */`
   precision highp float;
   varying vec3 vColor, vWorld;
   varying vec2 vNrm;
-  varying float vAcross, vHeight, vArrive, vSlope, vGhostF;
+  varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
   uniform vec3 uLight, uEye;
-  uniform float uFlat, uHeights, uAmbient;
+  uniform float uFlat, uHeights, uAmbient, uFurrow, uFurrowMm;
   ${COMMON}
 
   void main() {
-    vec3 n = normalize(vec3(vNrm * (vSlope * vAcross), 1.0));
+    // A brush has hairs, and they leave furrows running along the mark. This is
+    // most of what separates the scan from a smooth extruded ribbon at 1:1 --
+    // and it is where the sheen lives, because a flat-topped stroke turns its
+    // normal through 19 degrees across its whole width and never catches the
+    // light, while a furrowed one turns through that much every half millimetre.
+    // Faded by how fast the phase moves across the screen, the same way the
+    // weave is, or it aliases into corduroy the moment you step back.
+    float ph = vAcross * max(vWidth / max(uFurrowMm, 1e-6), 1.0) * 3.14159265;
+    // fade only once a furrow is genuinely near a pixel: at 0.45 this was
+    // cutting them to a third of strength at seven pixels a furrow, which is
+    // three times Nyquist and plainly resolvable
+    float fade = 1.0 - smoothstep(1.7, 2.7, fwidth(ph));
+    float fur = cos(ph) * uFurrow * fade * smoothstep(0.02, 0.25, vHeight);
+    vec3 n = normalize(vec3(vNrm * (vSlope * vAcross + fur), 1.0));
     if (!gl_FrontFacing) n = -n;
     vec3 base = vColor;
 
@@ -307,15 +378,21 @@ const STROKE_FRAG = /* glsl */`
     // one tight lobe and one broad one: oil paint has a sheen, it is not a
     // mirror and it is not chalk. The broad lobe especially has to stay small
     // -- it lands everywhere at once and turns the whole palette milky.
-    float tight = pow(ndh, 120.0) * 0.19;
-    float broad = pow(ndh, 22.0) * 0.022;
+    // oil has a sheen and it is not a mirror. M0a set the tight lobe at 120,
+    // which on a ribbon whose normal only ever turned 19 degrees meant it never
+    // fired at all: the scan's brightest one percent sits at luma 212 and the
+    // render's at 165, which is the whole difference between wet paint and wax.
+    float tight = pow(ndh, 60.0) * 0.80;
+    float broad = pow(ndh, 16.0) * 0.045;
 
     // contact shadow where the paint meets what is under it, per stroke rather
-    // than with a shadow map -- at this scale it is indistinguishable
-    float foot = smoothstep(0.86, 1.0, abs(vAcross));
-    float ao = 1.0 - foot * (0.05 + 0.22 * vHeight);
+    // than with a shadow map -- at this scale it is indistinguishable. It has to
+    // be deep enough to read as the gap between two marks, because that dark
+    // line is how a viewer counts the strokes.
+    float foot = smoothstep(0.58, 1.0, abs(vAcross));
+    float ao = 1.0 - foot * (0.14 + 0.50 * vHeight);
 
-    vec3 lit = base * (uAmbient + 0.90 * ndl) * ao + vec3(tight + broad) * (0.35 + 0.65 * vHeight);
+    vec3 lit = base * (uAmbient + 1.05 * ndl) * ao + vec3(tight + broad) * (0.35 + 0.65 * vHeight);
     lit *= mix(0.55, 1.0, vArrive);          // paint darkens as it is laid
     gl_FragColor = vec4(linearToSrgb(lit), 1.0);
   }
@@ -333,7 +410,7 @@ const CLOTH_VERT = `precision highp float; varying vec2 vUv; varying vec3 vW;
     gl_Position = projectionMatrix * viewMatrix * w; }`;
 const CLOTH_FRAG = /* glsl */`
   precision highp float; varying vec2 vUv; varying vec3 vW;
-  uniform float uWeaveM, uHasUnder, uPrimed, uFloor;
+  uniform float uWeaveM, uWeaveRough, uHasUnder, uPrimed, uFloor;
   uniform vec3 uGround, uEye, uGesso;
   uniform vec4 uTileUV;
   uniform sampler2D uUnder;
@@ -354,6 +431,17 @@ const CLOTH_FRAG = /* glsl */`
     if (amp > 0.002) {
       float warp = sin(g.x * 6.2831853), weft = sin(g.y * 6.2831853);
       weave = 0.5 + 0.5 * (warp * step(0.0, weft) + weft * step(0.0, -warp));
+      // DESIGN 4.5: the cloth changes over the ten years. He ran out of canvas
+      // at Saint-Remy and painted on jute, which is not finer linen scaled up
+      // -- its threads vary in thickness along their length and it slubs. So
+      // roughness is a separate number from the period, and both come from the
+      // station at M3; here they are hooks with the values that will feed them.
+      if (uWeaveRough > 0.001) {
+        float slub = sin(g.x * 0.37 + 1.7) * sin(g.y * 0.23 - 0.9)
+                   + 0.6 * sin(g.x * 0.11 - 2.3) * sin(g.y * 0.09 + 0.5);
+        weave = clamp(weave + uWeaveRough * 0.42 * slub, 0.0, 1.0);
+        amp *= 1.0 + 1.30 * uWeaveRough;
+      }
     }
 
     vec3 ground = uGround, wash = uGround;
@@ -432,6 +520,7 @@ async function main() {
   const preH = 0.732, preScale = num('scale', 3.6 / preH);
   const floorUni = {
     uWeaveM: { value: 0.0009 * preScale },           // ~9 px of weave at 120 px/cm
+    uWeaveRough: { value: 0 },                       // 0 linen, 1 Saint-Remy jute
     // the floor is primed canvas, not the painting's ground: it dims as the
     // paint arrives rather than turning into it
     uGround: { value: new THREE.Color(0.155, 0.150, 0.138) },
@@ -461,7 +550,7 @@ async function main() {
     requestAnimationFrame(pre);
   }
 
-  const slug = Q.get('blob') || 'strokes/m0b/reaper-canvas.bin';
+  const slug = Q.get('blob') || 'strokes/m1/reaper-canvas.bin';
   let blob;
   try {
     const res = await fetch(slug);
@@ -494,8 +583,21 @@ async function main() {
   const scale = Q.has('scale') ? num('scale', 1) : 3.6 / tileM[1];
   const hang = flatMode ? 0 : num('hang', tileM[1] * scale * 0.5 + 0.12);
   body.z = num('back', 0.40 * scale);
-  floorUni.uWeaveM.value = 0.0009 * scale;
+  // the cloth: period in millimetres of real canvas, roughness 0 to 1. Linen
+  // by default; ?weave=2.4&rough=1 is the jute of station 8. Both come from the
+  // station data at M3 -- this is the mechanism, exercised.
+  const weaveMm = num('weave', 0.9), rough = clamp01(num('rough', 0));
+  floorUni.uWeaveM.value = weaveMm / 1000 * scale;
+  floorUni.uWeaveRough.value = rough;
   if (Q.has('cam')) { const c = Q.get('cam').split(',').map(Number); body.z = c[2]; }
+
+  // the same mapping the vertex shader does, so a chunk's box lands where its
+  // strokes do. Kept next to it on purpose: if one changes and the other does
+  // not, chunks cull against the wrong rectangle and strokes vanish at the edge
+  // of the screen for no visible reason.
+  const canvasToWorldJS = (cx, cy) => new THREE.Vector3(
+    (cx - tileCentre[0]) * canvasM[0] * scale,
+    -(cy - tileCentre[1]) * canvasM[1] * scale + hang, 0);
 
   const uni = {
     uCoordLo: { value: blob.coordLo }, uCoordSpan: { value: blob.coordHi - blob.coordLo },
@@ -503,14 +605,17 @@ async function main() {
     uTileCentre: { value: new THREE.Vector2(...tileCentre) },
     uShortM: { value: shortM }, uWidthK: { value: blob.widthK },
     uHeightM: { value: blob.heightMm / 1000 * num('h', 1) },
+    uOrderLift: { value: (blob.orderLiftMm || 0) / 1000 * scale * num('lift', 1) },
     uScale: { value: scale }, uHang: { value: hang },
     uScrub: { value: 1 }, uArrive: { value: num('arrive', 0.012) },
     uXray: { value: has('xray') ? 1 : 0 },
-    uLight: { value: new THREE.Vector3(-0.45, 0.62, 0.65).normalize() },
+    uLight: { value: new THREE.Vector3(-0.52, 0.58, 0.34).normalize() },
     uEye: { value: eyeVec },
     uFlat: { value: flatMode ? 1 : 0 },
     uHeights: { value: has('heights') ? 1 : 0 },
-    uAmbient: { value: 0.21 },
+    uAmbient: { value: 0.30 },
+    uFurrow: { value: num('furrow', 0.16) },
+    uFurrowMm: { value: num('hair', 0.55) / 1000 * scale },   // brush-hair pitch
     uGhost: { value: num('ghost', 0.25) },
   };
 
@@ -518,12 +623,93 @@ async function main() {
     vertexShader: STROKE_VERT, fragmentShader: STROKE_FRAG,
     uniforms: uni, side: THREE.DoubleSide,
   });
-  const geo = bindStrokes(ribbonBase(TIERS[tier].seg), blob);
-  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
-                                        Math.max(...tileM) * scale);
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.frustumCulled = false;
-  if (!has('noStrokes')) world.add(mesh);
+  // One mesh a chunk a tier, all sharing one interleaved buffer and one
+  // material. `near` is the quality tier's full ribbon; `mid` is the same
+  // ribbon at two segments and three columns, which is what a stroke a few
+  // pixels wide is worth. The design's third tier -- baked to a texture -- is
+  // deferred and the reason is measured, not assumed: M0b counted 18,924
+  // strokes on a whole canvas against the design's thirty to eighty thousand,
+  // so everything visible fits at the near tier. See BUILD.md, Deferred.
+  const bufs = strokeBuffers(blob);
+  const chunkList = readChunks(blob);
+  const BASES = { near: [TIERS[tier].seg, TIERS[tier].col], mid: [2, 3] };
+  const sphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
+                                  Math.max(...tileM) * scale);
+  const orders = new Float32Array(blob.count);
+  {
+    const dv = new DataView(blob.bytes);
+    for (let i = 0; i < blob.count; i++)
+      orders[i] = dv.getUint16(blob.hdr + i * STRIDE + 20, true) / 65535;
+  }
+  for (const c of chunkList) {
+    c.mesh = {};
+    for (const k of ['near', 'mid']) {
+      const g = bindStrokes(ribbonBase(...BASES[k]), bufs, c.first);
+      g.instanceCount = 0;
+      g.boundingSphere = sphere;
+      const m = new THREE.Mesh(g, mat);
+      m.frustumCulled = false;
+      m.visible = false;
+      c.mesh[k] = m;
+      if (!has('noStrokes')) world.add(m);
+    }
+    // world-space box: x and y from the canvas mapping, z is the paint standing
+    // off the cloth, which is a millimetre and is what keeps the box honest
+    const w0 = canvasToWorldJS(c.box[0], c.box[3]), w1 = canvasToWorldJS(c.box[2], c.box[1]);
+    c.aabb = new THREE.Box3(
+      new THREE.Vector3(Math.min(w0.x, w1.x), Math.min(w0.y, w1.y), -0.002 * scale),
+      new THREE.Vector3(Math.max(w0.x, w1.x), Math.max(w0.y, w1.y),
+                        blob.heightMm / 1000 * scale + 0.002 * scale));
+    c.centre = c.aabb.getCenter(new THREE.Vector3());
+  }
+  const mesh = chunkList[0].mesh.near;      // the reload hook's handle
+
+  // A few dozen chunks is a loop that never touches a stroke. Three things come
+  // out of it: a chunk entirely past the scrub is not drawn at all, a chunk
+  // outside the frustum is not drawn at all, and a chunk that is drawn is drawn
+  // only as far as the scrub has reached -- because it is order-sorted, so the
+  // arrived strokes are a prefix and the scrub is the instance *count*.
+  const frustum = new THREE.Frustum(), pv = new THREE.Matrix4(), tmpBox = new THREE.Box3();
+  let shownNear = 0, shownMid = 0, chunksDrawn = 0;
+  function updateChunks(scrub) {
+    pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(pv);
+    // ?flat uses an orthographic camera, which has no fov: reading one off it
+    // gives NaN, and NaN compares false, so every chunk silently fell to the
+    // mid tier -- in the one mode whose whole job is to agree with
+    // tools/flat.py pixel for pixel. Found while chasing a parity number that
+    // turned out to be a bad measurement on my side, and true regardless.
+    const px = cam.isPerspectiveCamera
+      ? renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2))
+      : Infinity;
+    shownNear = shownMid = chunksDrawn = 0;
+    for (const c of chunkList) {
+      let near = null;
+      if (c.olo <= scrub) {
+        tmpBox.copy(c.aabb).applyMatrix4(world.matrixWorld);
+        if (frustum.intersectsBox(tmpBox)) {
+          // screen-space stroke width, which is what the tier is chosen by --
+          // not distance, because a 25 cm tile and a 93 cm canvas do not hang
+          // at the same magnification
+          const d = Math.max(0.05, cam.position.distanceTo(
+            c.centre.clone().applyMatrix4(world.matrixWorld)));
+          const wpx = c.wmax * blob.widthK * shortM * scale / d * px;
+          near = wpx >= num('midpx', 5);
+        }
+      }
+      const n = near === null ? 0 : (c.ohi <= scrub ? c.count
+                : upperBound(orders, c.first, c.first + c.count, scrub) - c.first);
+      c.mesh.near.visible = near === true && n > 0;
+      c.mesh.mid.visible = near === false && n > 0;
+      c.mesh.near.geometry.instanceCount = c.mesh.near.visible ? n : 0;
+      c.mesh.mid.geometry.instanceCount = c.mesh.mid.visible ? n : 0;
+      if (n > 0 && near !== null) { chunksDrawn++; near ? shownNear += n : shownMid += n; }
+    }
+  }
+  function upperBound(a, lo, hi, x) {           // first index past x, a sorted
+    while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] <= x) lo = m + 1; else hi = m; }
+    return lo;
+  }
 
   // The underlayer is a small PNG beside the blob: what the extractor could
   // see of the ground between the marks, normalised-convolved out under them.
@@ -531,6 +717,8 @@ async function main() {
   // a missing file is never a mystery.
   const clothUni = Object.assign({}, floorUni, {
     uFloor: { value: 0 }, uPrimed: { value: 0 },
+    uWeaveM: { value: weaveMm / 1000 * scale },
+    uWeaveRough: { value: rough },
     uHasUnder: { value: 0 }, uUnder: { value: null },
     uTileUV: { value: new THREE.Vector4(tx / blob.canvasPx[0], ty / blob.canvasPx[1],
                                         tw / blob.canvasPx[0], th / blob.canvasPx[1]) },
@@ -694,6 +882,10 @@ async function main() {
       cam.rotateZ(still ? 0 : Math.sin(body.phase) * 0.004 * (1 - lie.v));
     }
     eyeVec.copy(cam.position);
+    // per frame, not per scrub: the frustum moves when the body does
+    cam.updateMatrixWorld();
+    world.updateMatrixWorld();
+    updateChunks(scrub);
 
     const gq = gpuBegin();
     renderer.render(scene, cam);
@@ -710,8 +902,9 @@ async function main() {
         `tau      ${scrub.toFixed(4)}\n` +
         `station  ${state.station ?? 'none yet (M3)'}\n` +
         `volume   ${state.volume ?? 'none yet (M3)'}\n` +
-        `strokes  ${blob.count}  shown ${countShown()}\n` +
-        `quality  ${tier}  seg ${TIERS[tier].seg}  dpr ${renderer.getPixelRatio()}\n` +
+        `strokes  ${blob.count}  shown ${countShown()}  (near ${shownNear}  mid ${shownMid})\n` +
+        `chunks   ${chunksDrawn} of ${chunkList.length} drawn\n` +
+        `quality  ${tier}  seg ${TIERS[tier].seg}x${TIERS[tier].col}  dpr ${renderer.getPixelRatio()}\n` +
         `draws    ${info.calls}\n` +
         `tris     ${(info.triangles / 1000).toFixed(1)} k\n` +
         `submit   ${ft.toFixed(2)} ms cpu\n` +
@@ -728,19 +921,15 @@ async function main() {
     requestAnimationFrame(frame);
   }
 
-  const orders = (() => {
-    const a = new Float32Array(blob.count);
-    const dv = new DataView(blob.bytes);
-    for (let i = 0; i < blob.count; i++) a[i] = dv.getUint16(blob.hdr + i * STRIDE + 20, true) / 65535;
-    return a;
-  })();
-  const countShown = () => { let n = 0; for (let i = 0; i < orders.length; i++) if (orders[i] <= scrub) n++; return n; };
+  const countShown = () => shownNear + shownMid;
 
   // ------------------------------------------------------------ debug API --
   window.vg = {
     get state() {
       return { tau: scrub, cam: [body.x, cam.position.y, body.z, body.yaw, body.pitch],
                strokes: blob.count, shown: countShown(),
+               near: shownNear, mid: shownMid,
+               chunks: chunkList.length, chunksDrawn,
                submitMs: +ft.toFixed(2), gpuMs: +gpuMs.toFixed(2), fps: +fps.toFixed(1),
                frameMsMeasured: +(1000 / Math.max(fps, 1e-3)).toFixed(2),
                draws: renderer.info.render.calls,
@@ -759,15 +948,17 @@ async function main() {
     // worse than one that is missing.
     station: n => { console.warn(`station ${n}: stations arrive at M3`); return null; },
     volume: () => null,
-    strokes: () => ({ near: countShown(), mid: 0, far: 0 }),
+    strokes: () => ({ near: shownNear, mid: shownMid, far: 0 }),
     cam: (x, y, z, yaw, pitch) => { body.x = x; body.z = z; body.yaw = yaw ?? body.yaw; body.pitch = pitch ?? body.pitch; },
     // render immediately before reading: the drawing buffer is not preserved,
     // so a toDataURL that is not preceded by a draw comes back blank
     snap: () => { renderer.render(scene, cam); return renderer.domElement.toDataURL('image/png'); },
     reload: async (path) => {
       const b = readBlob(await (await fetch(path + '?t=' + Date.now())).arrayBuffer());
-      const g = bindStrokes(ribbonBase(), b);
+      const g = bindStrokes(ribbonBase(TIERS[tier].seg, TIERS[tier].col),
+                            strokeBuffers(b), 0);
       g.boundingSphere = mesh.geometry.boundingSphere;
+      g.instanceCount = b.count;
       mesh.geometry.dispose(); mesh.geometry = g;
       Object.assign(blob, b);
       return b.count;
