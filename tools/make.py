@@ -9,8 +9,12 @@ about which numbers exist, so this checks both directions. A key the extractor
 wants and the file lacks is a crash later; a key the file has and the extractor
 never reads is worse, because it looks exactly like tuning and does nothing.
 
-**The build.** extract -> pack -> flat, skipped when the blob's header already
-records this source file and these parameters. The header carries both hashes,
+**The build.** extract -> order -> pack -> flat, skipped when the blob's header
+already records this source file and these parameters. The order stage is
+separate from extraction because it is the one that has to be argued with: it
+reads the strokes back out of the JSON, so it can be re-run and re-measured in
+fifteen seconds instead of six minutes, and `--no-order` builds the same canvas
+with M1's heuristic sequence for comparison. The header carries both hashes,
 so staleness is a fact about the artifact rather than a timestamp.
 
 **The regression.** Two golden images at 1200 px, both committed: the flat
@@ -86,10 +90,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("slug", nargs="?")
     ap.add_argument("--tile", default=None)
-    ap.add_argument("--out", default="strokes/m1")
+    ap.add_argument("--out", default="strokes/m2")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--golden", action="store_true")
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--no-order", action="store_true",
+                    help="leave M1's heuristic sequence in place")
     a = ap.parse_args()
 
     if a.check or not a.slug:
@@ -113,6 +119,8 @@ def main():
         if a.tile:
             args += ["--tile", a.tile]
         run(*args)
+        if not a.no_order:
+            run("tools/order.py", stem + ".json")
         run("tools/pack.py", stem + ".json")
     else:
         print(f"{a.slug}/{name} is up to date with its source and params")

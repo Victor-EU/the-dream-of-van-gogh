@@ -261,6 +261,35 @@ continuous and its colour dominates; the lower one is interrupted. Extraction se
 thousands of pairwise "A is after B" facts, and a topological sort over that partial order gives a **reconstructed
 sequence derived from the painting itself**, not from a guess.
 
+*Measured at M2 (`BUILD.md`) — and the claim survives its own kill criterion, at about half the size it is stated
+at here. Three things have to be said with it.*
+
+*First, **the pairwise question is usually the wrong one.** On a canvas painted three and a half times over, three
+quarters of the crossings the geometry finds have since been buried by a third mark, so the pixel at the crossing
+belongs to neither A nor B. That is measured against its own control: shuffle which stroke owns which colour and a
+third mark wins a quarter of the time and is worse by four ΔE, rather than three quarters of the time and better by
+one. The reading that works asks instead **which of everything covering this point is the paint you can see** —
+every mark whose footprint contains it is a candidate, the winner was laid after all the others there, and one point
+yields as many facts as there are marks stacked on it. That uses what the extraction knows and a pairwise reading of
+the scan cannot: every mark on the canvas rather than these two.*
+
+*Second, **the second cue here is not there to be read.** "The lower one is interrupted" is a statement about shape,
+and it is implemented — a section across the stroke at the crossing, regressed on the same section either side,
+which reads the crest and both feet at once. On the museum's canvases it is barely distinguishable from a coin:
+13.5% of its weight has to be cut to make its own graph acyclic against 17.7% for the same graph with its arrows
+thrown at random, where the colour reading gives 0.2% against 5.9%. The reason is M1's: flat-field museum
+photography has erased the relief shadows, so shape leaves no trace in the image. It ships at weight zero.*
+
+*Third, and this is what the sentence above should be read as claiming: **the crossings recover local order, not
+global sequence.** Withhold a fifth of the confident crossings by region and the reconstruction gets 58.9%, 53.7%
+and 52.8% of them right on the Sower, the 1887 Self-Portrait and the Reaper, against 45.8%, 42.2% and 45.9% for the
+habits below on the same withheld crossings — margins of +13.1, +11.5 and +6.8 — and the margin halves for every
+doubling of the withheld block, so part of even that is proximity. Two marks that touch, the paint puts the right
+way round. Two marks a hand's breadth apart, it mostly cannot, and what orders those is still the habits: the solved
+sequence correlates 0.89 with the heuristic it started from. On a synthetic canvas where the true order is known and
+the overpaint matches, the same machinery recovers 79% of the still-visible order, which is the ceiling this method
+has and it is a long way above what a real canvas can be shown to reach.*
+
 The partial order is sparse — most strokes never cross — so it needs tiebreakers, and these are habits rather than
 evidence:
 
@@ -361,7 +390,24 @@ being a uniform fizz: typically *ground*, *sky*, *land*, *subject*, *contour*, *
 holds between them. The hold is what lets the viewer look — a burst of four thousand strokes over two seconds, then
 three seconds of standing in a sky with no ground under it.
 
+*M2 makes the boundaries fall out rather than be drawn. The solved sequence is cut where cutting it most reduces the
+within-span scatter of what a stroke is — where it sits, how light, how wide, contour, highlight — and each span is
+named by a rule over its own contents, from the six names above. The Reaper comes out contour 460, land 10,276,
+subject 4,160, sky 3,340, light 425 and a second sky of 263: six acts, five holds, about twenty-one seconds
+for one canvas. Only the
+vocabulary and the naming rule are chosen; where one act ends is a fact about the order.*
+
 ### 5.3 Pacing, per station
+
+*The global constant is fixed at M2 and it is **4,000×**. Stroke density is 2.75 per square centimetre, within six
+percent across three canvases spanning three times the area and three stations, so the Reaper is 18,924 strokes and
+a canvas of that size is something like ten hours of painting: he worked at about half a stroke a second, and
+§5.2's burst of 2,000 a second is four thousand times that. The absolute rate is therefore fiction and there is no
+version of this where it is not; what one constant buys is that every relative tempo is true. The hold does not take
+the constant — a night between sessions at 4,000× would be eleven seconds of nothing — so a hold is punctuation at
+a fixed 2.4 s and what the record supplies is how many there are, not how long. The whole work is about 550,000
+strokes and 273 seconds of arrival, which is a third of a fifteen-minute piece rather than the fifth `BUILD.md`
+assumed.*
 
 Real where the record supports it (§4.3), invented where it does not. The *Potato Eaters* accumulates slowly out of a
 winter. The orchards detonate. *Wheatfield with Crows* is one continuous rush with no holds at all, and it is the last

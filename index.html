@@ -37,10 +37,13 @@
 <body>
 <div id="ui">
   <div id="caption"><b id="capt">Wheatfield with a Reaper</b><span id="caps">The order in
-      which the strokes arrive is reconstructed, not recorded. M0b stands the whole
-      canvas up; the sequence is still a heuristic and does not yet claim to be
-      evidence.</span></div>
-  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; Z lie down</div>
+      which the strokes arrive is reconstructed, not recorded. Where two marks overlap the
+      paint says which was laid second, and 8,172 of those readings are strong enough to
+      use; withhold a fifth of them and the reconstruction gets 52.8% of the withheld ones
+      right against 46.0% for the painter's habits alone. So the order is partly evidence
+      and mostly habit, and it correlates 0.89 with the habits it started from. The timing
+      is invention throughout.</span></div>
+  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; space to let it paint itself &nbsp;·&nbsp; Z lie down</div>
   <div id="debug"></div>
   <div id="scrubbar"><div id="scrubfill"></div></div>
   <div id="fail"><div>
@@ -127,6 +130,23 @@ function readBlob(buf) {
     chunkCount: version >= 3 ? v.getUint32(232, true) : 0,
     chunkOff: version >= 3 ? v.getUint32(236, true) : 0,
     chunkStride: version >= 3 ? v.getUint16(240, true) : 24,
+    // M2: whether the sequence in this blob came out of the crossings or out of
+    // the habits, and the held-out measurement that decided it. The margin is
+    // quoted with the block size because the block size moves it -- at four
+    // stroke lengths the Reaper's solver beat the habits by 6.8 points, at
+    // sixteen by 1.6, and a blob carrying the first number without the second
+    // would be quoting itself out of context.
+    orderMethod: version >= 4 ? v.getUint8(256) : 0,
+    actCount: version >= 4 ? v.getUint16(258, true) : 0,
+    actOff: version >= 4 ? v.getUint32(260, true) : 0,
+    actStride: version >= 4 ? v.getUint16(264, true) : 24,
+    orderMargin: version >= 4 ? v.getFloat32(268, true) : 0,
+    orderSolver: version >= 4 ? v.getFloat32(272, true) : 0,
+    orderHeur: version >= 4 ? v.getFloat32(276, true) : 0,
+    orderEdges: version >= 4 ? v.getUint32(280, true) : 0,
+    orderFeedback: version >= 4 ? v.getFloat32(284, true) : 0,
+    orderFeedbackShuf: version >= 4 ? v.getFloat32(288, true) : 0,
+    orderBlock: version >= 4 ? v.getFloat32(300, true) : 0,
     srcSha: hex(72), paramSha: hex(104),
     bytes: buf,
   };
@@ -209,6 +229,28 @@ function bindStrokes(g, bufs, first) {
   return g;
 }
 
+// The acts of DESIGN 5.2, as spans of order. They are not regions of the canvas
+// and they were not drawn by hand: tools/order.py cuts the solved sequence where
+// cutting it most reduces the scatter of what a stroke *is* -- where it sits,
+// how light, how wide, contour, highlight -- and names each span by a rule over
+// its own contents. Here they do two jobs: they colour ?xray, and they give the
+// scrub its burst-and-hold shape.
+function readActs(blob) {
+  const out = [];
+  if (blob.version < 4 || !blob.actCount) return out;
+  const dv = new DataView(blob.bytes);
+  for (let i = 0; i < blob.actCount; i++) {
+    const o = blob.actOff + i * blob.actStride;
+    let name = '';
+    for (let j = 8; j < 24; j++) {
+      const c = dv.getUint8(o + j); if (!c) break; name += String.fromCharCode(c);
+    }
+    out.push({ lo: dv.getUint16(o, true) / 65535, hi: dv.getUint16(o + 2, true) / 65535,
+               count: dv.getUint32(o + 4, true), name });
+  }
+  return out;
+}
+
 // The chunk table, read straight out of the blob. One row a chunk: where its
 // records start, how many, its bounds, its order range and its widest stroke.
 function readChunks(blob) {
@@ -253,6 +295,8 @@ const STROKE_VERT = /* glsl */`
   uniform vec2  uTileCentre;     // canvas-normalised centre of the tile shown
   uniform float uShortM, uWidthK, uHeightM, uScale, uHang, uOrderLift;
   uniform float uScrub, uArrive, uXray, uGhost;
+  uniform float uActHi[8];
+  uniform int uActN;
 
   varying vec3 vColor, vWorld;
   varying vec2 vNrm;
@@ -311,6 +355,15 @@ const STROKE_VERT = /* glsl */`
     vec3 p = vec3(pos + nrm * across, lift + aOrder * uOrderLift);
 
     vColor = mix(srgbToLinear(aColor), vec3(0.020, 0.019, 0.021), ghost);
+    // ?xray paints the sequence itself: one hue an act, so a still at any tau
+    // shows what the order is doing rather than what the palette is doing.
+    if (uXray > 0.5) {
+      int ai = 0;
+      for (int i = 0; i < 7; i++) if (i < uActN - 1 && aOrder > uActHi[i]) ai = i + 1;
+      float f = float(ai) / max(float(uActN - 1), 1.0);
+      vec3 h = clamp(abs(mod(f * 5.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+      vColor = srgbToLinear(h * 0.86 + 0.10);
+    }
     vGhostF = ghost;
     vNrm = nrm;
     // the bow's slope constant; the fragment builds the normal from it, so the
@@ -332,7 +385,7 @@ const STROKE_FRAG = /* glsl */`
   varying vec2 vNrm;
   varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
   uniform vec3 uLight, uEye;
-  uniform float uFlat, uHeights, uAmbient, uFurrow, uFurrowMm;
+  uniform float uFlat, uHeights, uAmbient, uFurrow, uFurrowMm, uXray;
   ${COMMON}
 
   void main() {
@@ -357,6 +410,10 @@ const STROKE_FRAG = /* glsl */`
       float h = vHeight;
       base = vec3(smoothstep(0.35, 1.0, h), smoothstep(0.0, 0.6, h) * 0.8,
                   1.0 - smoothstep(0.0, 0.5, h)) * 0.9;
+      gl_FragColor = vec4(linearToSrgb(base), 1.0);
+      return;
+    }
+    if (uXray > 0.5) {               // the sequence, one hue an act, unlit
       gl_FragColor = vec4(linearToSrgb(base), 1.0);
       return;
     }
@@ -550,7 +607,7 @@ async function main() {
     requestAnimationFrame(pre);
   }
 
-  const slug = Q.get('blob') || 'strokes/m1/reaper-canvas.bin';
+  const slug = Q.get('blob') || 'strokes/m2/reaper-canvas.bin';
   let blob;
   try {
     const res = await fetch(slug);
@@ -609,6 +666,7 @@ async function main() {
     uScale: { value: scale }, uHang: { value: hang },
     uScrub: { value: 1 }, uArrive: { value: num('arrive', 0.012) },
     uXray: { value: has('xray') ? 1 : 0 },
+    uActHi: { value: new Float32Array(8) }, uActN: { value: 0 },
     uLight: { value: new THREE.Vector3(-0.52, 0.58, 0.34).normalize() },
     uEye: { value: eyeVec },
     uFlat: { value: flatMode ? 1 : 0 },
@@ -632,6 +690,9 @@ async function main() {
   // so everything visible fits at the near tier. See BUILD.md, Deferred.
   const bufs = strokeBuffers(blob);
   const chunkList = readChunks(blob);
+  const actList = readActs(blob);
+  for (let i = 0; i < actList.length - 1; i++) uni.uActHi.value[i] = actList[i].hi;
+  uni.uActN.value = actList.length;
   const BASES = { near: [TIERS[tier].seg, TIERS[tier].col], mid: [2, 3] };
   const sphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
                                   Math.max(...tileM) * scale);
@@ -799,6 +860,49 @@ async function main() {
   };
   setScrub(scrub);
 
+  // ---------------------------------------------------- burst and hold --
+  // BUILD.md M2 fixes the compression constant here, and it is one constant for
+  // the whole piece so that every relative tempo stays true. The rate he worked
+  // at is now measured rather than assumed: 2.75 strokes a square centimetre,
+  // within six percent across three canvases spanning three times the area and
+  // three stations, so the Reaper is 18,924 strokes and a canvas of that size is
+  // something like ten hours of painting -- about half a stroke a second.
+  // DESIGN 5.2's burst is 2,000 a second, so the constant is 4,000x, and the
+  // absolute rate is fiction in a way no version of this avoids.
+  //
+  // The hold is not compressed by it. A hold stands for the gap between two
+  // painting sessions, and a night at 4,000x would be eleven seconds of nothing:
+  // it is a punctuation mark, fixed at 2.4 s, and what the record supplies is
+  // how *many* there are, not how long. Acts are where they go, because an act
+  // boundary is where the sequence itself changed its mind about what it was
+  // laying down.
+  const BURST = 2000, HOLD = 2.4, COMPRESSION = 4000;
+  let playing = has('play'), held = 0;
+  const actAt = t => {
+    let i = 0;
+    while (i < actList.length - 1 && t > actList[i].hi) i++;
+    return i;
+  };
+  const advance = dt => {
+    if (!blob.count) return;
+    const a = actAt(scrub);
+    if (held > 0) { held = Math.max(0, held - dt); return; }
+    const next = scrub + dt * BURST / blob.count;
+    if (a < actList.length - 1 && next > actList[a].hi) {
+      setScrub(actList[a].hi + 1e-6);
+      held = HOLD;
+      return;
+    }
+    setScrub(next);
+    if (scrub >= 1) playing = false;
+  };
+  addEventListener('keydown', e => {
+    if (e.code !== 'Space') return;
+    e.preventDefault();
+    if (scrub >= 1) { setScrub(0); held = 0; }
+    playing = !playing;
+  });
+
   // ------------------------------------------------------------ the loop --
   const still = has('still');
   // Hooks the harness declares that nothing can answer yet. They are recognised
@@ -857,12 +961,13 @@ async function main() {
     // clamped delta, so a loop stalled by a hidden tab never teleports the body
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
+    if (playing && !still) advance(dt);
 
     if (!flatMode) {
       const fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
       const str = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
-      if (keys.has('ArrowLeft')) setScrub(scrub - dt * 0.18);
-      if (keys.has('ArrowRight')) setScrub(scrub + dt * 0.18);
+      if (keys.has('ArrowLeft')) { setScrub(scrub - dt * 0.18); playing = false; }
+      if (keys.has('ArrowRight')) { setScrub(scrub + dt * 0.18); playing = false; }
       const sp = 1.45 * (keys.has('ShiftLeft') ? 3.2 : 1);
       const sy = Math.sin(body.yaw), cy = Math.cos(body.yaw);
       if (!still && (fwd || str)) {
@@ -915,6 +1020,12 @@ async function main() {
         `under    ${state.under}\n` +
         `colour   ${blob.profile || (blob.colourFlags ? '?' : 'no ICC in the scan')}\n` +
         `bandpass ${blob.bandpass ? blob.bandpass.toFixed(2) : 'n/a'}\n` +
+        `order    ${blob.orderMethod ? 'crossings' : 'habits only'}  ` +
+        `${blob.orderEdges} edges  held out ` +
+        `${(blob.orderSolver * 100).toFixed(1)}% vs ${(blob.orderHeur * 100).toFixed(1)}%` +
+        ` (${(blob.orderMargin * 100 >= 0 ? '+' : '')}${(blob.orderMargin * 100).toFixed(1)})\n` +
+        `acts     ${actList.map(a => a.name + ' ' + a.count).join('  ') || 'none'}` +
+        `${held > 0 ? '   (holding ' + held.toFixed(1) + ' s)' : playing ? '   (painting)' : ''}\n` +
         `src      ${blob.srcSha.slice(0, 12)}\n` +
         `params   ${blob.paramSha.slice(0, 12)}`;
     }
@@ -939,6 +1050,11 @@ async function main() {
                params: blob.paramSha, heightMethod: blob.heightMethod,
                profile: blob.profile, colourFlags: blob.colourFlags,
                bandpass: blob.bandpass, under: state.under,
+               orderMethod: blob.orderMethod, orderEdges: blob.orderEdges,
+               orderMargin: blob.orderMargin, orderSolver: blob.orderSolver,
+               orderHeur: blob.orderHeur, orderBlock: blob.orderBlock,
+               acts: actList.map(a => ({ name: a.name, count: a.count, hi: a.hi })),
+               playing, held: +held.toFixed(2),
                station: state.station, volume: state.volume };
     },
     scrub: setScrub,

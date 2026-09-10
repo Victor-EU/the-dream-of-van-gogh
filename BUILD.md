@@ -193,6 +193,15 @@ entire work.** If the piece is to run ten to fifteen minutes, then arrival is a 
 else is holds, transits, and standing still looking — which is a pacing fact worth knowing before we write the pacing
 rather than after. Fixed at M2.
 
+*Fixed, and both numbers in that paragraph were wrong. 200,000 at 2,000 a second is 100 seconds, not 200 — and the
+200,000 is itself low by 2.7×. Stroke density is now measured at **2.75 per square centimetre**, within six percent
+across three canvases spanning three times the area and three stations, which gives **356,000 strokes** over the 26
+scans in `CREDITS.md` whose dimensions are known and about **550,000** pro rata over all forty. So arrival is 273
+seconds, a third of a fifteen-minute piece rather than a fifth of it. The constant is **4,000×**, from the Reaper's
+18,924 strokes over something like ten hours of painting — about half a stroke a second — against §5.2's 2,000 a
+second. And the hold does not take the constant: a night between sessions at 4,000× is eleven seconds of nothing, so
+a hold is punctuation at a fixed 2.4 s and the record supplies how many, not how long.*
+
 ---
 
 ## Verification harness
@@ -418,6 +427,11 @@ and §4.3's claim is not earned. So M2 reports two numbers, always together:
 | solver vs held-out crossings | |
 | heuristics alone vs **the same** held-out crossings | the control |
 
+*Done, and split. The Progress entry below carries the numbers; the short version is that the kill criterion did not
+fire and the exit criterion was met on two canvases of three. The design's pairwise reading of a crossing turned out
+to be the wrong question — three quarters of crossings have a third mark on top of them — and asking instead which
+of everything covering a point is visible there is what made the evidence usable.*
+
 **Exit criteria.**
 - Solver beats the heuristic control by **≥ 10 points**, on three canvases, one of which is not a landscape.
 - **Kill criterion:** if the margin is under 5 points, the claim that the sequence is "derived from the painting
@@ -595,7 +609,13 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
 estimator gives on canvases with no light at all, and the same estimator recovers a real light to 0.7°. So the
 signal is not weak, it is absent, and the milestone's declared fallback is what ships: a geometric relief model that
 never reads a colour, whose variance explained by colour is 0.005 against 0.814 for the design's own estimate.*
-| The order claim is unearned | the solver only reproduces "light over dark" | margin over heuristic control < 5 points | M2 |
+| The order claim is unearned | the solver only reproduces "light over dark" | margin over heuristic control < 5 points | M2 — **it did not fire** |
+*That row did not fire, and it did not clear either. The margin is +12.9, +11.4 and +6.8 on the Sower, the 1887
+Self-Portrait and the Reaper: above the kill line everywhere and above the exit line on two of three. What the paint
+turned out to buy is local order — two marks that touch, put the right way round; two marks a hand apart, not — and
+the solved sequence still correlates 0.89 with the habits it started from. The claim stands and is now stated at
+that size, in §4.3 and in the caption, rather than at the size the design first gave it.*
+
 | The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 |
 | We drift into modelling Provence | the world stops being made of strokes | `?noStrokes` shows a scene | every |
 | Station 1 loses the viewer | too dark, too long, and no reason to continue | tested at M6, not argued about before | M6 |
@@ -1011,3 +1031,181 @@ because M1 was not supposed to touch them.
 
 **Not started, per scope:** M2's order solver, the far LOD tier, any station past 0, the transit, interiors, the
 voice, sound, mobile.
+
+---
+
+### M2 — Order
+
+**Asked.** §4.3's crossing solver — "the best idea in the design and the one most likely to return nothing" — on
+three canvases, one not a landscape, with the heuristics-alone control and the pre-registered kill criterion.
+
+**It returned something, and the design's framing of it was wrong in a way worth more than the framing was.** The
+design reads a crossing as a two-horse race: is the pixel A's colour or B's? On a canvas painted three and a half
+times over, that question usually has no answer, because a third mark has since been laid across the crossing and
+the pixel is neither of theirs. Measured on the Reaper, and against its own control:
+
+| at a crossing of A and B | some third mark explains the pixel better | by |
+|---|---|---|
+| the real canvas | **74%** of crossings | 1.03 ΔE |
+| the same canvas with the strokes' colours shuffled between them | 24% | −3.94 ΔE (worse) |
+
+So the third mark is not noise to be vetoed. **It is the answer.** Every stroke whose footprint contains the point
+is a candidate; the one whose colour the paint actually is was laid after all the others there; and one point yields
+as many facts as there are marks stacked on it instead of one. That is what lifts the graph over the density at
+which an order can propagate at all — and it uses the thing the extraction knows and a pairwise reading of the scan
+does not, which is *every* mark on the canvas rather than these two.
+
+**Three canvases, at constants fixed on the synthetic and then not touched.**
+
+| | strokes | confident crossings | solver | habits alone | **margin** |
+|---|---|---|---|---|---|
+| *The Sower* — landscape, station 4 | 3,677 | 1,631 | 58.7% | 45.9% | **+12.9** |
+| *Self-Portrait 1887* — not a landscape, station 2 | 3,588 | 1,925 | 53.2% | 41.8% | **+11.4** |
+| *Wheatfield with a Reaper* — landscape, station 4 | 18,924 | 8,172 | 52.8% | 46.0% | **+6.8** |
+
+**Two of three clear the bar and the third does not.** The kill criterion — under +5 points — is not triggered on
+any canvas, so §4.3's claim survives; the exit criterion of +10 on three canvases is met on two. Both are recorded
+as they fell rather than as either one alone.
+
+**The margin is partly leakage and the test says so.** Withholding scattered blocks rather than a random fifth was
+the design's idea and it was right; it is also not a cure, only a dial. On all three canvases the margin roughly
+halves for every doubling of the block:
+
+| block, in stroke lengths | 2 | 4 *(the size fixed in advance)* | 8 | 16 |
+|---|---|---|---|---|
+| Reaper | +13.3 | **+6.8** | +4.1 | +1.6 |
+| Sower | +19.6 | **+12.9** | +6.1 | — |
+| Self-Portrait | +18.6 | **+11.4** | +3.9 | — |
+
+Read plainly: **the crossings recover local order and not global sequence.** Two marks that touch, the paint can
+put in the right order. Two marks a hand's breadth apart, it mostly cannot, and what orders them is still the
+habits. The solved sequence correlates **0.89** with the heuristic it started from on the Reaper (0.92 on the
+Sower), and 31% of strokes moved more than a twentieth of the sequence. That is the honest description of what was
+bought, and it is what the caption now says.
+
+**The estimator was also run where the answer is known.** `tools/order.py --synthetic` paints strokes in a known
+random permutation — opaque ribbons with rounded tops, on a mottled ground, with weave and scan noise, at the same
+three-and-a-half-times overpaint the real canvas has — and then runs the whole pipeline against the truth:
+
+- **the stacking facts are 92% right**, and the merged, thresholded edges 90–97% depending on where the threshold
+  sits, which is what a calibrated confidence looks like;
+- **only 33% of crossings are still visible** — the rest have been buried by a later mark — and of the visible ones
+  the confident edges are **97% right**. The ceiling on this method is not the estimator, it is how much of the
+  evidence still exists;
+- the solved order agrees with the truth on **78.6%** of the crossings that are still visible, against the
+  heuristic's 50% (the synthetic's truth is random, so 50 is where its control belongs);
+- **and that same solver scores +6.0 on the held-out margin**, at the same block size and the same fold count the
+  museum's canvases are scored with. A solver recovering four fifths of the recoverable truth returns six points.
+  **The +10 bar was set without that conversion in hand**, and on this evidence it is above what the test returns
+  for a near-ceiling solver on a canvas of this density. The synthetic is not the Reaper — its truth is random and
+  its palette is eight well-separated hues — so this calibrates rather than excuses: the Sower's +12.9 and the
+  Self-Portrait's +11.4 are *above* it, and the Reaper's +6.8 sits on it.
+
+**The design's second cue failed its own control, and M1 explains why.** §4.3 lists ridge-profile continuity and
+unbroken edges beside colour. Both are one measurement — a section across the stroke at the crossing, regressed on
+the same section either side, which reads crest and both feet at once — and it is implemented, run and reported.
+The test that decides it is not the exit number but the one measure of quality a real canvas offers without a
+ground truth: **how much of a cue's own weight has to be cut to make its graph acyclic, against the same graph with
+its arrows thrown at random.** A cue that is guessing produces a graph as cyclic as a random orientation of itself.
+
+| | its own weight that is a cycle | with the arrows thrown | ratio | true accuracy, on the synthetic |
+|---|---|---|---|---|
+| stacking, Reaper | 0.2% | 5.9% | **30×** | — |
+| stacking, synthetic | 0.43% | 15.7% | **36×** | 86% |
+| profile, Reaper | 13.5% | 17.7% | **1.3×** | — |
+| profile, synthetic | 7.5% | 14.8% | 2.0× | 60% |
+
+The diagnostic reads correctly where the truth is known, and on the museum's canvases it says the profile cue is
+barely distinguishable from a coin. **It ships at weight zero, and the decision was made by that table rather than
+by the margin.** The reason connects straight back to M1: the profile cue reads *shape*, and M1 established there
+is no raking light in these scans, so shape leaves no trace in the image. There is nothing there for it to read.
+
+**The constant is fixed, and the piece is bigger than the plan assumed.** Stroke density came out at **2.75 strokes
+per square centimetre**, within six percent across three canvases spanning three times the area and three stations
+(2.79, 2.81, 2.65). That is a genuinely useful invariant, and it sizes the work off `CREDITS.md` directly: 12.93 m²
+of canvas across the 26 scans whose dimensions are known, **356,000 strokes**, and about **550,000** pro rata across
+all forty. The plan's 200,000 is low by 2.7×. At §5.2's 2,000-a-second burst that is **273 s of arrival**, so
+arrival is a third of a fifteen-minute piece rather than the fifth the plan expected — and the plan's own
+arithmetic there was wrong besides (200,000 at 2,000 a second is 100 seconds, not 200).
+
+The compression constant follows from the measurement rather than from taste: the Reaper is 18,924 strokes and a
+canvas of that size is something like ten hours of painting, so he worked at about **half a stroke a second** and
+the constant is **4,000×**. The hold is *not* compressed by it — a night between sessions at 4,000× is eleven
+seconds of nothing — so a hold is punctuation at a fixed 2.4 s and what the record supplies is how many there are,
+not how long. Press space and the canvas paints itself: five bursts, four holds, about nineteen seconds.
+
+**Acts fall out of the order rather than being drawn on the canvas.** The solved sequence is cut where cutting most
+reduces the within-span scatter of what a stroke *is* — where it sits, how light, how wide, contour, highlight —
+and each span is named by a rule over its own contents. The Reaper comes out *contour* 460, *land* 10,276, *subject*
+4,160, *sky* 3,340, *light* 425 and a second *sky* of 263; the Sower *ground, land, subject, sky, light*. `?xray` paints one hue an
+act, so a still at any τ shows what the order is doing instead of what the palette is doing.
+
+**Exit criteria.**
+
+| | measured | target |
+|---|---|---|
+| solver beats the heuristic control | **+12.9, +11.4, +6.8** | ≥ +10 on three canvases — **met on two** |
+| one of them not a landscape | *Self-Portrait 1887*, +11.4 | — |
+| kill criterion | not triggered on any canvas | < +5 removes the claim |
+| acts fall out of the order as named groups | 4–5 acts a canvas, named by rule | — |
+| the global compression constant fixed here | 4,000×, from a measured 2.75 strokes/cm² | — |
+| `?xray` at three τ shows the sequence doing something legible | yes — contours first, then land, then subject | — |
+| … *sky before land* | **no: it is land before sky**, and it comes from the habits, not the paint | — |
+| 60 fps, and nothing else moved | 60 fps, GPU 8.0 ms, 10 draws, 2.50 M triangles; `?flat` parity RMS **0.050** against M1's 0.051; geometry, colour and height byte-identical to M1 | — |
+
+**Eleven things that were wrong, and four of them were mine rather than the code's.**
+
+1. **The design's crossing is the wrong event.** Extraction returns short fat arcs — a Reaper stroke is 3.3 times as
+   long as it is wide — and two of those overlap constantly while their centrelines miss. 143,000 pairs share a
+   bounding box; only 47,000 cross in the strict sense. The event is now the closest approach of the two
+   centrelines, kept when the cores overlap, which is a strict generalisation: 61,000 events instead of 26,000.
+2. **A pair whose votes cancelled became an edge pointing whichever way the indices ran.** With the profile cue at
+   weight zero, every pair it alone had voted on merged to a net of exactly zero — and `net > 0` sent all thirty-nine
+   thousand of them from the higher index to the lower. The solver then scored **45.6%** on held-out edges, below
+   chance, which is the shape of a systematic bug rather than a weak signal.
+3. **Withholding one contiguous fifth of the canvas is not a strict test, it is a broken one.** The strokes inside
+   the withheld region then have no constraints left at all, so the solver is reduced to the prior there and the
+   test can only return zero. It returned +0.0 on four folds of five, which looked exactly like a null result and
+   was not one. Blocks, scattered, several stroke lengths across.
+4. **A hinge loss does not propagate.** It stops pulling the moment an edge is satisfied, so the cheapest solution
+   is every constraint met locally and nothing travelling further than one edge. Squared — a weighted Laplacian,
+   solved by Jacobi sweeps — is worth a point and a half of agreement with the true order and six points of margin.
+5. **Two clean samples either side of a crossing are not enough to find the stroke's own colour.** At 92% coverage a
+   mark is crossed again a centimetre away, and a sample taken there is somebody else's paint. Four samples with the
+   odd one out dropped, and the stroke's own median colour behind that.
+6. **One pixel at the fitted intersection is one pixel, and the intersection is fitted.** Five points inside the
+   overlap, medianed.
+7. **The lattice sounded better than it measured.** A stacking fact needs no crossing at all, only a point where two
+   marks are present, so sampling the whole canvas on a lattice should have found far more. On the synthetic it is a
+   small gain. On all three museum canvases it is a loss, and the two exit-blind diagnostics agree about why: the
+   consistency ratio falls from 30×, 44× and 24× to 16×, 20× and 10×, and repeated readings of one pair stop
+   agreeing as often, 96% down to 92%. A lattice point has no crossing geometry near it, so its gate is scaled by
+   the canvas-median noise instead of the neighbourhood's own. Reachable by `--lattice`, off, and the reason is in
+   the source rather than in a commit message.
+8. **My first synthetic canvas judged the estimator against unanswerable questions.** Two thirds of its crossings
+   have since been buried, and scoring the cue on those made a 97%-accurate method look like a 72%-accurate one.
+   The synthetic now records which stroke ended up visible at each point and reports both numbers.
+9. **`ndarray.ptp` again** — removed in NumPy 2.0, and this file had inherited the call from `pack.py`.
+10. **The venv.** The first background extraction ran under `/usr/bin/python3`, which has no NumPy, and reported
+    success with exit code 0 because the failure was inside a pipeline.
+11. **The solver read the habits out of the file it had just written them over.** `extract.py` puts the heuristic
+    sequence in each stroke's `o` and `order.py` overwrites it, so running the solver twice measured the solver
+    against itself: margin +0.0, correlation with the habits 1.00, and both look like findings rather than like a
+    program with no fixed point. The habits are a function of the strokes, so they are recomputed from the strokes.
+
+**Still visible, and named rather than fixed.**
+
+- **The Reaper does not clear the bar.** +6.8 against +10, and it is the canvas the piece opens station 4 with. It
+  is also the biggest and the most nearly monochrome — a wheatfield is one colour laid over itself thousands of
+  times, which is precisely the case where "whose colour is this pixel" has least to say.
+- **The global sweep of the sequence is still the habits**, at ρ = 0.89. The paint rearranges neighbours.
+- **The reconstruction says land before sky**, which is the reverse of the design's expectation, and it says it
+  because the heuristic puts light paint last, not because the crossings do. The crossings do not overturn it and
+  do not confirm it.
+- **Session counts are not in yet.** The number of holds is currently the number of act boundaries, which is a
+  structure rather than a record. The letters are M3's job.
+- **A pair that overlaps twice is read once**, at its squarest touch. Rare, and unmeasured.
+- **The acts are named by a rule, and the rule is thresholds on y, contour and highlight fractions.** The boundaries
+  are found; the names are asserted.
+
+**Not started, per scope:** the far LOD tier, any station past 0, the transit, interiors, the voice, sound, mobile.

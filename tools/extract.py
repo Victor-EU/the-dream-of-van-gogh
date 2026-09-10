@@ -1125,7 +1125,7 @@ def main():
             rgb=[int(v) for v in s["colour"]],
             w=float(s["width"] / min(cw, ch)), h=0.0, o=float(ordv[k]),
             act=0, flags=int(flags), depth=0.0, arc=float(s["arc"]),
-            chan=int(s["chan"])))
+            chan=int(s["chan"]), pol=int(s["pol"]), mark=int(s["mark"])))
 
     t = time.time()
     _, cov, lay = raster(recs, cw, ch, DS, colour=False)

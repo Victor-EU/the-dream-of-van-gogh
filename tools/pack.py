@@ -23,7 +23,7 @@ to bind the thing:
       20      2   order                     u16 fraction of the sequence
       22      2   depth                     f16
 
-The header is 256 bytes and at version 3. It grew from 192 at M0b to carry
+The header is 320 bytes and at version 4. It grew from 192 at M0b to carry
 which colour profile the scan had, or that it had none, so a blob can never be
 silently assumed sRGB later; what was cropped off the scan to reach the edge of
 the painting; the underlayer's scale; and the band-pass ratio, which is the
@@ -38,6 +38,16 @@ agreement lands inside the range the same estimator returns on a canvas with no
 light at all, which is what put the shipped heights on method 2. A blob can
 therefore always be asked what its relief is worth.
 
+Version 4 adds what M2 found out about the order. `order_method` says whether
+the sequence in this blob came from the crossings or from the habits alone, and
+the numbers beside it are the held-out measurement that decided it: what
+fraction of withheld crossings the order satisfies, what fraction the habits
+satisfy on the same withheld crossings, and the size of the blocks that were
+withheld -- because that last one moves the answer and a blob that carried the
+margin without it would be quoting a number out of context. The act table is the
+sequence's own structure: DESIGN 5.2's named groups, each one a span of order,
+found by cutting the solved sequence rather than by drawing lines on the canvas.
+
 Every reader takes hdr_len from the header rather than assuming it, so the
 growth costs nothing.
 
@@ -47,10 +57,11 @@ import json, os, struct, sys
 import numpy as np
 
 MAGIC = b"VGST"
-VERSION = 3
-HDR = 256
+VERSION = 4
+HDR = 320
 STRIDE = 24
 CSTRIDE = 24
+ASTRIDE = 24
 CHUNK_MAX = 2500
 COORD_LO, COORD_HI = -0.05, 1.05
 
@@ -126,8 +137,10 @@ def pack(doc, dest):
     k = float(np.ceil(wid.max() * 255.0) / 255.0) if n else 1.0
     k = max(k, 1e-6)
 
+    acts = doc.get("acts") or []
     coff = HDR + n * STRIDE
-    buf = bytearray(coff + len(table) * CSTRIDE)
+    aoff = coff + len(table) * CSTRIDE
+    buf = bytearray(aoff + len(acts) * ASTRIDE)
     rec = memoryview(buf)[HDR:coff]
     for i, r in enumerate(s):
         o = i * STRIDE
@@ -170,6 +183,21 @@ def pack(doc, dest):
                      float(doc.get("light_R", 0.0)), float(doc.get("light_mm", 0.0)))
     struct.pack_into("<f", buf, 228, float(doc.get("order_lift_mm", 0.0)))
     struct.pack_into("<IIH", buf, 232, len(table), coff, CSTRIDE)
+
+    rep = doc.get("order_report") or {}
+    aud = rep.get("audit") or {}
+    struct.pack_into("<B", buf, 256, int(doc.get("order_method", 0)))
+    struct.pack_into("<H", buf, 258, len(acts))
+    struct.pack_into("<I", buf, 260, aoff)
+    struct.pack_into("<H", buf, 264, ASTRIDE)
+    struct.pack_into("<fff", buf, 268, float(aud.get("margin", 0.0)),
+                     float(aud.get("solver", 0.0)), float(aud.get("heuristic", 0.0)))
+    struct.pack_into("<I", buf, 280, int(rep.get("edges", 0)))
+    struct.pack_into("<ff", buf, 284, float(rep.get("feedback", 0.0)),
+                     float(rep.get("feedback_shuffled", 0.0)))
+    struct.pack_into("<II", buf, 292, int(rep.get("stacking", 0)),
+                     int(rep.get("overlaps", 0)))
+    struct.pack_into("<f", buf, 300, float(aud.get("block", 0.0)))
     for j, t in enumerate(table):
         o = coff + j * CSTRIDE
         struct.pack_into("<II", buf, o, t["first"], t["count"])
@@ -178,6 +206,17 @@ def pack(doc, dest):
                          int(np.clip(round(t["olo"] * 65535), 0, 65535)),
                          int(np.clip(round(t["ohi"] * 65535), 0, 65535)),
                          int(np.clip(round(t["wmax"] / k * 65535), 0, 65535)))
+
+    ordv = np.array([r["o"] for r in s], np.float64) if n else np.zeros(0)
+    for j, a in enumerate(acts):
+        o = aoff + j * ASTRIDE
+        m = np.array([r["act"] for r in s], np.int32) == j if n else np.zeros(0, bool)
+        lo, hi = (float(ordv[m].min()), float(ordv[m].max())) if m.any() else (0.0, 0.0)
+        struct.pack_into("<HH", buf, o, int(np.clip(round(lo * 65535), 0, 65535)),
+                         int(np.clip(round(hi * 65535), 0, 65535)))
+        struct.pack_into("<I", buf, o + 4, int(m.sum()))
+        nm = a["name"].encode("utf-8")[:16]
+        buf[o + 8:o + 8 + len(nm)] = nm
 
     with open(dest, "wb") as f:
         f.write(buf)
@@ -198,6 +237,15 @@ def main():
           f"  (flags {doc.get('colour_flags', 0)})")
     import math
     lt = doc.get("light") or [1.0, 0.0]
+    rep = doc.get("order_report") or {}
+    aud = rep.get("audit") or {}
+    acts = doc.get("acts") or []
+    print(f"  order   method {doc.get('order_method', 0)}"
+          f"   {rep.get('edges', 0)} confident crossings"
+          f"   held out: {aud.get('solver', 0)*100:.1f}% against the habits'"
+          f" {aud.get('heuristic', 0)*100:.1f}%"
+          f"  (margin {aud.get('margin', 0)*100:+.1f})")
+    print(f"  acts    " + "  ".join(f"{a['name']} {a['count']}" for a in acts))
     print(f"  relief  method {doc.get('height_method', 0)}"
           f"   cap {doc.get('height_mm', 0):.2f} mm"
           f"   light {math.degrees(math.atan2(-lt[1], lt[0])):+.0f} deg"
