@@ -23,14 +23,21 @@ to bind the thing:
       20      2   order                     u16 fraction of the sequence
       22      2   depth                     f16
 
-    tools/pack.py strokes/m0a/reaper-gate.json
+The header is 256 bytes at version 2. It grew from 192 to carry what M0b added:
+which colour profile the scan had, or that it had none, so a blob can never be
+silently assumed sRGB later; what was cropped off the scan to reach the edge of
+the painting; the underlayer's scale; and the band-pass ratio, which is the
+number that says whether the strokes carry the picture. Every reader takes
+hdr_len from the header rather than assuming it, so the growth costs nothing.
+
+    tools/pack.py strokes/m0b/reaper-canvas.json
 """
 import json, os, struct, sys
 import numpy as np
 
 MAGIC = b"VGST"
-VERSION = 1
-HDR = 192
+VERSION = 2
+HDR = 256
 STRIDE = 24
 COORD_LO, COORD_HI = -0.05, 1.05
 
@@ -79,10 +86,16 @@ def pack(doc, dest):
     struct.pack_into("<f", buf, 60, k)
     struct.pack_into("<f", buf, 64, float(doc.get("height_mm", 4.0)))
     struct.pack_into("<B", buf, 68, int(doc.get("height_method", 0)))
+    struct.pack_into("<B", buf, 69, int(doc.get("colour_flags", 0)))
+    struct.pack_into("<H", buf, 70, int(doc.get("under_ds", 0)))
     buf[72:104] = bytes.fromhex(doc["source_sha256"])
     buf[104:136] = bytes.fromhex(doc["params_sha256"])
     slug = (doc["slug"] + "-" + doc["tile"]).encode()[:32]
     buf[136:136 + len(slug)] = slug
+    prof = (doc.get("profile") or "").encode("utf-8")[:24]
+    buf[168:168 + len(prof)] = prof
+    struct.pack_into("<IIII", buf, 192, *(doc.get("crop_rect") or [0, 0, 0, 0]))
+    struct.pack_into("<f", buf, 208, float(doc.get("bandpass", 0.0)))
 
     with open(dest, "wb") as f:
         f.write(buf)
@@ -97,6 +110,8 @@ def main():
     print(f"{n} strokes  width_k {k:.5f}  {size/1024:.1f} KB  -> {dest}")
     print(f"  source  {doc['source_sha256'][:16]}...")
     print(f"  params  {doc['params_sha256'][:16]}...")
+    print(f"  colour  {doc.get('profile') or 'no profile embedded in the scan'}"
+          f"  (flags {doc.get('colour_flags', 0)})")
 
 
 if __name__ == "__main__":

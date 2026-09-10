@@ -20,16 +20,21 @@ def read(path):
     b = np.fromfile(path, np.uint8)
     magic, ver, hdr, stride, flags, n = struct.unpack_from("<4sHHHHI", b, 0)
     assert magic == b"VGST" and stride == STRIDE, "not a stroke blob"
+    # hdr_len is read, never assumed: the header grew from 192 to 256 at
+    # version 2 and this file did not have to know
     cw, ch = struct.unpack_from("<II", b, 16)
     cwcm, chcm, ppcm = struct.unpack_from("<fff", b, 24)
     tile = struct.unpack_from("<IIII", b, 36)
     lo, hi = struct.unpack_from("<ff", b, 52)
     k, = struct.unpack_from("<f", b, 60)
     hmm, = struct.unpack_from("<f", b, 64)
+    under_ds = struct.unpack_from("<H", b, 70)[0] if ver >= 2 else 0
+    profile = bytes(b[168:192]).split(b"\x00")[0].decode("utf-8", "replace") if ver >= 2 else ""
     r = b[hdr:hdr + n * STRIDE].reshape(n, STRIDE)
     p = r[:, 0:12].copy().view("<u2").reshape(n, 3, 2).astype(np.float32)
     p = p / 65535.0 * (hi - lo) + lo
     return dict(n=n, cw=cw, ch=ch, cm=(cwcm, chcm), ppcm=ppcm, tile=tile,
+                ver=ver, under_ds=under_ds, profile=profile,
                 p=p, rgb=r[:, 12:15], width=r[:, 15].astype(np.float32) / 255.0 * k,
                 height=r[:, 16].astype(np.float32) / 255.0, act=r[:, 17],
                 flags=r[:, 18], hmm=hmm,
@@ -37,7 +42,7 @@ def read(path):
                 depth=r[:, 22:24].copy().view("<f2").ravel().astype(np.float32))
 
 
-def render(d, px, tau=1.0, xray=False):
+def render(d, px, tau=1.0, xray=False, under=None):
     tx, ty, tw, th = d["tile"]
     if tw == 0:
         tx, ty, tw, th = 0, 0, d["cw"], d["ch"]
@@ -45,8 +50,21 @@ def render(d, px, tau=1.0, xray=False):
     H = max(1, int(round(px * th / tw)))
     sc = W / tw
     img = np.zeros((H, W, 3), np.float32)
-    img[:] = np.array([0.55, 0.50, 0.41], np.float32)      # bare ground; the
-    # real residual underlayer is M0b's job, this is a flat stand-in for it
+    if under is not None:
+        # the ground the strokes lie on, from the underlayer M0b extracts.
+        # Compositing over it rather than over a flat tone is what makes this
+        # the same image the runtime draws -- which is the whole point of the
+        # hook, and the reason a wrong ribbon winding showed up as a
+        # disagreement between the two rather than as merely bad art.
+        u = np.asarray(under, np.float32) / 255.0
+        yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+        sy = (yy / sc + ty) * u.shape[0] / d["ch"]
+        sx = (xx / sc + tx) * u.shape[1] / d["cw"]
+        yi = np.clip(sy.astype(np.int32), 0, u.shape[0] - 1)
+        xi = np.clip(sx.astype(np.int32), 0, u.shape[1] - 1)
+        img[:] = u[yi, xi]
+    else:
+        img[:] = np.array([0.55, 0.50, 0.41], np.float32)
     cov = np.zeros((H, W), np.float32)
 
     short = min(d["cw"], d["ch"])
@@ -70,7 +88,11 @@ def render(d, px, tau=1.0, xray=False):
         gy = yy[y0:y1, x0:x1, None]
         dist = np.sqrt((gx - c[None, None, :, 0]) ** 2 +
                        (gy - c[None, None, :, 1]) ** 2).min(-1)
-        a = np.clip((wpx - dist) / max(0.8, wpx * 0.35), 0, 1)
+        # antialias only. An earlier version feathered by 35% of the
+        # half-width, which on a 105 px stroke at 1:1 is an 18 px blur on
+        # each edge -- the reconstruction looked like smeared blobs and the
+        # blur was entirely this line, not the data it was drawing.
+        a = np.clip((wpx - dist) / 1.2, 0, 1)
         col = d["rgb"][i].astype(np.float32) / 255.0
         if xray:
             col = np.array([1.0, 0.1, 0.05], np.float32)
@@ -89,10 +111,13 @@ def main():
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     d = read(a.blob)
-    img, cov = render(d, a.px, a.tau, a.xray)
+    up = os.path.splitext(a.blob)[0] + "-under.png"
+    under = np.asarray(Image.open(up)) if os.path.exists(up) else None
+    img, cov = render(d, a.px, a.tau, a.xray, under)
     out = a.out or os.path.splitext(a.blob)[0] + ("-xray" if a.xray else "-flat") + ".png"
     Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).save(out)
-    print(f"{d['n']} strokes, tau {a.tau:.2f}, covered {cov*100:.1f}%  -> {out}")
+    print(f"{d['n']} strokes, tau {a.tau:.2f}, covered {cov*100:.1f}%"
+          f"{'' if under is not None else '  (no underlayer, flat ground)'}  -> {out}")
 
 
 if __name__ == "__main__":

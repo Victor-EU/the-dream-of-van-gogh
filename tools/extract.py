@@ -1,25 +1,55 @@
 #!/usr/bin/env python3
-"""Fit brush strokes to one region of a Van Gogh scan.
+"""Fit brush strokes to a Van Gogh scan.
 
-M0a is the simplest extractor that could possibly work, per BUILD.md: structure
-tensor at ONE scale, luminance ridges only, streamline trace, quadratic Bezier
-fit, median colour, width from the ridge's own flanks. No chroma ridges, no
-residual underlayer, no tiling, no order solver. The height field here is the
-design's luminance-above-a-wide-neighbourhood estimate, which BUILD.md M1 says
-is measuring colour rather than relief -- it is in only so the ribbons are not
-flat, it is flagged as estimate method 0 in the blob, and M1 replaces it.
+M0a was one tile, luminance only, to answer whether a field of fitted ribbons
+reads as paint. It does. M0b is the pipeline behind that answer: the whole
+canvas, tiled with a merge across the overlaps; ridges on luminance *and* on
+both chroma channels, because a slab of one loaded colour beside another at the
+same value is invisible to a luminance ridge and was 11% of the gate tile; a
+residual underlayer, so the unfinished states look like an unfinished painting
+rather than a loading bar; the scan's colour profile honoured or its absence
+recorded; and the edge of the painting found rather than assumed.
+
+Two things are calibrated once for the whole canvas rather than per tile, and
+both are seam mechanisms if they are not. The seed strength threshold: a
+per-tile percentile means a tile of sky and a tile of wheat disagree about what
+counts as a stroke, and the disagreement lands exactly on the boundary between
+them. The wide blur under the height estimate: sigma is 140 px, so a tile
+computing it alone invents 420 px in from each of its own edges.
+
+The height field is still DESIGN 4.1 step 6's luminance-above-a-neighbourhood
+estimate, which BUILD.md M1 says is measuring colour rather than relief. It is
+flagged as method 0 in the blob and M1 replaces it.
 
 Every number lives in params/<slug>.json. Nothing is tuned by editing this file.
 
-    tools/extract.py reaper                  # the tile named by params["tile"]
-    tools/extract.py reaper --tile impasto
+    tools/extract.py reaper                  # the whole canvas, tiled
+    tools/extract.py reaper --tile gate      # one named region, for tuning
 """
-import argparse, hashlib, json, os, sys, time
+import argparse, hashlib, io, json, os, resource, sys, time
 import numpy as np
 from scipy.ndimage import gaussian_filter, map_coordinates, maximum_filter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
 EPS = 1e-12
+DS = 8                      # downsample for the canvas-wide low-frequency work
+
+# Every key params/<slug>.json may contain. make.py checks a params file against
+# this, both ways: a key here that the file lacks is a missing number, and a key
+# in the file that is not here is a number that silently does nothing -- which
+# is the more expensive of the two, because it looks like it is tuning.
+PARAMS = (
+    "slug source canvas_cm px_per_cm tiles tile "
+    "sigma_grad sigma_tensor sigma_ridge sigma_height height_mm "
+    "chroma_gain chroma_tensor_w chroma_priority chroma_veto_px "
+    "tensor_energy_frac "
+    "seed_spacing seed_strength_pct coherence_min "
+    "step max_arc min_arc max_turn max_total_turn dir_blend de_max recentre "
+    "width_min width_max width_drop_frac width_gap_frac trough_chroma_min "
+    "colour_band dedup_frac dedup_angle dedup_band fit_tol_frac fit_max_split "
+    "tile_px tile_step sigma_under under_ds"
+).split()
 
 
 # ---------------------------------------------------------------- colour ----
@@ -30,7 +60,7 @@ def srgb_to_linear(a):
 
 
 def linear_to_lab(rgb):
-    """Linear sRGB -> CIE Lab (D65). Only used for the trace's colour break."""
+    """Linear sRGB -> CIE Lab (D65)."""
     m = np.array([[0.4124564, 0.3575761, 0.1804375],
                   [0.2126729, 0.7151522, 0.0721750],
                   [0.0193339, 0.1191920, 0.9503041]], np.float32)
@@ -50,6 +80,33 @@ def lightness(lin):
     return np.power(np.maximum(y, 0.0), 1.0 / 2.4).astype(np.float32)
 
 
+def decode(path):
+    """Open a scan and get it to sRGB, honouring its profile if it has one.
+
+    DESIGN 4.1 step 1. BUILD.md makes this a cross-station problem rather than a
+    per-canvas one: forty scans from twelve institutions, and if the decode is
+    loose the stations do not sit on the same colour footing. Station 2's flood
+    is the effect most exposed to it. So the rule is honour what is embedded and
+    *record the absence* where there is nothing to honour, rather than assuming
+    sRGB silently -- 31 of these 40 files have no profile at all, including both
+    sides of that flood.
+    """
+    from PIL import Image
+    Image.MAX_IMAGE_PIXELS = None
+    im = Image.open(path)
+    icc = im.info.get("icc_profile")
+    if im.mode != "RGB":
+        im = im.convert("RGB")
+    if not icc:
+        return im, "", 0                                   # no profile embedded
+    from PIL import ImageCms
+    src = ImageCms.ImageCmsProfile(io.BytesIO(icc))
+    name = (ImageCms.getProfileDescription(src) or "").strip()
+    dst = ImageCms.createProfile("sRGB")
+    im = ImageCms.profileToProfile(im, src, dst, outputMode="RGB")
+    return im, name, 3                                     # embedded, converted
+
+
 # ------------------------------------------------------------- sampling ----
 
 def samp(field, x, y, order=1):
@@ -65,70 +122,145 @@ def samp3(field, x, y):
     return field[yi, xi]
 
 
-# ------------------------------------------------------- orientation field --
+# ------------------------------------------------------------- the fields --
 
-def structure_tensor(L, sigma_grad, sigma_tensor):
-    """One scale, per M0a. Returns along-stroke unit vectors and coherence."""
-    gx = gaussian_filter(L, sigma_grad, order=(0, 1))
-    gy = gaussian_filter(L, sigma_grad, order=(1, 0))
-    jxx = gaussian_filter(gx * gx, sigma_tensor)
-    jxy = gaussian_filter(gx * gy, sigma_tensor)
-    jyy = gaussian_filter(gy * gy, sigma_tensor)
+def channels(rgb8, p):
+    """The three fields a ridge can live in, on one comparable scale.
+
+    Luminance is 0..1 and stays exactly as M0a had it, so that tuning survives.
+    a* and b* are divided by 100, which puts a full-swing colour opposition --
+    his orange against his blue -- at about the same number as a full-swing
+    change in light. Both are what a stroke is made of and neither is privileged
+    except in the merge, where luminance claims first.
+    """
+    lin = srgb_to_linear(rgb8)
+    lab = linear_to_lab(lin)
+    g = float(p["chroma_gain"])
+    chans = [lightness(lin), lab[..., 1] * g, lab[..., 2] * g]
+    s = float(p["sigma_ridge"])
+    return chans, gaussian_filter(lab, (s, s, 0))          # smoothed, for dE
+
+
+def structure_tensor(chans, p, energy_ref):
+    """Di Zenzo: the tensor of a colour image is the sum of its channels'.
+
+    Where chroma is flat this is exactly M0a's luminance tensor. Where luminance
+    is flat -- the plateau case, a slab of one loaded colour against another at
+    the same value -- the luminance tensor is zero and coherence is meaningless,
+    because coherence is a *ratio* and the ratio of two nothings is noise. The
+    chroma terms give those passages a direction, and the energy floor below
+    stops the ratio being asked at all where there is nothing to divide.
+    """
+    sg, st = float(p["sigma_grad"]), float(p["sigma_tensor"])
+    w = [1.0, float(p["chroma_tensor_w"]), float(p["chroma_tensor_w"])]
+    jxx = jxy = jyy = 0.0
+    for c, wc in zip(chans, w):
+        gx = gaussian_filter(c, sg, order=(0, 1))
+        gy = gaussian_filter(c, sg, order=(1, 0))
+        jxx = jxx + wc * gx * gx
+        jxy = jxy + wc * gx * gy
+        jyy = jyy + wc * gy * gy
+    jxx = gaussian_filter(jxx, st)
+    jxy = gaussian_filter(jxy, st)
+    jyy = gaussian_filter(jyy, st)
     d = jxx - jyy
     s = np.hypot(d, 2 * jxy)
-    coh = (s / (jxx + jyy + EPS)).astype(np.float32)      # 0 isotropic, 1 a line
+    energy = (jxx + jyy).astype(np.float32)
+    coh = (s / (energy + EPS)).astype(np.float32)          # 0 isotropic, 1 a line
+    coh[energy < energy_ref * float(p["tensor_energy_frac"])] = 0.0
     # major eigenvector = direction of greatest change = ACROSS the stroke.
     a = 0.5 * np.arctan2(2 * jxy, d)
-    return (np.cos(a).astype(np.float32), np.sin(a).astype(np.float32), coh)
+    return (np.cos(a).astype(np.float32), np.sin(a).astype(np.float32), coh, energy)
 
 
-def ridge_field(L, sigma_ridge, nx, ny):
-    """Luminance ridges read across the orientation field.
+def ridge_field(F, sigma_ridge, nx, ny):
+    """Ridges in one field, read across the orientation field.
 
-    Lnn < 0 is a crest (a light stroke over darker paint), Lnn > 0 a trough
-    (his dark contours). Both are strokes. Strength is the scale-normalised
-    curvature across the stroke, which is what makes a 2 mm reed-pen contour
-    and a 7 mm loaded sweep comparable numbers.
+    Fnn < 0 is a crest, Fnn > 0 a trough, and on luminance those are a light
+    stroke over darker paint and one of his dark contours. On a* and b* they are
+    a stroke laid warmer, or cooler, than what it lies against. Strength is the
+    scale-normalised curvature across the stroke, which is what makes a 2 mm
+    reed-pen contour and a 7 mm loaded sweep comparable numbers.
     """
-    Ls = gaussian_filter(L, sigma_ridge)
-    lxx = gaussian_filter(L, sigma_ridge, order=(0, 2))
-    lxy = gaussian_filter(L, sigma_ridge, order=(1, 1))
-    lyy = gaussian_filter(L, sigma_ridge, order=(2, 0))
+    Fs = gaussian_filter(F, sigma_ridge)
+    lxx = gaussian_filter(F, sigma_ridge, order=(0, 2))
+    lxy = gaussian_filter(F, sigma_ridge, order=(1, 1))
+    lyy = gaussian_filter(F, sigma_ridge, order=(2, 0))
     lnn = (lxx * nx * nx + 2 * lxy * nx * ny + lyy * ny * ny).astype(np.float32)
-    return Ls, lnn * (sigma_ridge ** 2)
+    return Fs, lnn * (sigma_ridge ** 2)
 
 
 # ------------------------------------------------------------------ seeds --
 
-def find_seeds(Ls, lnn, coh, nx, ny, p):
-    """Local extrema of lightness across the stroke, spaced and ranked."""
-    h, w = Ls.shape
+def find_seeds(Fs, lnn, coh, nx, ny, p, thr, core, veto=None):
+    """Local extrema of the field across the stroke, spaced and ranked.
+
+    `thr` is calibrated over the whole canvas, not taken as a percentile of this
+    tile. A percentile asks each tile what counts as a stroke *here*, so a tile
+    of sky and a tile of wheat answer differently and the disagreement lands on
+    the boundary between them, which is the one place a seam is visible.
+
+    `veto` is what luminance has already spoken for. DESIGN 4.1 step 3 puts
+    chroma ridges in for strokes that are "invisible to a luminance ridge
+    filter" -- one loaded colour beside another at the same value -- and taking
+    the plain union of the ridge maps instead finds the same stroke two and
+    three times over: measured on the gate tile, 99% of chroma traces ran within
+    one stroke width of a luminance trace, for 2.3 points of coverage at 2.75x
+    the strokes. Seeding chroma only where luminance is blind is what the design
+    actually says, and it costs what it contributes.
+
+    `core` is the tile's exclusive claim: seeds outside it belong to a
+    neighbour. The cores partition the canvas exactly, and every core is inset
+    at least half the hard arc cap from its own tile's edges, so a trace seeded
+    anywhere in one can walk its full length without ever meeting a tile edge.
+    That is what makes tile truncation structurally impossible rather than
+    something the merge has to repair afterwards.
+    """
+    h, w = Fs.shape
     strength = np.abs(lnn)
-    # a ridge point is an extremum of Ls along the across-direction n
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     step = max(2.0, p["sigma_ridge"] * 0.5)
-    up = map_coordinates(Ls, [(yy + ny * step).ravel(), (xx + nx * step).ravel()],
+    up = map_coordinates(Fs, [(yy + ny * step).ravel(), (xx + nx * step).ravel()],
                          order=1, mode="nearest").reshape(h, w)
-    dn = map_coordinates(Ls, [(yy - ny * step).ravel(), (xx - nx * step).ravel()],
+    dn = map_coordinates(Fs, [(yy - ny * step).ravel(), (xx - nx * step).ravel()],
                          order=1, mode="nearest").reshape(h, w)
-    crest = (Ls > up) & (Ls > dn) & (lnn < 0)
-    trough = (Ls < up) & (Ls < dn) & (lnn > 0)
-    live = (coh > p["coherence_min"])
-
-    # Crests and troughs are seeded separately. Sharing one threshold and one
-    # suppression window lets a loaded impasto ridge suppress the reed-pen
-    # contour lying against it, and on this canvas that is the whole figure:
-    # the reaper is drawn in dark blue outline against wheat that shouts.
+    crest = (Fs > up) & (Fs > dn) & (lnn < 0)
+    trough = (Fs < up) & (Fs < dn) & (lnn > 0)
+    # Suppression runs over the core *dilated* by the suppression radius, and
+    # only then are seeds outside the core dropped. Masking to the core first
+    # means a maximum one pixel inside the boundary and one just outside it
+    # never suppress each other, so both tiles keep their own -- and the same
+    # stroke is traced twice, a pixel apart, in a way the merge only mostly
+    # catches. Measured: duplicates ran at 2.2x the canvas rate along the core
+    # boundaries. Both tiles see identical data this near a boundary, so both
+    # compute the same suppression and exactly one of them owns the survivor.
     sp = int(p["seed_spacing"])
+    live = coh > p["coherence_min"]
+    grown = (max(0, core[0] - sp), max(0, core[1] - sp),
+             min(w, core[2] + sp), min(h, core[3] + sp))
+    live[:grown[1], :] = False
+    live[grown[3]:, :] = False
+    live[:, :grown[0]] = False
+    live[:, grown[2]:] = False
+    if veto is not None:
+        live &= ~veto
+
+    # Crests and troughs are seeded separately. Sharing one suppression window
+    # lets a loaded impasto ridge suppress the reed-pen contour lying against
+    # it, and on this canvas that is the whole figure: the reaper is drawn in
+    # dark blue outline against wheat that shouts.
     ok = np.zeros_like(live)
     for mask in (crest & live, trough & live):
         if not mask.any():
             continue
-        thr = np.percentile(strength[mask], p["seed_strength_pct"])
         m = mask & (strength >= thr)
         masked = np.where(m, strength, -np.inf)
         ok |= m & (masked >= maximum_filter(masked, size=2 * sp + 1))
 
+    ok[:core[1], :] = False                       # the survivors this tile owns
+    ok[core[3]:, :] = False
+    ok[:, :core[0]] = False
+    ok[:, core[2]:] = False
     ys, xs = np.nonzero(ok)
     order = np.argsort(-strength[ys, xs])
     ys, xs = ys[order], xs[order]
@@ -151,8 +283,8 @@ def walk(x0, y0, pol, sign, fields, p):
     plateau, not a crest, so its centre has no curvature to speak of and the
     sign there is noise.
     """
-    Ls, coh, tx, ty, lab = fields
-    h, w = Ls.shape
+    Fs, coh, tx, ty, lab = fields
+    h, w = Fs.shape
     n = len(x0)
     nsteps = int(p["max_arc"] / 2 / p["step"]) + 2
     step, rec = float(p["step"]), float(p["recentre"])
@@ -163,6 +295,7 @@ def walk(x0, y0, pol, sign, fields, p):
     live = np.ones(n, bool)
     count = np.ones(n, np.int32)
     spill = np.zeros(n, bool)
+    why = np.zeros(n, np.int8)          # which condition ended each half-trace
     total_turn = np.zeros(n, np.float32)
     arc = np.zeros(n, np.float32)
     half_cap = float(p["max_arc"]) * 0.5
@@ -201,7 +334,7 @@ def walk(x0, y0, pol, sign, fields, p):
         anx, any_ = -uy, ux
         sx = nxs[:, None] + anx[:, None] * offs[None, :]
         sy = nys[:, None] + any_[:, None] * offs[None, :]
-        prof = map_coordinates(Ls, [sy.ravel(), sx.ravel()], order=1,
+        prof = map_coordinates(Fs, [sy.ravel(), sx.ravel()], order=1,
                                mode="nearest").reshape(len(idx), -1)
         prof = prof * pol[idx][:, None]
         pmax = prof.max(1, keepdims=True)
@@ -216,7 +349,7 @@ def walk(x0, y0, pol, sign, fields, p):
         # arc is the path actually walked, not the step count: re-centring
         # moves the trace sideways as well as forward, so a 6 px step can lay
         # down 19 px of polyline. Counting steps let marks reach 1300 px against
-        # a 1024 px cap -- and the cap is what has to clear M0b's tile overlap,
+        # a 1024 px cap -- and the cap is what has to clear the tile overlap,
         # or long strokes acquire a seam at every tile boundary.
         arc[idx] += np.hypot(nxs - cx, nys - cy)
 
@@ -227,9 +360,17 @@ def walk(x0, y0, pol, sign, fields, p):
         de = np.sqrt((dlab ** 2).sum(-1))
         inside = (nxs > 1) & (nxs < w - 2) & (nys > 1) & (nys < h - 2)
 
-        keep = inside & (turn < p["max_turn"]) & (c > p["coherence_min"]) \
-            & (de < p["de_max"]) & (total_turn[idx] < p["max_total_turn"]) \
-            & (arc[idx] < half_cap)
+        tests = [inside, turn < p["max_turn"], c > p["coherence_min"],
+                 de < p["de_max"], total_turn[idx] < p["max_total_turn"],
+                 arc[idx] < half_cap]
+        keep = tests[0] & tests[1] & tests[2] & tests[3] & tests[4] & tests[5]
+        # first failing condition, for the tuning loop: a tracer that stops for
+        # the wrong reason is the difference between a mark and a fragment, and
+        # two of M0a's nine bugs were exactly that
+        stop = np.nonzero(~keep)[0]
+        if stop.size:
+            first = np.argmax(~np.stack([t[stop] for t in tests], 1), axis=1)
+            why[idx[stop]] = np.where(why[idx[stop]] == 0, first + 1, why[idx[stop]])
 
         x[idx], y[idx] = nxs, nys
         dx[idx], dy[idx] = ux, uy
@@ -239,12 +380,20 @@ def walk(x0, y0, pol, sign, fields, p):
         spill[idx[~inside]] = True
         live[idx[~keep]] = False
 
-    return px, py, count, spill
+    why[live] = 7                                    # ran out of steps
+    return px, py, count, spill, why
 
 
-def trace_all(xs, ys, pol, fields, p):
+WHY = ["", "tile edge", "curvature", "coherence", "colour break",
+       "total turn", "arc cap", "step budget"]
+
+
+def trace_all(xs, ys, pol, fields, p, tally=None):
     fwd = walk(xs, ys, pol, +1.0, fields, p)
     bwd = walk(xs, ys, pol, -1.0, fields, p)
+    if tally is not None:
+        for w in np.concatenate([fwd[4], bwd[4]]):
+            tally[WHY[int(w)]] = tally.get(WHY[int(w)], 0) + 1
     lines, spill = [], []
     for i in range(len(xs)):
         nb, nf = bwd[2][i], fwd[2][i]
@@ -253,7 +402,7 @@ def trace_all(xs, ys, pol, fields, p):
         lines.append(np.stack([np.concatenate([bx, fx]),
                                np.concatenate([by, fy])], 1))
         spill.append(bool(bwd[3][i] or fwd[3][i]))
-    return lines, np.array(spill)
+    return lines, np.array(spill, bool)
 
 
 # ------------------------------------------------------------- dedup/merge --
@@ -262,21 +411,33 @@ def arclen(pts):
     return float(np.hypot(*np.diff(pts, axis=0).T).sum()) if len(pts) > 1 else 0.0
 
 
-def dedup(lines, strength, widths, shape, p, eligible):
+def dedup(traces, shape, p, scale=1):
     """One stroke found from two seeds is one stroke. Claim in strength order.
 
-    Only ever considers traces that passed the earlier filters -- an earlier
-    draft walked every index in the array, so traces already rejected for being
-    stubs or for lying in a shadow came back in here, and the merge removed
-    almost nothing.
+    Run once over the whole canvas rather than once per tile, so a stroke found
+    from a seed in one tile's core and again from a seed in its neighbour's is
+    the same case as a stroke found twice inside one tile -- and gets the same
+    answer. A separate cross-tile merge would be a second code path doing the
+    same job, and the second path is the one that would be quietly wrong.
+
+    Angle is stamped as int8 over pi, which is 0.025 rad -- twenty times finer
+    than the tolerance that reads it, and four times smaller than a float32
+    plane, which at canvas scale is the difference between 100 MB and 400.
+
+    The claim band is sampled at about a pixel. It used to be sampled at nine
+    points whatever the stroke's width, which across 100 px of paint leaves
+    12 px gaps -- and a near-parallel duplicate lying in a gap registers no hit
+    at all, so it is kept. With one ridge field that merely under-merged; with
+    three fields finding the same stroke three times it meant the tile came out
+    with three of everything.
     """
     h, w = shape
     claimed = np.zeros((h, w), bool)
-    angle = np.zeros((h, w), np.float32)
+    angle = np.zeros((h, w), np.int8)
     keep = []
-    elig = np.array(sorted(eligible, key=lambda i: -strength[i]), np.int64)
-    for i in elig:
-        pts = lines[i]
+    order = sorted(range(len(traces)), key=lambda i: -traces[i]["strength"])
+    for i in order:
+        pts = traces[i]["pts"] / scale
         if len(pts) < 3:
             continue
         d = np.gradient(pts, axis=0)
@@ -285,19 +446,22 @@ def dedup(lines, strength, widths, shape, p, eligible):
         yi = np.clip(pts[:, 1].astype(np.int32), 0, h - 1)
         hit = claimed[yi, xi]
         if hit.any():
-            da = np.abs(np.angle(np.exp(1j * (angle[yi, xi] - th))))
+            prev = angle[yi, xi].astype(np.float32) * (np.pi / 128.0)
+            da = np.abs(np.angle(np.exp(1j * (prev - th))))
             da = np.minimum(da, np.pi - da)
             frac = float((hit & (da < p["dedup_angle"])).mean())
             if frac > p["dedup_frac"]:
                 continue
         keep.append(i)
-        # stamp a band narrower than the stroke, so crossings stay legal
-        band = np.linspace(-1, 1, 9) * (p.get("dedup_band", 0.45) * widths[i])
+        # stamp a band narrower than the stroke, so crossings stay legal,
+        # and sample it at about a pixel so nothing can lie in a gap
+        half = p["dedup_band"] * traces[i]["width"] / scale
+        band = np.linspace(-1, 1, max(3, 2 * int(half) + 1)) * half
         ax, ay = -np.sin(th), np.cos(th)
         sx = np.clip((pts[:, 0:1] + ax[:, None] * band).astype(np.int32), 0, w - 1)
         sy = np.clip((pts[:, 1:2] + ay[:, None] * band).astype(np.int32), 0, h - 1)
         claimed[sy, sx] = True
-        angle[sy, sx] = th[:, None]
+        angle[sy, sx] = np.rint(th[:, None] * (128.0 / np.pi)).astype(np.int8)
     return keep
 
 
@@ -328,7 +492,7 @@ def fit_chain(pts, tol, depth, min_arc):
             + fit_chain(pts[k:], tol, depth - 1, min_arc))
 
 
-def stroke_width(pts, Ls, pol, p):
+def stroke_width(pts, Fs, pol, p):
     """Perpendicular extent of the ridge: out to the gap on either side.
 
     Half-prominence measured against the nearest local minimum collapses to
@@ -349,7 +513,7 @@ def stroke_width(pts, Ls, pol, p):
     offs = np.linspace(-lim, lim, 2 * ns + 1, dtype=np.float32)
     sx = q[:, 0:1] + ax[:, None] * offs[None, :]
     sy = q[:, 1:2] + ay[:, None] * offs[None, :]
-    prof = map_coordinates(Ls, [sy.ravel(), sx.ravel()], order=1,
+    prof = map_coordinates(Fs, [sy.ravel(), sx.ravel()], order=1,
                            mode="nearest").reshape(len(q), -1) * pol
     mid = ns
     drop = float(p["width_drop_frac"])
@@ -382,7 +546,8 @@ def trough_is_paint(pts, lab, width, p):
     luminance ridge filter exactly like one of his dark contours. The difference
     is chroma: the contour on this canvas is blue laid on yellow, the gap is the
     same yellow with less light on it. Without this test the wheat fills with
-    dark ribbons lying in its own shadows.
+    dark ribbons lying in its own shadows. Only luminance troughs need it -- a
+    chroma trough is a colour difference by construction.
     """
     m = max(1, len(pts) // 12)
     q = pts[::m]
@@ -408,12 +573,12 @@ def stroke_colour_height(pts, srgb, hfield, width, p):
     band = np.linspace(-1, 1, 7, dtype=np.float32) * (width * p["colour_band"])
     sx = (q[:, 0:1] + ax[:, None] * band).ravel()
     sy = (q[:, 1:2] + ay[:, None] * band).ravel()
-    cols = samp3(srgb, sx, sy)
-    return (np.median(cols, axis=0),
-            float(np.median(map_coordinates(hfield, [sy, sx], order=1, mode="nearest"))))
+    cols = samp3(srgb, sx, sy)                       # straight off the memmap
+    hs = samp3(hfield[..., None], sx / HDS, sy / HDS)[:, 0].astype(np.float32)
+    return np.median(cols, axis=0), float(np.median(hs))
 
 
-# ------------------------------------------------------------------- main --
+# ------------------------------------------------------------ the working ---
 
 def params_hash(p):
     clean = {k: v for k, v in sorted(p.items()) if not k.startswith("_")}
@@ -428,96 +593,478 @@ def file_sha256(path):
     return h.hexdigest()
 
 
-def working_image(p, src):
-    """Downsample to the working resolution once and cache it (BUILD.md)."""
-    cache = os.path.join(ROOT, "ref", "work", p["slug"] + ".npy")
-    if os.path.exists(cache):
-        return np.load(cache, mmap_mode="r")
+def working_image(p, src, verbose=True):
+    """Decode, honour the profile, find the painting, downsample once, cache it.
+
+    Everything downstream reads this memory-mapped, so a 98 MP canvas costs the
+    pipeline a file handle rather than 1.2 GB.
+    """
     from PIL import Image
-    Image.MAX_IMAGE_PIXELS = None
-    im = Image.open(src).convert("RGB")
+    import canvas_edge
+    cache = os.path.join(ROOT, "ref", "work", p["slug"] + ".npy")
+    meta_path = os.path.splitext(cache)[0] + ".json"
+    want = dict(px_per_cm=p["px_per_cm"], canvas_cm=p["canvas_cm"], src=p["source"])
+    if os.path.exists(cache) and os.path.exists(meta_path):
+        meta = json.load(open(meta_path))
+        if all(meta.get(k) == v for k, v in want.items()):
+            return np.load(cache, mmap_mode="r"), meta
+
+    im, profile, cflags = decode(src)
+    (cx, cy, cw_s, ch_s), (W, H) = canvas_edge.rect(src)
+    if (cx, cy, cw_s, ch_s) != (0, 0, W, H):
+        if verbose:
+            print(f"  canvas edge: cropping {W}x{H} to {cw_s}x{ch_s} at ({cx},{cy})")
+        im = im.crop((cx, cy, cx + cw_s, cy + ch_s))
     w = int(round(p["canvas_cm"][0] * p["px_per_cm"]))
     h = int(round(im.size[1] * w / im.size[0]))
+    if verbose:
+        print(f"  working image {w}x{h} at {p['px_per_cm']:.0f} px/cm"
+              f"   profile: {profile or 'NONE EMBEDDED, assuming sRGB'}")
     a = np.asarray(im.resize((w, h), Image.LANCZOS))
     os.makedirs(os.path.dirname(cache), exist_ok=True)
     np.save(cache, a)
-    return np.load(cache, mmap_mode="r")
+    meta = dict(want, profile=profile, colour_flags=cflags,
+                crop_rect=[cx, cy, cw_s, ch_s], scan_px=[W, H])
+    json.dump(meta, open(meta_path, "w"))
+    return np.load(cache, mmap_mode="r"), meta
+
+
+def low_frequency(work, p):
+    """The canvas-wide wide blur under the height estimate, computed once.
+
+    sigma_height is 140 px. A tile computing that for itself invents the outer
+    420 px of its own answer from whatever the filter's boundary mode fabricates,
+    and two tiles fabricate differently -- which puts a step in the height field
+    along every tile edge. So it is computed here, on the whole canvas at 1/8,
+    where 140 px is 17 px and the whole thing costs a second.
+    """
+    small = np.asarray(work[::DS, ::DS])
+    L = lightness(srgb_to_linear(small))
+    return gaussian_filter(L, float(p["sigma_height"]) / DS).astype(np.float32)
+
+
+HDS = 2                     # the height field is kept at half the working scale
+
+
+def height_field(work, hbase, p, band=2048):
+    """The impasto estimate for the whole canvas, computed once, in bands.
+
+    Two reasons it is not per tile. Holding twenty tiles' images so that colour
+    and height can be sampled after the merge is 3.6 GB against a 6 GB ceiling.
+    And a field assembled from tiles is a field with tile edges in it: this one
+    is banded with a 3-sigma overlap and written only in each band's interior,
+    so the result is identical to computing it in one piece.
+
+    Half scale and float16, because this is DESIGN 4.1 step 6's
+    luminance-above-a-neighbourhood estimate, which BUILD.md M1 says is
+    measuring colour rather than relief. Storing an estimate that is known to be
+    wrong at full precision would be a strange thing to spend 400 MB on.
+    """
+    H, W = work.shape[:2]
+    sr = float(p["sigma_ridge"])
+    pad = int(3 * sr) + 2
+    oh, ow = (H + HDS - 1) // HDS, (W + HDS - 1) // HDS
+    out = np.zeros((oh, ow), np.float16)
+    for oy in range(0, oh, band):
+        oy1 = min(oh, oy + band)
+        y0, y1 = max(0, oy * HDS - pad), min(H, oy1 * HDS + pad)
+        L = lightness(srgb_to_linear(np.asarray(work[y0:y1])))
+        Fs = gaussian_filter(L, sr)
+        rows = np.arange(oy, oy1) * HDS - y0
+        yy, xx = np.meshgrid(rows.astype(np.float32) + y0,
+                             np.arange(0, ow, dtype=np.float32) * HDS, indexing="ij")
+        wide = map_coordinates(hbase, [(yy / DS).ravel(), (xx / DS).ravel()],
+                               order=1, mode="nearest").reshape(len(rows), ow)
+        out[oy:oy1] = (Fs[rows][:, ::HDS][:, :ow] - wide).astype(np.float16)
+        del L, Fs, wide
+    return out
+
+
+def calibrate(work, p, seed=18531890, n=14, crop=768, pad=96):
+    """One threshold per channel for the whole canvas, from sampled crops.
+
+    The alternative is a percentile per tile, and a percentile per tile is a
+    seam: it asks each tile what counts as a stroke *here*, so the sky's answer
+    and the wheat's answer differ and they differ exactly along the line where
+    the two tiles meet. Sampling instead means every tile is measured against
+    the same canvas.
+    """
+    rng = np.random.default_rng(seed)
+    H, W = work.shape[:2]
+    xs = rng.integers(0, max(1, W - crop), n)
+    ys = rng.integers(0, max(1, H - crop), n)
+    pooled = [[] for _ in range(3)]
+    energies = []
+    for x, y in zip(xs, ys):
+        rgb = np.ascontiguousarray(work[y:y + crop, x:x + crop])
+        chans, _ = channels(rgb, p)
+        # no floor here: this pass is what decides where the floor goes
+        nx, ny, _, energy = structure_tensor(chans, dict(p, tensor_energy_frac=0.0), 1.0)
+        energies.append(energy[pad:-pad, pad:-pad].ravel())
+        for c in range(3):
+            _, lnn = ridge_field(chans[c], p["sigma_ridge"], nx, ny)
+            pooled[c].append(np.abs(lnn[pad:-pad, pad:-pad]).ravel())
+    energy_ref = float(np.median(np.concatenate(energies)))
+    thr = [float(np.percentile(np.concatenate(v), p["seed_strength_pct"]))
+           for v in pooled]
+    return dict(energy_ref=energy_ref, seed_thr=thr)
+
+
+def tile_grid(W, H, size, step):
+    """Tile origins, and the cores that partition the canvas between them.
+
+    A core is a tile's exclusive right to seed. The boundary between two cores
+    is the midpoint of the overlap they share, which puts every core at least
+    half the overlap in from its own tile's edges -- and the overlap is the hard
+    arc cap, so a trace seeded anywhere in a core can walk its full length in
+    both directions without ever reaching the edge of the tile that owns it.
+    Tile truncation is then not something the merge repairs; it cannot happen.
+    """
+    def axis(n):
+        if n <= size:
+            return [0], [0, n]
+        o = list(range(0, n - size, step)) + [n - size]
+        b = [0] + [(o[i - 1] + size + o[i]) // 2 for i in range(1, len(o))] + [n]
+        return o, b
+    ox, bx = axis(W)
+    oy, by = axis(H)
+    out = []
+    for j, y in enumerate(oy):
+        for i, x in enumerate(ox):
+            out.append(dict(origin=(x, y), size=(min(size, W - x), min(size, H - y)),
+                            core=(bx[i], by[j], bx[i + 1], by[j + 1])))
+    return out
+
+
+# ------------------------------------------------------------- one tile ----
+
+def extract_tile(work, cal, p, tile, tally=None):
+    """Every trace whose seed belongs to this tile, in canvas coordinates.
+
+    Nothing about the tile is kept. Colour is read from the memory-mapped canvas
+    at fitting time and height from the canvas-wide field, so the tile's own
+    planes -- 178 MB of them -- go out of scope the moment this returns.
+    """
+    x0, y0 = tile["origin"]
+    tw, th = tile["size"]
+    rgb8 = np.ascontiguousarray(work[y0:y0 + th, x0:x0 + tw])
+    chans, labs = channels(rgb8, p)
+    nx, ny, coh, _ = structure_tensor(chans, p, cal["energy_ref"])
+    tx, ty = -ny, nx                                   # along the stroke
+    core = (max(0, tile["core"][0] - x0), max(0, tile["core"][1] - y0),
+            min(tw, tile["core"][2] - x0), min(th, tile["core"][3] - y0))
+    out, veto = [], None
+    prio = [1.0, float(p["chroma_priority"]), float(p["chroma_priority"])]
+    for c in range(3):
+        Fs, lnn = ridge_field(chans[c], p["sigma_ridge"], nx, ny)
+        if c == 0:
+            r = int(p["chroma_veto_px"])
+            veto = maximum_filter(np.abs(lnn) >= cal["seed_thr"][0],
+                                  size=2 * r + 1) if r > 0 else None
+        sx, sy, pol, strength = find_seeds(Fs, lnn, coh, nx, ny, p,
+                                           cal["seed_thr"][c], core,
+                                           None if c == 0 else veto)
+        if not len(sx):
+            continue
+        lines, spill = trace_all(sx, sy, pol, (Fs, coh, tx, ty, labs), p, tally)
+        for i, pts in enumerate(lines):
+            if arclen(pts) < p["min_arc"]:
+                continue
+            wid = stroke_width(pts, Fs, pol[i], p)
+            if c == 0 and pol[i] < 0 and not trough_is_paint(pts, labs, wid, p):
+                continue                      # a shadow between strokes, not paint
+            # strength in units of this channel's own bar, so the three are
+            # comparable and the priority below actually decides the order
+            out.append(dict(pts=pts + np.array([x0, y0], np.float32),
+                            strength=float(strength[i]) / max(cal["seed_thr"][c], EPS)
+                            * prio[c],
+                            width=wid, pol=float(pol[i]), chan=c,
+                            spill=bool(spill[i])))
+    return out
+
+
+# ------------------------------------------------------------- underlayer --
+
+def raster(recs, cw, ch, scale, colour=True, base=None):
+    """Flat orthographic rasterisation of the fitted strokes, at 1/scale."""
+    W, H = int(np.ceil(cw / scale)), int(np.ceil(ch / scale))
+    img = np.zeros((H, W, 3), np.float32) if colour else None
+    if colour and base is not None:
+        yy0, xx0 = np.mgrid[0:H, 0:W]
+        img[:] = base[np.clip(yy0 * base.shape[0] // H, 0, base.shape[0] - 1),
+                      np.clip(xx0 * base.shape[1] // W, 0, base.shape[1] - 1)]
+    cov = np.zeros((H, W), np.float32)
+    short = min(cw, ch)
+    seq = np.argsort([r["o"] for r in recs])           # painter's algorithm
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    for i in seq:
+        r = recs[i]
+        p0, p1, p2 = (np.array(q, np.float32) * [cw, ch] / scale for q in r["p"])
+        wpx = max(0.8, r["w"] * short / scale * 0.5)
+        t = np.linspace(0, 1, 40, dtype=np.float32)[:, None]
+        c = (1 - t) ** 2 * p0 + 2 * t * (1 - t) * p1 + t ** 2 * p2
+        xa = max(0, int(c[:, 0].min() - wpx) - 1)
+        xb = min(W, int(c[:, 0].max() + wpx) + 2)
+        ya = max(0, int(c[:, 1].min() - wpx) - 1)
+        yb = min(H, int(c[:, 1].max() + wpx) + 2)
+        if xb <= xa or yb <= ya:
+            continue
+        d = np.sqrt((xx[ya:yb, xa:xb, None] - c[None, None, :, 0]) ** 2 +
+                    (yy[ya:yb, xa:xb, None] - c[None, None, :, 1]) ** 2).min(-1)
+        a = np.clip((wpx - d) / 1.2, 0, 1)          # antialias, not feather
+        cov[ya:yb, xa:xb] = np.maximum(cov[ya:yb, xa:xb], a)
+        if colour:
+            col = np.array(r["rgb"], np.float32) / 255.0
+            sub = img[ya:yb, xa:xb]
+            img[ya:yb, xa:xb] = sub * (1 - a[..., None]) + col * a[..., None]
+    return img, cov
+
+
+def underlayer(work, cov, p):
+    """What is visible of the ground between the strokes, extended beneath them.
+
+    DESIGN 4.1 step 7 asks for the residual after the strokes are subtracted,
+    blurred. But the residual in a *covered* passage is the fitting error, and
+    blurring that back in reintroduces exactly the stroke-scale structure the
+    strokes are supposed to be carrying -- which is the failure the band-pass
+    criterion exists to catch, arriving through the back door. So the evidence
+    here is only the pixels no stroke covers: a normalised convolution weighted
+    by (1 - coverage), which is literally the ground as seen between the marks,
+    smoothly continued underneath them. Where the tracer found nothing at all --
+    a scumbled passage, a thin wash -- there is no coverage, so those places
+    speak for themselves and are reproduced.
+    """
+    ds = int(p["under_ds"])
+    small = np.asarray(work[::ds, ::ds]).astype(np.float32) / 255.0
+    h, w = small.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    sy = yy * (cov.shape[0] - 1) / max(1, h - 1)
+    sx = xx * (cov.shape[1] - 1) / max(1, w - 1)
+    a = map_coordinates(cov, [sy.ravel(), sx.ravel()], order=1,
+                        mode="nearest").reshape(h, w)
+    wgt = np.clip(1.0 - a, 0.0, 1.0).astype(np.float32)
+    s = float(p["sigma_under"]) / ds
+    num = np.stack([gaussian_filter(small[..., c] * wgt, s) for c in range(3)], -1)
+    den = gaussian_filter(wgt, s)[..., None]
+    # a passage with no bare pixel anywhere near it has no local evidence at
+    # all; widen until it does rather than leaving a hole
+    for extra in (2.0, 6.0, 20.0):
+        thin = den < 1e-3
+        if not thin.any():
+            break
+        n2 = np.stack([gaussian_filter(small[..., c] * wgt, s * extra)
+                       for c in range(3)], -1)
+        d2 = gaussian_filter(wgt, s * extra)[..., None]
+        num = np.where(thin, n2, num)
+        den = np.where(thin, d2, den)
+    return np.clip(num / np.maximum(den, 1e-6), 0, 1)
+
+
+def bandpass_ratio(work, recs, cw, ch, med_w, region=None, under=None, scale=4):
+    """Do the strokes carry the picture, or does the underlayer?
+
+    BUILD.md's risk table: if the residual carries it, we have built a
+    projection show with sprinkles. The number is the energy at stroke scale in
+    the reconstruction over the energy at stroke scale in the scan -- a
+    difference of Gaussians either side of the median stroke width, so it is
+    blind to the broad tone the underlayer is allowed to have and to the weave
+    and grain below the paint.
+
+    The reconstruction is composited over the underlayer, not over black. A
+    black ground turns every uncovered pixel into the highest-contrast edge on
+    the canvas and the ratio came out at 4.07 -- measuring the holes, not the
+    paint.
+    """
+    img, _ = raster(recs, cw, ch, scale, base=under)
+    src = np.asarray(work[::scale, ::scale]).astype(np.float32) / 255.0
+    h = min(img.shape[0], src.shape[0])
+    w = min(img.shape[1], src.shape[1])
+    img, src = img[:h, :w], src[:h, :w]
+    if region is not None:                 # tuning one tile: judge that tile
+        x, y, tw, th = (v // scale for v in region)
+        img = img[y:y + th, x:x + tw]
+        src = src[y:y + th, x:x + tw]
+    s1, s2 = med_w / scale * 0.25, med_w / scale * 1.5
+
+    def energy(a):
+        g = a.mean(-1)
+        bp = gaussian_filter(g, s1) - gaussian_filter(g, s2)
+        return float((bp ** 2).mean())
+    return energy(img) / max(energy(src), EPS)
+
+
+# -------------------------------------------------------------- the seams --
+
+def seam_report(recs, cw, ch, bounds, med_w, trials=200, seed=18531890):
+    """Two direct tests for the part of the pipeline most likely to be wrong.
+
+    Broken chains: a trace cut by a boundary ends *at* it. So count the stroke
+    ends that fall near a core boundary -- and compare against the same count
+    for many sets of arbitrary interior lines, because strokes end everywhere
+    and a single number has no meaning without knowing what a number looks like
+    when nothing is wrong. The control is a distribution, not one draw: with one
+    draw a 12% excess is unreadable, and against 200 draws it is either inside
+    the spread or it is not.
+
+    Duplicates: a stroke found in two tiles and kept twice lies *on* another,
+    following it for its whole length. The first version of this test binned
+    midpoints and asked for near-parallel neighbours, which in a wheatfield is a
+    description of wheat -- it called a third of the tile duplicated and was
+    measuring stroke density. A duplicate has to be a curve that goes where
+    another curve goes: every sample of each within a fraction of a width of the
+    other. They are counted twice, once anywhere and once only near a boundary,
+    since a cross-tile duplicate has to be there.
+    """
+    ends = np.array([[r["p"][0][0] * cw, r["p"][0][1] * ch] for r in recs] +
+                    [[r["p"][2][0] * cw, r["p"][2][1] * ch] for r in recs])
+    near = med_w * 0.5
+    bx, by = bounds
+    inner_x = np.array([v for v in bx if 0 < v < cw], float)
+    inner_y = np.array([v for v in by if 0 < v < ch], float)
+
+    def count(xs, ys):
+        d = np.full(len(ends), np.inf)
+        for v in xs:
+            d = np.minimum(d, np.abs(ends[:, 0] - v))
+        for v in ys:
+            d = np.minimum(d, np.abs(ends[:, 1] - v))
+        return int((d < near).sum()), d < near
+
+    n_seam, seam_mask = count(inner_x, inner_y)
+    rng = np.random.default_rng(seed)
+    ctrl = np.array([count(rng.integers(int(0.06 * cw), int(0.94 * cw), len(inner_x)),
+                           rng.integers(int(0.06 * ch), int(0.94 * ch), len(inner_y)))[0]
+                     for _ in range(trials)], float)
+    mu, sd = float(ctrl.mean()), float(ctrl.std())
+    z = (n_seam - mu) / sd if sd > 1e-9 else 0.0
+
+    t = np.linspace(0, 1, 9, dtype=np.float32)[:, None]
+    curves = np.array([((1 - t) ** 2 * np.array(r["p"][0], np.float32) * [cw, ch]
+                        + 2 * t * (1 - t) * np.array(r["p"][1], np.float32) * [cw, ch]
+                        + t ** 2 * np.array(r["p"][2], np.float32) * [cw, ch])
+                       for r in recs], np.float32)
+    cell = max(1.0, med_w)
+    grid = {}
+    for i, c in enumerate(curves):
+        for k in set(map(tuple, np.rint(c / cell).astype(np.int64))):
+            grid.setdefault(k, []).append(i)
+    tol = 0.3 * med_w
+    dup = set()
+    for cells in grid.values():
+        for ai in range(len(cells)):
+            for bi in range(ai + 1, len(cells)):
+                i, j = cells[ai], cells[bi]
+                if i in dup or j in dup:
+                    continue
+                d = np.hypot(curves[i][:, None, 0] - curves[j][None, :, 0],
+                             curves[i][:, None, 1] - curves[j][None, :, 1])
+                if max(d.min(1).max(), d.min(0).max()) < tol:
+                    dup.add(j)
+    # both numbers must ask the same question. An earlier version counted a
+    # duplicate as "near a boundary" if either of its ends was, and took the
+    # expectation from start points alone -- which doubles the expectation's
+    # denominator and manufactures a 1.7x excess out of arithmetic.
+    n = len(recs)
+    either = seam_mask[:n] | seam_mask[n:]
+    at_seam = sum(1 for j in dup if either[j])
+    frac_seam = float(either.mean())
+    return dict(ends_near_boundary=n_seam, control_mean=mu, control_sd=sd, z=z,
+                boundaries=len(inner_x) + len(inner_y), duplicates=len(dup),
+                dup_at_seam=at_seam, dup_expected_at_seam=len(dup) * frac_seam)
+
+
+# ------------------------------------------------------------------- main --
+
+def check_params(p):
+    """A number that tunes nothing looks exactly like a number that tunes."""
+    known, have = set(PARAMS), {k for k in p if not k.startswith("_")}
+    extra, missing = have - known, known - have
+    if extra or missing:
+        msg = []
+        if missing:
+            msg.append("missing: " + ", ".join(sorted(missing)))
+        if extra:
+            msg.append("unknown (tuning nothing): " + ", ".join(sorted(extra)))
+        raise SystemExit("params: " + "; ".join(msg))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("slug")
-    ap.add_argument("--tile", default=None)
-    ap.add_argument("--out", default="strokes/m0a")
+    ap.add_argument("--tile", default=None, help="one named region, for tuning")
+    ap.add_argument("--out", default="strokes/m0b")
+    ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
     t_start = time.time()
     p = json.load(open(os.path.join(ROOT, "params", args.slug + ".json")))
-    tile_name = args.tile or p["tile"]
-    x0, y0, tw, th = p["tiles"][tile_name]
+    check_params(p)
     src = os.path.join(ROOT, p["source"])
+    work, meta = working_image(p, src)
+    ch, cw = work.shape[:2]
 
-    full = working_image(p, src)
-    cw, ch = full.shape[1], full.shape[0]
-    rgb8 = np.ascontiguousarray(full[y0:y0 + th, x0:x0 + tw])
-    print(f"tile {tile_name} {tw}x{th} at ({x0},{y0}) of {cw}x{ch}"
-          f"  [{x0/p['px_per_cm']:.1f}-{(x0+tw)/p['px_per_cm']:.1f} cm, "
-          f"{y0/p['px_per_cm']:.1f}-{(y0+th)/p['px_per_cm']:.1f} cm]", flush=True)
-
-    lin = srgb_to_linear(rgb8)
-    L = lightness(lin)
-    lab = linear_to_lab(gaussian_filter(lin, (p["sigma_ridge"], p["sigma_ridge"], 0)))
-
-    t = time.time()
-    nx, ny, coh = structure_tensor(L, p["sigma_grad"], p["sigma_tensor"])
-    tx, ty = -ny, nx                                   # along the stroke
-    Ls, lnn = ridge_field(L, p["sigma_ridge"], nx, ny)
-    hfield = Ls - gaussian_filter(L, p["sigma_height"])
-    print(f"  fields {time.time()-t:.1f}s   coherence mean {coh.mean():.3f}", flush=True)
+    if args.tile:
+        x, y, tw, th = p["tiles"][args.tile]
+        tiles = [dict(origin=(x, y), size=(tw, th), core=(x, y, x + tw, y + th))]
+        name, bounds = args.tile, ([x, x + tw], [y, y + th])
+    else:
+        tiles = tile_grid(cw, ch, int(p["tile_px"]), int(p["tile_step"]))
+        name = "canvas"
+        bounds = (sorted({t["core"][0] for t in tiles} | {cw}),
+                  sorted({t["core"][1] for t in tiles} | {ch}))
+    print(f"{args.slug}: {cw}x{ch} at {p['px_per_cm']:.0f} px/cm, "
+          f"{len(tiles)} tile(s)", flush=True)
 
     t = time.time()
-    sx, sy, pol, strength = find_seeds(Ls, lnn, coh, nx, ny, p)
-    print(f"  {len(sx)} seeds {time.time()-t:.1f}s", flush=True)
+    hbase = low_frequency(work, p)
+    cal = calibrate(work, p)
+    hfield = height_field(work, hbase, p)
+    print(f"  calibrated {time.time()-t:.0f}s   energy ref {cal['energy_ref']:.4g}"
+          f"   seed thresholds {['%.3g' % v for v in cal['seed_thr']]}", flush=True)
+
+    traces, tally = [], {}
+    t = time.time()
+    for k, tile in enumerate(tiles):
+        got = extract_tile(work, cal, p, tile, tally)
+        traces += got
+        if not args.quiet:
+            print(f"  [{k+1}/{len(tiles)}] {tile['origin']} -> {len(got)} traces"
+                  f"   ({time.time()-t:.0f}s)", flush=True)
+    tot = max(1, sum(tally.values()))
+    print(f"  {len(traces)} traces from {len(tiles)} tile(s) in "
+          f"{time.time()-t:.0f}s", flush=True)
+    print("  half-traces ended on: " + "  ".join(
+        f"{k} {v*100/tot:.0f}%" for k, v in
+        sorted(tally.items(), key=lambda kv: -kv[1])), flush=True)
 
     t = time.time()
-    lines, spill = trace_all(sx, sy, pol, (Ls, coh, tx, ty, lab), p)
-    print(f"  traced {time.time()-t:.1f}s", flush=True)
-
-    t = time.time()
-    keep0 = [i for i in range(len(lines)) if arclen(lines[i]) >= p["min_arc"]]
-    widths = np.zeros(len(lines), np.float32)
-    for i in keep0:
-        widths[i] = stroke_width(lines[i], Ls, pol[i], p)
-    shadow = [i for i in keep0 if pol[i] < 0
-              and not trough_is_paint(lines[i], lab, widths[i], p)]
-    keep0 = [i for i in keep0 if i not in set(shadow)]
-    print(f"  {len(shadow)} dark traces dropped as shadow between strokes", flush=True)
-    kept = dedup(lines, strength, widths, L.shape, p, keep0)
-    print(f"  {len(kept)} traces after merge {time.time()-t:.1f}s", flush=True)
+    ds = 2 if cw > 6000 else 1                # the merge raster, at half scale
+    kept = dedup(traces, (ch // ds + 2, cw // ds + 2), p, scale=ds)
+    print(f"  {len(kept)} traces after merge {time.time()-t:.0f}s", flush=True)
 
     t = time.time()
     out = []
     for i in kept:
-        pts, wid = lines[i], float(widths[i])
-        tol = p["fit_tol_frac"] * wid
-        arcs = fit_chain(pts, tol, int(p["fit_max_split"]), p["min_arc"])
+        tr = traces[i]
+        pts, wid = tr["pts"], tr["width"]
+        arcs = fit_chain(pts, p["fit_tol_frac"] * wid, int(p["fit_max_split"]),
+                         p["min_arc"])
         for j, (seg, bez) in enumerate(arcs):
             if arclen(seg) < p["min_arc"] * 0.5:
                 continue
-            col, hgt = stroke_colour_height(seg, rgb8, hfield, wid, p)
-            out.append(dict(
-                bez=bez, colour=col, width=wid, height=hgt,
-                arc=arclen(seg), polarity=float(pol[i]),
-                chain=1 if j < len(arcs) - 1 else 0,
-                spill=1 if spill[i] else 0))
-    print(f"  {len(out)} strokes after fit {time.time()-t:.1f}s", flush=True)
+            col, hgt = stroke_colour_height(seg, work, hfield, wid, p)
+            out.append(dict(bez=bez, colour=col, width=wid, height=hgt,
+                            arc=arclen(seg), pol=tr["pol"], chan=tr["chan"],
+                            mark=i, chain=1 if j < len(arcs) - 1 else 0,
+                            spill=1 if tr["spill"] else 0))
+    print(f"  {len(out)} strokes after fit {time.time()-t:.0f}s", flush=True)
 
-    # heuristic order (M0a): thin and dark before thick and light
+    # heuristic order (M2 owns the solver): thin and dark before thick and light
     wv = np.array([s["width"] for s in out], np.float32)
-    lv = np.array([lightness(srgb_to_linear(s["colour"][None, :]))[0] for s in out], np.float32)
+    lv = np.array([lightness(srgb_to_linear(s["colour"][None, :]))[0] for s in out],
+                  np.float32)
     rank = lambda a: np.argsort(np.argsort(a)) / max(1, len(a) - 1)
-    score = 0.5 * rank(wv) + 0.5 * rank(lv)
-    seq = np.argsort(score)
+    seq = np.argsort(0.5 * rank(wv) + 0.5 * rank(lv))
     ordv = np.zeros(len(out), np.float32)
     ordv[seq] = np.arange(len(out)) / max(1, len(out) - 1)
 
@@ -526,61 +1073,88 @@ def main():
     hn = np.clip((hv - lo) / max(hi - lo, EPS), 0, 1)
 
     med_w = float(np.median(wv)) if len(wv) else 1.0
+    lv85 = float(np.percentile(lv, 85)) if len(lv) else 1.0
     recs = []
     for k, s in enumerate(out):
-        pol_dark = s["polarity"] < 0
-        flags = (1 if (pol_dark and s["width"] < 0.7 * med_w) else 0)          # contour
-        flags |= (2 if (not pol_dark and lv[k] > np.percentile(lv, 85)
-                        and hn[k] > 0.6) else 0)                               # highlight
-        flags |= (4 if s["chain"] else 0)                                      # chain
-        flags |= (8 if s["spill"] else 0)                                      # edge-spill
-        b = s["bez"] + np.array([x0, y0], np.float32)
+        dark = s["pol"] < 0
+        flags = 1 if (s["chan"] == 0 and dark and s["width"] < 0.7 * med_w) else 0
+        flags |= 2 if (s["chan"] == 0 and not dark and lv[k] > lv85
+                       and hn[k] > 0.6) else 0
+        flags |= 4 if s["chain"] else 0
+        flags |= 8 if s["spill"] else 0
+        b = s["bez"]
         recs.append(dict(
             p=[[float(b[i, 0] / cw), float(b[i, 1] / ch)] for i in range(3)],
             rgb=[int(v) for v in s["colour"]],
-            w=float(s["width"] / min(cw, ch)),
-            h=float(hn[k]), o=float(ordv[k]), act=0, flags=int(flags),
-            depth=0.0, arc=float(s["arc"])))
+            w=float(s["width"] / min(cw, ch)), h=float(hn[k]), o=float(ordv[k]),
+            act=0, flags=int(flags), depth=0.0, arc=float(s["arc"]),
+            chan=int(s["chan"])))
 
-    os.makedirs(os.path.join(ROOT, args.out), exist_ok=True)
-    dest = os.path.join(ROOT, args.out, f"{args.slug}-{tile_name}.json")
-    json.dump(dict(
-        slug=args.slug, tile=tile_name, tile_rect=[x0, y0, tw, th],
+    t = time.time()
+    _, cov = raster(recs, cw, ch, DS, colour=False)
+    under = underlayer(work, cov, p)
+    region = list(p["tiles"][args.tile]) if args.tile else None
+    ratio = bandpass_ratio(work, recs, cw, ch, med_w, region, under)
+    seams = seam_report(recs, cw, ch, bounds, med_w)
+    if region:
+        x, y, tw, th = (v // DS for v in region)
+        cov_frac = float((cov[y:y + th, x:x + tw] > 0.5).mean())
+    else:
+        cov_frac = float((cov > 0.5).mean())
+    print(f"  underlayer + metrics {time.time()-t:.0f}s", flush=True)
+
+    outdir = os.path.join(ROOT, args.out)
+    os.makedirs(outdir, exist_ok=True)
+    stem = f"{args.slug}-{name}"
+    from PIL import Image
+    Image.fromarray((under * 255).astype(np.uint8)).save(
+        os.path.join(outdir, stem + "-under.png"))
+
+    doc = dict(
+        slug=args.slug, tile=name,
+        tile_rect=list(p["tiles"][args.tile]) if args.tile else [0, 0, 0, 0],
         canvas_px=[cw, ch], canvas_cm=p["canvas_cm"], px_per_cm=p["px_per_cm"],
         source=p["source"], source_sha256=file_sha256(src),
         params_sha256=params_hash(p), height_method=0,
         height_mm=p.get("height_mm", 2.4),
-        strokes=recs), open(dest, "w"))
+        profile=meta.get("profile", ""), colour_flags=meta.get("colour_flags", 0),
+        crop_rect=meta.get("crop_rect", [0, 0, 0, 0]),
+        under_ds=int(p["under_ds"]), bandpass=float(ratio), strokes=recs)
+    dest = os.path.join(outdir, stem + ".json")
+    json.dump(doc, open(dest, "w"))
 
     arcs = np.array([r["arc"] for r in recs])
-    cov = coverage(recs, cw, ch, x0, y0, tw, th)
-    el = time.time() - t_start
-    print(f"\n  strokes            {len(recs)}            (M0a target 300-1500)")
-    print(f"  mean arc length    {arcs.mean():.0f} px   "
-          f"= {arcs.mean()/p['px_per_cm']*10:.1f} mm   (target 250-700 px)")
-    print(f"  median arc         {np.median(arcs):.0f} px")
-    print(f"  mean width         {med_w:.0f} px   = {med_w/p['px_per_cm']*10:.1f} mm")
-    print(f"  coverage           {cov*100:.1f}%          (target >= 75%)")
-    print(f"  wall time          {el:.0f} s          (target <= 120 s)")
+    marks = {}
+    for s_ in out:
+        marks[s_["mark"]] = marks.get(s_["mark"], 0.0) + s_["arc"]
+    mk = np.array(list(marks.values())) if marks else np.array([0.0])
+    per_chan = [int(sum(1 for r in recs if r["chan"] == c)) for c in range(3)]
+    print(f"\n  strokes            {len(recs)}"
+          f"   (L {per_chan[0]}  a* {per_chan[1]}  b* {per_chan[2]})")
+    print(f"  mean mark          {mk.mean():.0f} px   "
+          f"= {mk.mean()/p['px_per_cm']*10:.1f} mm   ({len(mk)} marks)")
+    print(f"  mean fitted arc    {arcs.mean():.0f} px   "
+          f"= {arcs.mean()/p['px_per_cm']*10:.1f} mm   "
+          f"({len(recs)/max(1,len(mk)):.2f} arcs a mark)")
+    print(f"  longest mark       {mk.max():.0f} px   (hard cap {p['max_arc']:.0f})")
+    print(f"  median width       {med_w:.0f} px   = {med_w/p['px_per_cm']*10:.1f} mm")
+    print(f"  coverage           {cov_frac*100:.1f}%")
+    print(f"  band-pass ratio    {ratio:.2f}          (target >= 0.60)")
+    if not args.tile:
+        print(f"  ends near boundary {seams['ends_near_boundary']} against "
+              f"{seams['control_mean']:.0f} +/- {seams['control_sd']:.0f} at "
+              f"{seams['boundaries']} arbitrary lines  (z {seams['z']:+.1f})")
+        print(f"  duplicates         {seams['duplicates']}"
+              f"   {seams['dup_at_seam']} of them near a boundary, "
+              f"{seams['dup_expected_at_seam']:.0f} expected if boundaries "
+              f"were not special")
+    else:
+        print(f"  duplicates         {seams['duplicates']}")
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    rss = rss / (1 << 30) if sys.platform == "darwin" else rss / (1 << 20)
+    print(f"  peak RSS           {rss:.1f} GB       (ceiling 6)")
+    print(f"  wall time          {time.time()-t_start:.0f} s")
     print(f"  -> {os.path.relpath(dest, ROOT)}")
-
-
-def coverage(recs, cw, ch, x0, y0, tw, th):
-    """Fraction of the tile inside some stroke's footprint, rasterised solid."""
-    cov = np.zeros((th, tw), bool)
-    for r in recs:
-        p0, p1, p2 = (np.array(q, np.float32) * [cw, ch] - [x0, y0] for q in r["p"])
-        wpx = r["w"] * min(cw, ch)
-        n = max(8, int(r["arc"]))
-        t = np.linspace(0, 1, n, dtype=np.float32)[:, None]
-        pts = (1 - t) ** 2 * p0 + 2 * t * (1 - t) * p1 + t ** 2 * p2
-        d = np.gradient(pts, axis=0)
-        a = np.arctan2(d[:, 1], d[:, 0])
-        off = np.linspace(-0.5, 0.5, max(4, int(wpx)), dtype=np.float32) * wpx
-        xs = np.clip((pts[:, 0:1] - np.sin(a)[:, None] * off).astype(np.int32), 0, tw - 1)
-        ys = np.clip((pts[:, 1:2] + np.cos(a)[:, None] * off).astype(np.int32), 0, th - 1)
-        cov[ys, xs] = True
-    return float(cov.mean())
 
 
 if __name__ == "__main__":

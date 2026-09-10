@@ -13,3 +13,9 @@ ref/
 strokes/**/*.bin
 strokes/**/*.json
 strokes/**/*.png
+
+# ...except the golden image, which is the pipeline regression: every build
+# reports its RMS against this, and a change that moves it without meaning to
+# is caught in seconds instead of in a milestone.
+!strokes/golden/
+!strokes/golden/*.png

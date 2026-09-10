@@ -118,6 +118,11 @@ as written, because it is an estimate arguing with an estimate and M0b settles i
 first time the record was bound as an attribute buffer. It is recorded in its Progress entry and the design is
 patched. Four is what could be found by reading; the fifth needed a compiler.*
 
+*Two more of the design's steps needed correcting at M0b, and neither was arithmetic: §4.1 step 3's union of the
+ridge maps finds every stroke three times unless chroma is seeded only where luminance is blind, and §4.1 step 7's
+subtracted residual smuggles stroke-scale structure back under the strokes unless the underlayer is built from the
+uncovered pixels alone. Both are recorded in the M0b entry and the design is patched with the reasoning.*
+
 ---
 
 ## The numbers this plan bets on
@@ -556,6 +561,7 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
   rests on ~10,000 strokes per canvas, so **the trigger is M0b's measured count**, not a later milestone. Above ~25,000
   a station passes 100,000 strokes and the far tier comes back into M1 immediately. Otherwise re-open at M4 if one
   station is visible from another and costs more than 2 ms.
+  *M0b measured 18,924 on the Reaper: the trigger fired and did not trip. Still deferred, and re-open at M4 as above.*
 - **Monocular depth estimation.** Hand-authored depth first. Re-open if M5's interiors need more shells than hand
   authoring can carry.
 - **The other four Sunflowers.** One version at M5. The rest are a data file each once the pipeline is frozen.
@@ -727,3 +733,140 @@ a guess, now written down as one in `paintings/CREDITS.md` rather than made sile
 layer, the order solver, LOD, and any station. `?flat`, `?still`, `?xray`, `?heights`, `?noStrokes`, `?debug`,
 `?tau`, `?cam` and `window.vg` exist because M0a could not be checked without them; the rest of M0b's harness does
 not.
+
+### M0b — The pipeline and the harness
+
+**Asked.** The machinery the gate proved worth building: `git init`, the harness in full, `tools/make.py` and the
+params discipline, the tiled extractor with its overlap merge over the whole Reaper, chroma ridges, the residual
+underlayer, colour management, the golden image, and station 0.
+
+**Verified.** All seven exit criteria pass, on a clean run of the whole canvas:
+
+| | measured | target |
+|---|---|---|
+| Stroke count, whole canvas | **18,924** | 5 k – 25 k |
+| Band-pass energy at stroke scale, strokes ÷ source | **0.95** | ≥ 0.60 |
+| Flat reconstruction at 1200 px | the painting, unmistakably | recognisably the painting |
+| Flat reconstruction at 1:1 | ribbons with his sweep and curl | recognisably paint |
+| Extraction wall time, whole canvas | **5 min 36 s** | ≤ 20 min |
+| Peak RSS | **2.1 GB** | ≤ 6 GB |
+| Tile seams | see below | invisible; no duplicates in an overlap; no chain broken |
+
+20 tiles of 3072 px stepping 2048, exactly as this plan's arithmetic predicted. 14,985 traces merge to 10,853 marks
+and fit to 18,924 strokes at 1.74 arcs a mark. Mean mark **452 px = 37.6 mm** against correction 4's estimate of
+35 mm; median width **69 px = 5.7 mm** against its 7 mm; longest mark 1024 px, which is the cap, held. Coverage
+91.7%. The blob is 444 KB and the underlayer a 696 × 550 PNG beside it.
+
+**The seams have a number and a control, because a number alone would not mean anything.** Marks end everywhere, so
+"2,089 marks end near a tile boundary" says nothing until you know what that count looks like when nothing is wrong.
+Against 200 sets of arbitrary interior lines: **1,906 against 1,789 ± 150, z = +0.78.** Inside the spread. And
+duplicates near a boundary: **157, against 165 expected** if boundaries were not special — slightly fewer, not more.
+The merge does its job.
+
+**The runtime, measured properly for the first time.** 60 fps at 2× DPR, and the honest part is what that cost:
+
+| | |
+|---|---|
+| GPU time, 2560 × 1440 at 2× DPR | **5.3 ms** of a 16.7 ms budget |
+| CPU submit | 1.1 – 2.4 ms |
+| Draw calls · triangles | **3 · 757 k** |
+
+**M0a guessed the frame was fill and not geometry, and that is confirmed, but not where it expected.** `?noStrokes`
+— everything except the strokes — costs *more* than the full canvas: 6.3 ms against 6.0, because without ribbons in
+front of it every pixel of the substrate runs its full shader. The strokes are nearly free; the cloth they lie on is
+the frame. Skipping the weave where both its fades have already killed it took `?noStrokes` to 4.2 ms.
+
+**Colour agrees end to end, which is what says the packed record is not lying.** Mean RGB over the canvas:
+
+| | R | G | B |
+|---|---|---|---|
+| the scan | 177.4 | 162.0 | 91.8 |
+| `tools/flat.py`, from the blob | 182.1 | 166.8 | 92.9 |
+| the runtime under `?flat` | 180.0 | 164.6 | 91.9 |
+
+RMS between the two reconstructions is **0.047**; each against the scan is 0.083. The two rasterisers agree with each
+other about twice as closely as either agrees with the painting, which is exactly the shape this hook was argued for.
+`?still` twice gives byte-identical PNGs.
+
+**Ten things were wrong. The ones worth writing down:**
+
+1. **Chroma ridges, taken as the union DESIGN §4.1 step 3 asks for, find the same stroke three times.** Measured on
+   the gate tile: **99% of chroma traces ran within one stroke width of a luminance trace**, the three channels had
+   the same mean colour and width and arc as each other, and together they nearly tripled the stroke count to buy
+   2.3 points of coverage. The operative clause in the design is *"invisible to a luminance ridge filter"* — so a
+   chroma seed is now refused within half a stroke width of a luminance ridge. On this canvas that is 61 traces
+   instead of 3,266. On a canvas where blue meets green at the same value it will be most of them, and the mechanism
+   does not change; only the arithmetic does.
+2. **The merge stamped its claim at nine points across the stroke, whatever the stroke's width.** Across 100 px of
+   paint that is 12 px gaps, and a near-parallel duplicate lying in a gap registers no hit and is kept. With one
+   ridge field this merely under-merged and M0a never saw it. With three fields finding the same stroke three times,
+   the tile came out with three of everything.
+3. **The strokes were half as wide again as the paint.** M0a measured 8.3 mm and never looked at 1:1. Drawing each
+   fitted footprint on the scan shows the outlines straddling two and three neighbouring marks, and the
+   reconstruction at 1:1 is fat lozenges rather than ribbons. `width_gap_frac` 0.72 → 0.50 puts the outlines on the
+   marks and the median at 5.7 mm.
+4. **The instrument was wrong before the data was.** The flat rasteriser feathered every edge by 35% of the stroke's
+   half-width, which on a 105 px stroke at 1:1 is an 18 px blur on each side — the first 1:1 reconstruction looked
+   like smeared blobs and every bit of that was one line of the renderer. Nothing about widths could be judged until
+   it was fixed.
+5. **The band-pass ratio was measuring the holes.** Compositing the reconstruction over black turns every uncovered
+   pixel into the highest-contrast edge on the canvas: the ratio read 4.07. Over the underlayer, which is what the
+   runtime actually draws, it reads 0.95.
+6. **A seam excess made of arithmetic.** The duplicate test counted a stroke as "near a boundary" if *either* end
+   was, and took the expectation from start points alone — which doubles the denominator and manufactures a 1.7×
+   excess out of nothing. It very nearly went into this log as a defect of the merge.
+7. **Two tiles could each keep a maximum a pixel from the other's.** Seed suppression was masked to the tile's core
+   *before* it ran, so a peak just inside a core boundary and one just outside never suppressed each other and both
+   tiles traced the same stroke. Suppression now runs over the core dilated by its own radius and only then drops
+   what belongs to the neighbour. Duplicates at boundaries went from 2.2× the canvas rate to level with it.
+8. **The canvas-edge detector cropped 503 px of sky off the church at Auvers** — 11% of that painting, all of it
+   paint. Quiet is not enough of a test, because a dark passage is quiet too. **A margin ends and a sky continues:**
+   the activity steps at a real boundary and ramps across a dark passage. With that test, 2 of the 40 scans carry a
+   margin and the church is not one of them.
+9. **The underlayer was upside down.** three.js flips an image on upload and the shader flipped it again, so the sky
+   sat under the wheat. This is the flipped-V case this plan named when it argued for `?flat`, arriving in the one
+   milestone where the hook could not catch it, because both views take the texture from the same place.
+10. **Holding each tile so colour could be sampled after the merge is 3.6 GB** against a 6 GB ceiling. Colour now
+    comes off the memory-mapped canvas at fitting time and height from a canvas-wide field computed in bands — which
+    also removed the last thing that was still being computed per tile and could therefore differ across a boundary.
+
+**Two things are calibrated once for the canvas rather than per tile, and both are seams if they are not.** The seed
+strength threshold, because a percentile asks each tile what counts as a stroke *here*, so a tile of sky and a tile of
+wheat disagree and the disagreement lands exactly on the line between them. And the wide blur under the height
+estimate, where σ is 140 px and a tile invents 420 px in from each of its own edges.
+
+**The overlap merge does one job, not two.** This plan expected it to deduplicate *and* re-chain traces cut by a
+boundary. It does not have to re-chain, because the cores that own the seeding partition the canvas at the midpoints
+of the overlaps, which puts every core at least half the hard arc cap in from its own tile's edges — so a trace
+seeded anywhere in a core can walk its full length in both directions without ever reaching a tile edge. Truncation
+is not repaired; it cannot happen. That rests entirely on the cap being enforced, which is M0a's bug 8, and it is the
+second time that bug has turned out to be load-bearing.
+
+**Station 0 stands, and it is the loading screen.** White, woven, one charcoal line on the ground going forward, and
+the underdrawing ghost — the 439 strokes the extraction flagged as contour and put earliest, drawn thin and flat and
+charcoal before they arrive. It is built before anything is fetched and the painting is hung into it, rather than the
+other way round, which is what §7 means by the wait being the thesis. The ground wash at τ = 0 is the underlayer
+sampled at a coarse mip, so it is one tone rather than a legible composition; the bias falls to zero as the paint
+arrives, and the ground *resolves* into the tonal map underneath instead of the picture being readable before a
+stroke has been laid.
+
+**Correction 4 is settled.** 18,924 strokes for a canvas, against the design's "thirty to eighty thousand". Twenty
+canvases is roughly 380,000 strokes for the whole piece, and the largest station will be well under 100,000 — so
+everything visible fits at the near tier and **the far LOD tier stays deferred**, its trigger having fired and not
+tripped.
+
+**Still visible, and left visible.**
+
+- **8% of the canvas is bare.** With the widths corrected the strokes no longer paper over the gaps between marks,
+  and what is left uncovered is mostly real: the shadowed cloth between ridges, which the underlayer now supplies.
+- **9.4% of strokes are near-duplicates of another stroke**, canvas-wide and not at boundaries — the merge's own
+  tolerance rather than a tiling artifact. It costs about a tenth of the geometry and nothing visible.
+- **The height field is still the design's known-wrong estimate**, method 0 in the blob, and `?heights` still shows
+  it as a speckled mess. M1.
+- **The order is still the heuristic**, thin and dark before thick and light. The caption says so. M2.
+- **`?station`, `?volume` and `vg.station()` are recognised and refuse**, in the console and in the `?debug` readout,
+  because there is nothing to answer with until M3. A hook that silently does nothing is worse than one that is
+  missing.
+
+**Not started, per scope:** M1's cross-profile height, M2's order solver, the LOD tiers, any station past 0, the
+transit, interiors, the voice, sound, mobile.

@@ -148,12 +148,24 @@ open-access masters.
    varnish or yellowing correction — where a museum publishes a post-conservation image, prefer it, and otherwise
    leave the canvas as photographed and record the choice in `CREDITS.md`. Guessing at the original colour of a
    Van Gogh is a conservation research project, not a rendering step.
+
+   *Audited at M0a and implemented at M0b. **31 of the 40 scans carry no embedded profile at all**, including all 24
+   from the Van Gogh Museum and both sides of station 2's flood. There is nothing to honour in those files, so the
+   pipeline records the absence in the blob header rather than assuming sRGB silently — the assumption is still made,
+   but it is now written down where a later milestone can find it. `paintings/CREDITS.md` carries the full audit.*
 2. **Orientation field.** Structure tensor at three scales (σ ≈ 2, 6, 16 px at 8k), giving a dominant direction
    θ(x, y) and a coherence c(x, y). High coherence is a stroke; low coherence is a scumbled or blended passage and has
    to be handled by the residual layer (step 7).
 3. **Ridge detection.** On luminance *and* on each chroma channel independently. This matters: his strokes are very
    often a single loaded colour laid next to another single loaded colour at similar value, which is invisible to a
    luminance ridge filter and obvious in chroma. Union the ridge maps.
+
+   *Built at M0b, and the union is the part that needed correcting. Taken literally it finds the same stroke three
+   times: measured on the gate tile, **99% of chroma traces ran within one stroke width of a luminance trace**, and
+   the three channels together nearly tripled the stroke count to buy 2.3 points of coverage. The operative clause is
+   "invisible to a luminance ridge filter" — so a chroma seed is taken only where luminance has nothing to say, which
+   on the Reaper is 61 traces rather than 3,266 and costs what it contributes. On a canvas where blue meets green at
+   the same value it will be most of them; the mechanism is the same and only the arithmetic changes.*
 4. **Tracing.** Walk each ridge along the orientation field, streamline-style, terminating on a coherence drop, a
    colour change beyond a ΔE threshold, a curvature limit, or a maximum arc length. This is the step that will need
    the most tuning per canvas; expect per-station parameter overrides in the station data rather than one global
@@ -171,6 +183,15 @@ open-access masters.
    low-frequency **underlayer**: the residual image after the fitted strokes are subtracted, blurred, rendered as a
    thin flat surface beneath the ribbons, plus the canvas weave. The underlayer is what makes the half-finished state
    look like a real unfinished painting instead of like a loading bar.
+
+*Built at M0b, with one change of evidence. Subtracting the fitted strokes leaves, in a covered passage, the
+**fitting error** — and blurring that back in reintroduces exactly the stroke-scale structure the strokes are
+supposed to be carrying, which is the "projection show with sprinkles" failure arriving through the back door. So
+the underlayer is built only from the pixels no stroke covers: a normalised convolution weighted by (1 − coverage),
+which is literally the ground as seen between the marks, continued smoothly underneath them. Passages where the
+tracer found nothing at all — a scumbled sky, a thin wash — have no coverage, so they speak for themselves and are
+reproduced. The band-pass ratio that M0b measures is the check that this is honest: on the Reaper the strokes carry
+0.95 of the source's energy at stroke scale, so the underlayer is not doing the picture's work.*
 
 ### 4.2 The stroke record
 

@@ -17,7 +17,7 @@ craquelure instead — which is noise for stroke fitting, and expensive noise at
 of §4.1 step 2 are aimed. The `px/cm` column below is the number that matters; megapixels alone are misleading,
 because a 42 MP scan of a 114 cm canvas is a *worse* source than a 42 MP scan of a 33 cm one.
 
-## Two things worth knowing about the sources
+## Three things worth knowing about the sources
 
 **The Van Gogh Museum's IIIF server silently caps a single request at about 42 megapixels.** Its Micrio endpoint
 (`iiif.micr.io`) answers `full/max` with a downsampled image and no warning — *Daubigny's Garden* arrives at 42 MP
@@ -35,6 +35,18 @@ This lands hardest on station 2. The flood there is a Nuenen canvas from the Van
 from Chicago — and *neither side carries a profile*, so neither can be colour-managed from its own file. Both are
 assumed sRGB, and that assumption is now written down rather than made silently. `DESIGN.md` §4.1 step 1 and
 `BUILD.md` M0b own the decode; the risk table's "station 2's flood survives a profile audit" is this paragraph.
+
+**Two of the forty are not cropped to the painting.** Whole-canvas coordinates only mean anything if 0 and 1 are the
+edges of the *picture*, and a scan carrying a strip of backdrop or stretcher puts every stroke at the wrong fraction
+of its canvas — an error invisible in any single tile, because it is a translation plus a scale, and visible the day
+two canvases hang beside each other and one is a percent bigger than it should be. Audited at M0b with
+`tools/canvas_edge.py`: **38 scans are cropped tight, and two are not** — the Orsay/C2RMF *Bedroom* carries 53 px of
+black surround and the Getty *Irises* 32 px of grey backdrop. Both are cropped before extraction and the crop is
+recorded in the blob header.
+
+*The first draft of that detector took quiet to mean margin and cropped 503 px of sky off the church at Auvers, which
+is 11% of that painting. A dark passage is quiet too. The test that separates them is that **a margin ends and a sky
+continues**: activity steps at a real edge and ramps across a dark passage.*
 
 **The Musée d'Orsay publishes nothing usable.** Its IIIF service (`iiif.musee-orsay.fr`) serves a maximum of 850 px
 on the long edge, and it holds two canvases this piece cannot do without. Both fall back to Google Art Project copies
