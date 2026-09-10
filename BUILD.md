@@ -510,6 +510,19 @@ thing no gallery can do and the reason this station exists. The Sunflowers *pres
 - The strokes bound to built surfaces keep their canvas direction.
 - It is warm. This is the only station whose exit criterion is a feeling, and the design is right that it should be.
 
+*Done, and the tool this milestone was named for could not do the thing it was named for. The Progress entry below
+carries the numbers; the short version is that DESIGN 4.4's sentence about interiors splits cleanly in half. **The
+room does come off the canvas** — the width and the height with no free constant in them at all, because the field
+of view cancels out of both, and only the depth needs one. **The vanishing point does not.** Looked for twice, in
+the strokes and then in the scan's own detected line segments, it will not land in the same place twice on any
+canvas in this piece, and the calibration says what it would have taken: a fifth of every mark on the canvas lying
+on a room line drawn to within six degrees. His rooms are not ruled. So the six numbers a room needs are authored,
+in the station file, and the piece says so — and the claim the station actually rests on is measured instead, with
+no hand in it anywhere: block for block, seven to ten in a hundred find themselves in the next Bedroom where a
+wheatfield against another wheatfield finds none, and once the third canvas's own reframing is taken out the three
+agree to between one and three percent. One room, three paintings of it, and the paint changes around you a mark at
+a time.*
+
 ---
 
 ## M6 — The arc  *(2–3 weeks)*
@@ -642,7 +655,7 @@ about the canvases: the two that clear +10 are the two whose marks cross at ever
 +6 are fields of long nearly-parallel strokes where a crossing is shallow and the colour cue has less to work with.
 The claim did not need revising. It needed to be tried somewhere it might have failed.*
 
-| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes**, M4 — **and it got worse** |
+| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes**, M4 — **and it got worse**, M5 — **and it is two questions** |
 
 *The instrument is built and reads out; the tester is not, and a person is what the criterion actually asks for. What
 it returns for three scripted ways of moving is 93%, 83% and 72% of the time within half a metre of the boundary —
@@ -661,6 +674,15 @@ is one division per pair and no simulation. On the olive grove a twentieth of th
 stroke-wide gap at **2.34 m**, a tenth at 3.4 m and a fifth at 5.4 m. The walkers at station 8 return 94%, 84% and
 84%. So the three numbers now read: the paint justifies 2.3 m shelled and 6 m lifted, and an ambling body wants 50.
 The gap did not close.*
+
+*M5 is the first station the row does not fire on, and it changes what the row is asking. A built room's volume is
+not a compromise between what the paint supports and what a body wants — it **is** the room, 2.8 × 3.8 m, off-centre
+because the walls stand 2.39 m to the left of where he set the easel and 0.80 m to its right. Two of the three
+walkers come in under the limit there: `forward` at **0.3%** and `look` at **7.1%**, where nothing at stations 4 or 8
+came under 72%. The one that still fails is `wander`, at 71.8%, and it fails because forty seconds of walking in a
+straightish line is not a thing a bedroom can absorb — a fact about ambling and not about the room. So the row splits
+in two. **For an interior it is answered and there is nothing left to decide.** For a landscape it is exactly as open
+as M4 left it, and M6 now has only that half to settle.*
 
 | We drift into modelling Provence | the world stops being made of strokes | `?noStrokes` shows a scene | every |
 | Station 1 loses the viewer | too dark, too long, and no reason to continue | tested at M6, not argued about before | M6 |
@@ -1708,3 +1730,274 @@ without being pointed at. Params discipline ok for seven files. `?station=4` and
 
 **Not started, per scope.** Station 5 and the built treatment. The letters (`text` is still null in both station
 files). The far LOD tier. Sound. Any station but 4 and 8.
+
+---
+
+### M5 — Interiors
+
+**Asked.** Station 5, the Yellow House. The *built* treatment, with a small tool that takes the vanishing point and
+the frame and returns the room. The three Bedrooms occupying the same space, so that walking forward changes the
+colour of the room without a cut. The Sunflowers *present*, enormous and close.
+
+**The question this milestone turns on.** DESIGN 4.4 justifies the built treatment in one sentence, and it is the
+only treatment in the piece whose justification is a claim about the paintings rather than about the code: *his
+interiors are already one-point perspective — the vanishing point gives you the room's proportions directly off the
+canvas.* Two claims, and the first can be false while the second is worth having. `tools/room.py` tests them
+separately, the way M1 tested the light, M2 the order, M3 the place and M4 the motion: the thing that makes the
+effect and the thing that could refute it are the same code, and canvases that are not rooms go through it as
+controls.
+
+**The measurement, and its pre-registration.** Every stroke carries a direction, so every straight mark is a line.
+Extend them all and ask which point in the plane the most of them pass nearest, weighted by arc length, at a
+tolerance of 2% of the canvas. The null is the one `tools/place.py` already uses for the horizon: permute the
+directions between strokes and keep the midpoints, which leaves the composition exactly as it was and destroys only
+the fan. Written down before any canvas was run: **an interior must beat its own direction shuffle by 3× where the
+outdoor controls do not**, and the three Bedrooms — three collections, three scans at 329, 203 and 78 px/cm — must
+agree to within **2% of the canvas**.
+
+**The controls were run first, and they are a tight band.**
+
+| | over its own direction shuffle |
+|---|---|
+| *Olive Grove* | 1.95× |
+| *The Harvest* | 1.93× |
+| *Irises* | 1.77× |
+| *Sunflowers* | 1.65× |
+| *The Sower* | 1.61× |
+| *Wheatfield with a Reaper* | 1.58× |
+| *The Starry Night* | 1.35× |
+| *Self-Portrait* | 1.13× |
+
+Nothing that is not a room reaches 2, and the pre-registered 3.0 sits well clear of all eight. Then the three
+Bedrooms came in at **1.37×, 1.28× and 1.25×** — *inside the control band*, below a wheatfield. **The pre-registered
+test failed.**
+
+**Why it failed is a fact about the instrument, and finding that out is most of this milestone.** `--sensitivity`
+grades the tool on a known answer: take a canvas's own marks, keep every midpoint and every length, and re-point a
+fraction *f* of them at one chosen place with a few degrees of hand in them.
+
+| f | 0.00 | 0.05 | 0.10 | 0.20 | 0.35 | 0.50 | 1.00 |
+|---|---|---|---|---|---|---|---|
+| ratio | 1.25× | 1.31× | 1.44× | 1.98× | **3.47×** | 4.82× | 9.14× |
+| found, from the truth | wrong | wrong | 2.2% | 0.8% | 0.5% | 0.3% | 0.2% |
+
+The height of the peak says *how much of the paint* lies on the room's lines, and it does not reach 3× until a third
+of every mark on the canvas is a perspective line. No painting is like that: the walls are painted with wall and the
+bed with bed. **The location, though, is already right at a tenth**, where the ratio is an unremarkable 1.44. So the
+bar was set on a quantity that answers a different question, and asking it of a painting was the error. The ratio is
+kept and reported anyway, because a test that was made and failed is worth more than a test quietly replaced.
+
+**What replaces it is the split half, at the bar this file already had.** Cut the marks in two at random, find the
+point in each half alone, and ask how far apart the two answers are — 2% of the canvas, the same number already
+written down for the three Bedrooms, asked of a second thing rather than chosen after seeing the data. Two
+independent estimates of something that is there land on top of each other; two estimates of the place the marks
+merely happen to be densest do not.
+
+| | two halves, apart | its own shuffle | better by | |
+|---|---|---|---|---|
+| *Sunflowers* | **1.9%** | 39.9% | 20.7× | **stable** |
+| *Olive Grove* | **2.4%** | 68.5% | 28.8× | just outside |
+| *The Bedroom* (Amsterdam) | 7.8% | 29.0% | 3.7× | |
+| *The Harvest* | 8.8% | 39.8% | 4.5× | |
+| *Wheatfield with a Reaper* | 10.4% | 11.3% | 1.1× | |
+| *The Sower* | 33.4% | 39.5% | 1.2× | |
+| *The Starry Night* | 53.5% | 54.6% | 1.0× | |
+| *Irises* | 54.9% | 62.0% | 1.1× | |
+| *Self-Portrait* | 55.6% | 42.3% | 0.8× | |
+| *The Bedroom* (Chicago) | **62.4%** | 13.8% | 0.2× | worse than chance |
+| *The Bedroom* (Orsay) | **90.7%** | 54.3% | 0.6× | worse than chance |
+
+**The instrument is not broken, and this table is the proof.** It finds a stable point on two canvases and both of
+them are outdoors: a vase of sunflowers, whose flowers genuinely radiate from one place, at 1.9% and twenty times
+better than its own shuffle; and an olive grove at 2.4%. It finds nothing on any Bedroom, and on two of the three it
+does *worse than chance*. A tool that returned nothing everywhere would be a tool with a bug in it. This one says
+where radial structure is, and it says there is none in these rooms.
+
+The direction histogram says why in one line: **59% of the arc-weighted straight marks on the Chicago Bedroom lie
+within ten degrees of vertical**, and in one-point perspective a vertical line stays vertical and never converges.
+The vote's six strongest local maxima all sit on one vertical ridge at u ≈ 0.09, strung down it, and which of them
+wins flips between halves.
+
+**So the question was asked again of something that is not the stroke record.** A painting of a room is mostly paint
+that is not the room, and if the vanishing point is in the picture but not in the marks, the failure is the record's
+and not the painter's. `--scan` runs the working image the extractor already cached through a line-segment detector
+and then through *exactly* the same vote, split half and shuffle. It does no better: the Chicago Bedroom's halves
+land 14.4% apart against a 12.5% shuffle, the Orsay one 99.6% against 54.3%. Drawing the detected segments over the
+canvas shows the reason plainly, and it is the interesting part: **the floorboards are not detected because they are
+not drawn as lines.** They are bands of colour. The window frame is found, some picture frames are found, and the
+architecture of the room — the wall/floor junction, the corners, the boards — is barely there at all.
+
+**And how much hand the instrument can take settles it.** The same calibration with a jitter:
+
+| f = 0.20 | 3° | 6° | 10° | 15° |
+|---|---|---|---|---|
+| found, from the truth | 2.0% | 2.0% | 6.3% | 59.6% |
+| two halves, apart | 1.2% | 4.5% | **56.5%** | 66.5% |
+
+**It would have taken a fifth of every mark on the canvas, drawn to within six degrees.** That is the finding, and it
+is a statement about what a painting is rather than a shrug: *his rooms are not ruled.* The perspective is carried by
+the shapes of the objects — the foreshortening of the bed, the top of the table — and a human reads it from those
+instantly, which is not line convergence and is not something this pipeline's atom can see.
+
+**So the room is authored, and the arithmetic is not.** Six numbers in the station file where a person can read them
+— the vanishing point, and the four edges of the back wall — exactly as station 8's depths are, and the caption says
+so. What follows from them is not invention at all, and it is better than DESIGN 4.4 knew:
+
+    D  = h·f / s          the back wall, in metres
+    XL = h·(u₀ − u_l)·a / s      the room, left of the axis
+    XR = h·(u_r − u₀)·a / s      and right of it
+    H  = h·(1 + (v₀ − v_c)/s)    floor to ceiling
+
+where s is how far the back wall's floor line sits below the vanishing point. **f cancels out of the width and the
+height.** They are in units of the painter's eye height and nothing else, so a room's cross-section really does come
+off the canvas with no free constant in it. Only the depth needs one. The Bedroom comes out **3.18 m wide and 2.57 m
+to the ceiling** — and 4.37 m deep at hfov 70°, which is 70 rather than the 50 every other canvas uses because a
+room is painted from inside it: at 50 the same six numbers give a room 6.1 m deep, which is longer than the house
+was. The depth is the one dimension that moves when that number moves, and it moves as 1/tan(hfov/2).
+
+**The measurement the station actually needed was a different one.** "The three Bedrooms occupy the same space" is
+not a claim about vanishing points; it is a claim about the canvases, and it can be asked with no hand in it
+anywhere. `--register` block-matches two canvases at the same canvas fractions, high-passed so it is the drawing
+being compared and not the tone — which matters, because the whole point of these three is that the tone is
+different. Every block of one canvas is looked for in a window of the other and counts only if its best match beats
+its own second best, which is Lowe's idea applied where it works. Feature matching was tried first and is the wrong
+tool: SIFT found forty matches between two Bedrooms and five survived RANSAC, because repeated brushwork fails the
+ratio test everywhere. Fitting a homography was worse — eight degrees of freedom folded a wheatfield onto a bedroom
+at a correlation as high as the two bedrooms scored.
+
+| | blocks that found themselves | moved | net | left over |
+|---|---|---|---|---|
+| Amsterdam / Chicago | 45 of 456 (10%) | 2.48% | −0.70, +0.42% | **2.66%** |
+| Amsterdam / Orsay | 38 of 456 (8%) | 7.00% | +5.88, +3.85% | **1.29%** |
+| Chicago / Orsay | 32 of 456 (7%) | 8.44% | +7.26, +4.13% | **2.25%** |
+| Chicago / *The Harvest* | 1 of 456 | — | — | nothing lines up |
+| *Harvest* / *Reaper* | 2 of 456 | — | — | nothing lines up |
+| Amsterdam / *Sunflowers* | 2 of 456 | — | — | nothing lines up |
+| *Olive Grove* / *Harvest* | 0 of 456 | — | — | nothing lines up |
+
+**The three are the same picture and nothing else is**, and the separation is not the thresholds doing the work: it
+survives all twenty-seven combinations of width, block size and match threshold that were tried, with the Bedrooms
+at 2–19% and every control at 0–1%, the two populations touching only at the loosest setting of all. What moved is
+**the Orsay canvas's framing**: he re-cropped the small version nearly six percent to the right and four percent
+down. Take that measured offset out and what is left between any two of them is **1.3% to 2.7% of the canvas** —
+which is the tolerance this file already asks for, so one authored room fits all three, and the second and third
+Bedrooms carry the first one's six numbers shifted by the measurement rather than authored again.
+
+**And that offset has an independent check on it that shares no code.** `tools/place.py` measures each canvas's
+strongest level colour cut without knowing anything about any of this, and returns v = 0.336, 0.322 and 0.362 for
+the three. Subtract the measured reframing from the third and they become 0.336, 0.322 and **0.324** — from 4.0%
+apart to 1.4%. Two measurements agreeing about how far one canvas moved.
+
+**The handover is per stroke, not a cross-fade.** Each Bedroom has a distance into the room at which it *is* the
+room, and walking forward runs a tent between the two nearest, so the weights sum to exactly one and the room is
+never half-painted. A stroke is then either laid or not, decided by its own hash against that weight — so nothing is
+ever half-transparent, no two rooms z-fight, the light and the relief stay exactly what they are, and `?still` comes
+back byte-identical in the middle of a handover. It costs no coverage: each canvas covers about four fifths of
+itself, so half of one and half of another cover four fifths together. And **a canvas τ has not reached cannot be
+walked into** — two of the three Bedrooms are September 1889 and the first is October 1888, so until the scrub gets
+there the room stays the room he was living in however far you walk. The chronology is the gate on the walk, which
+is the closest the piece's two controls have come to being one.
+
+**One correction to something M3 and M4 both shipped.** The scan and the catalogue disagree about the *shape* of a
+canvas, and the code was using both: `tools/place.py` and the runtime squared the canvas up by the ratio of the
+centimetres the holder publishes, while every stroke coordinate is a fraction of the scan. Measured across the nine
+canvases in the piece the two run **0.1% to 3.1% apart** — worst on the Getty *Irises*, which is the canvas lying at
+1:1 under the viewer's feet, and 2.2% on the Chicago *Bedroom*, where the reason is visible in the figure itself:
+92.3 × 73.6 cm is 36¼ × 29 inches converted, and a rounded inch is ±1.3 cm on a canvas this size. It mattered here
+because 2.2% is exactly the tolerance the three-Bedroom claim is argued at. The rule now is **the shape from the
+scan, the size from the catalogue** — the scan is the artifact, cropped to the picture's own edge, and the museum is
+the authority on how big it is. Nothing moved: all twelve existing goldens are byte-identical and every horizon
+ratio holds to a rounding (71.7×, 53.6×, 10.6×, 1.7×, 2.0×, 104.9×, 2.6×).
+
+**Eight things that were wrong, in the order they were found.**
+
+1. **The vanishing point was measured with the wrong aspect.** Fixed above, and it had to be fixed before anything
+   else, because a 2.2% squaring error and a 2% agreement bar cannot both be in the same argument.
+2. **Two extractions of the same canvas ran at once.** A `nohup … &` inside a tool call returns exit 0 immediately
+   and leaves the child running detached, so a second, tool-managed run started on top of it — both writing the same
+   memory-mapped working image. Nothing corrupted because it was caught in three minutes, and the lesson is the
+   harness's: if a long job is worth backgrounding it is worth backgrounding *once*, by the thing that will tell you
+   when it is done.
+3. **The ceiling was 5.78 m.** The JS mirror of the room arithmetic wrote `k·(1 + (v₀ − v_c))` where the formula is
+   `h + k·(v₀ − v_c)`, so the constant term came out scaled by k. A 2.57 m room reported a ceiling four metres above
+   the eye. Caught by putting the room into `vg.state` and reading it, which is the whole argument for the debug API.
+4. **Lighting the paint by the wall it landed on relights the painting.** Each stroke taking its surface's normal is
+   the obvious way to build a room and it is wrong: this world's light comes from above, so a floor normal takes 0.58
+   of it and a back wall 0.34, and the Bedroom's wall/floor line lit up as a band ruled straight across the paint at
+   47% of the canvas. Blending the five faces over a hand's width turned a ruled line into a ruled band and fixed
+   nothing, because the fault was not the hardness of the join. The two choices differ by RMS **0.081** and every row
+   of that difference is at the crease. So a built room lights its strokes the way a sky and a shell already do —
+   facing back down their own ray, at the painter — and the room is a room because of what the walk does to it. The
+   warmth is the paint's, which is where it was to begin with.
+5. **The dissolve saved the fill and not the sweep.** Collapsing a handed-away canvas's strokes to nothing in the
+   vertex shader still builds every ribbon: three Bedrooms' worth, 4.29 M triangles, so that two thirds could be
+   thrown away. Skipping the draw outright takes it to 1.0–1.8 M.
+6. **The room had no ceiling and no near floor**, because he cropped both out of the canvas, and a room you cannot
+   see the ceiling of is not one you are standing in. The cloth now runs well past the edge of the painting — and
+   past it there is no underlayer, and none is invented: it goes to `uGround`, the same *primed cloth of station 0,
+   gone dark* that the whole unpainted world is made of. It also softens the canvas's own rectangular edge, which
+   every station until now has had hard, and which M4 listed as still visible.
+7. **Three canvases of one room were carrying three substrates**, which would z-fight along every wall. One cloth
+   now, from the first Bedroom, and the other two declare `cloth: false` — which makes the shared shell a standing
+   check on the measurement, since three rooms that did not agree would show through it.
+8. **And it fired, one screenshot later.** At the second key most of the room went missing with every stroke still
+   being drawn — 13,099 of them, all of Bedroom 2, none of them visible. The three canvases' own six numbers give
+   rooms **3.18, 3.23 and 3.24 m wide** and 4.37, 4.44 and 4.45 deep: a 1.9% disagreement that comes entirely from
+   their scans having slightly different aspects, and 1.9% of four metres is seven centimetres. The first Bedroom's
+   back wall was standing seven centimetres in front of the second Bedroom's paint. So the box is the **station's**
+   and not the canvas's, which costs nothing that matters: a canvas's rays stay its own, so from the standpoint each
+   of the three is still exactly its own painting, and all the box decides is how far along those rays the paint
+   sits — which is what the walk is for. The check the shared cloth was described as being, it turned out to be.
+
+**And one that is a fact about a measurement rather than a bug.** The `?flat` parity came back at 0.0521 against
+M4's published 0.0472, which looks like a regression and is not: **the number depends on the resolution it is taken
+at.** At a 1272 px viewport it is **0.0476**; at 2544 it is 0.0521 — and M4's own `index.html`, checked out and
+measured the same way at 2544, returns the identical 0.0521. The residual is antialiasing and edge placement, and
+finer pixels resolve more of it. A parity figure should always carry the viewport it was measured at, and from here
+this log quotes both.
+
+**Verified.** `?flat` parity RMS **0.0476** at a 1272 px viewport against M4's 0.0472, and 0.0521 at 2544 where M4's
+own build returns the same. All **twenty** goldens identical, colour and relief, across ten canvases. `?still` twice,
+byte-identical by sha256, taken in the middle of a 50/50 handover. Three stations, ten canvases, **126,849 strokes
+and 2.9 MB of blob**, everything resident by **0.56–1.26 s** over four runs. Balanced worst case anywhere in the
+piece **2.06 M triangles, 25 draws, 8.1 ms of GPU, 60 fps** — at station 4, where it was at M4; station 5 runs 0.76 M
+standing, 1.50 M mid-handover and 0.83 M at the last key, and the two roads are 73 k triangles and 2 draws. τ is
+continuous across both transits and the date runs June 1888 → August → October → **December 1888** → March → May
+1889 without a jump. Station 5's walkers return **0.3%, 71.8% and 7.1%** against the 20% limit — the first station in
+the piece two of them pass. Params discipline ok for eleven files. `?station=4`, `?station=5` and `?station=8` each
+stand alone; `?station=9` still fails in text.
+
+*One number is worse than M4's and it needed taking apart before it could be written down. M4 reported a worst single
+build of 7.7 ms; over four runs here the worst is 13, 25, 144 and 173 ms. Per canvas it is entirely the **first** one
+to land — every canvas after it costs 1 to 23 ms with a median of 5, and the 20,734-stroke olive grove, the largest
+in the piece, is 11 to 23. So it is not a per-canvas cost that has grown; it is the first big typed-array allocation
+and the first pass through code the JIT has not seen, landing on whichever canvas arrives first. What that qualifies
+is M4's exit criterion: **entering a station never stalls the frame, but arriving in the piece can**, for up to three
+frames, once. It was invisible at M4 because six canvases happened to give a warm run and the number that got written
+down was 7.7.*
+
+**Still visible, and named rather than fixed.**
+
+- **The room's six numbers are authored and no amount of care makes them measured.** The tool says exactly what it
+  would have taken and cannot supply it. One diagnostic is left hanging on purpose: the floorboards of the *left
+  half* of the Bedroom, taken alone, agree between random halves at **4.3% against a 25.7% shuffle** — six times
+  better than chance and still twice the tolerance. It was found by choosing a region after seeing a failure, so it
+  proves nothing, and it is the first thing to try again.
+- **The ceiling is invented in all three versions**, because he cropped it out of all three. `v_c` is the one
+  authored number with nothing on the canvas to read it off.
+- **A stroke that straddles a corner of the room is stretched around it.** The ribbon follows the crease correctly
+  but takes its width from its own midpoint, so a mark lying along the wall/floor line comes out fatter at one end.
+  It is only conspicuous where many marks lie along the same crease, which is exactly where the Bedroom's do.
+- **Two of the three Bedrooms are shown on Arles cloth** and were painted at Saint-Rémy on whatever was to hand. The
+  substrate is a property of the room here rather than of the canvas, and that is the price of putting three canvases
+  in one space.
+- **The Orsay Bedroom's dimensions are still not verified against the holder**, the only canvas in the piece of
+  which that is true — Orsay serves 403 to a plain request. What depends on it is every stroke width in millimetres;
+  what does not is the room, because the built treatment works in units of eye height and the scan's own aspect.
+- **The amble still fails at station 5**, at 71.8%, and it is not the room's fault: forty seconds of walking in a
+  straightish line is not a thing a bedroom can absorb.
+- Everything M4 left open that M5 did not touch: the depth buffer at the dome, the Starry Night's tacking margin,
+  the Harvest's lopsided acts, station 8's thin standpoint.
+
+**Not started, per scope.** The two chairs, which DESIGN 7 asks for at this station and M5's scope does not. Stations
+1, 2, 3, 6, 7, 9, 10. The letters (`text` is null in all three station files). The far LOD tier. Sound.

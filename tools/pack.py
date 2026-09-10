@@ -81,8 +81,8 @@ import json, os, struct, sys
 import numpy as np
 
 MAGIC = b"VGST"
-VERSION = 6
-HDR = 512
+VERSION = 7
+HDR = 640
 STRIDE = 24
 CSTRIDE = 24
 ASTRIDE = 24
@@ -261,6 +261,30 @@ def pack(doc, dest):
     struct.pack_into("<I", buf, 492, int(sh.get("points", 0)))
     struct.pack_into("<ff", buf, 496, float(cu.get("de_at_rest", 0.0)),
                      float(cu.get("ratio_min", 0.0)))
+
+    # M5: the point the straight marks point at, and the room that comes off
+    # it. The vanishing point is measured and travels in the blob; the four
+    # numbers of the back wall are authored in the station file and the box is
+    # rebuilt from them there, so what is written here is what the tool found
+    # when the canvas was packed and it is here to be read back and argued with.
+    rm = doc.get("room") or {}
+    bx = rm.get("box") or {}
+    struct.pack_into("<ffff", buf, 512, float(rm.get("u", 0.0)), float(rm.get("v", 0.0)),
+                     float(rm.get("ratio", 0.0)), float(rm.get("spread_deg", 0.0)))
+    struct.pack_into("<Iff", buf, 528, int(rm.get("n", 0)),
+                     float(rm.get("on_lines", 0.0)), float(rm.get("straight_frac", 0.0)))
+    struct.pack_into("<BB", buf, 540,
+                     1 if rm.get("ratio", 0.0) >= float(rm.get("ratio_min", 3.0)) else 0,
+                     1 if bx else 0)
+    struct.pack_into("<fffffff", buf, 544, float(bx.get("left", 0.0)),
+                     float(bx.get("right", 0.0)), float(bx.get("ceil", 0.0)),
+                     float(bx.get("depth", 0.0)), float(bx.get("fz", 0.0)),
+                     float(bx.get("hfov", 0.0)), float(bx.get("eye", 0.0)))
+    struct.pack_into("<ffff", buf, 572, *[float(t) for t in
+                                          (bx.get("back") or [0.0, 0.0, 0.0, 0.0])])
+    struct.pack_into("<ffff", buf, 588, float(rm.get("null", 0.0)),
+                     float(rm.get("peak", 0.0)), float(rm.get("ratio_min", 0.0)),
+                     float(rm.get("sigma", 0.0)))
     for j, t in enumerate(table):
         o = coff + j * CSTRIDE
         struct.pack_into("<II", buf, o, t["first"], t["count"])
@@ -327,6 +351,18 @@ def main():
         print(f"  shell   {sh['points']} authored depths"
               f"   {sh['near']:.1f} to {sh['far']:.0f} m"
               f"   tears at {sh['half']:.2f} m ({sh['tear_frac']*100:.0f}% of pairs)")
+    rm = doc.get("room") or {}
+    if rm:
+        bar = float(rm.get("ratio_min", 3.0))
+        print(f"  room    vanishing point at u {rm['u']:.3f} v {rm['v']:.3f}"
+              f"   {rm['ratio']:.2f}x its own direction shuffle"
+              f" ({'fires' if rm['ratio'] >= bar else 'does not fire'} at {bar:.0f}x)"
+              f"   fan {rm['spread_deg']:.0f} deg over {rm['n']} straight marks")
+        bx = rm.get("box")
+        if bx:
+            print(f"          the room  {bx['left']+bx['right']:.2f} m wide,"
+                  f" {bx['ceil']:.2f} m high, {bx['depth']:.2f} m deep"
+                  f"   (width and height carry no free constant; the depth carries hfov)")
     print(f"  relief  method {doc.get('height_method', 0)}"
           f"   cap {doc.get('height_mm', 0):.2f} mm"
           f"   light {math.degrees(math.atan2(-lt[1], lt[0])):+.0f} deg"

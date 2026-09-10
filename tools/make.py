@@ -9,7 +9,8 @@ about which numbers exist, so this checks both directions. A key the extractor
 wants and the file lacks is a crash later; a key the file has and the extractor
 never reads is worse, because it looks exactly like tuning and does nothing.
 
-**The build.** extract -> order -> place -> pack -> flat, skipped when the blob's header
+**The build.** extract -> order -> place -> curl -> shell -> room -> pack -> flat,
+skipped when the blob's header
 already records this source file and these parameters. The order stage is
 separate from extraction because it is the one that has to be argued with: it
 reads the strokes back out of the JSON, so it can be re-run and re-measured in
@@ -20,7 +21,10 @@ is and whether it is a place at all, which is a question worth being able to
 re-ask. `curl` and `shell` are separate for the third time for the same reason,
 and `shell` is separate for a fourth: its input is a station file rather than a
 params file, because a hand-authored depth is a decision about a station and
-not a fact about a canvas. The header carries both hashes,
+not a fact about a canvas. `room` reads a station for the same reason and adds
+one of its own: a built room is six numbers a person typed, and the tool's whole
+job there is to report how far its own answer is from them. The header carries
+both hashes,
 so staleness is a fact about the artifact rather than a timestamp.
 
 **The regression.** Two golden images at 1200 px, both committed: the flat
@@ -39,6 +43,7 @@ the paint standing off the cloth.
     tools/make.py reaper --force      # build regardless
     tools/make.py reaper --golden     # accept the current output as golden
     tools/make.py --check             # params discipline over every canvas
+    tools/make.py bedroom1 --room stations/s05-yellow-house.json
 """
 import argparse, hashlib, json, os, struct, subprocess, sys
 import numpy as np
@@ -108,6 +113,9 @@ def main():
                     help="do not ask how far a stroke can move")
     ap.add_argument("--shell", default=None, metavar="STATION",
                     help="bake the per-stroke depth this station authors for it")
+    ap.add_argument("--room", default=None, metavar="STATION",
+                    help="ask where this canvas's straight marks point, and build "
+                         "the room the station authors from it")
     a = ap.parse_args()
 
     if a.check or not a.slug:
@@ -139,6 +147,8 @@ def main():
             run("tools/curl.py", stem + ".json")
         if a.shell:
             run("tools/shell.py", stem + ".json", a.shell)
+        if a.room:
+            run("tools/room.py", stem + ".json", a.room)
         run("tools/pack.py", stem + ".json")
     else:
         print(f"{a.slug}/{name} is up to date with its source and params")

@@ -220,6 +220,32 @@ function readBlob(buf) {
     shellNear: version >= 6 ? v.getFloat32(484, true) : 0,
     shellFar: version >= 6 ? v.getFloat32(488, true) : 0,
     shellPoints: version >= 6 ? v.getUint32(492, true) : 0,
+    // M5: the point the canvas's own straight marks point at. It is measured
+    // with no hand in it -- every straight mark's line extended, and the place
+    // most of them pass nearest -- and it is the whole justification for
+    // DESIGN 4.4's built treatment, so the ratio against its own direction
+    // shuffle travels beside it. The box is rebuilt from the station's four
+    // authored back-wall numbers; what is here is what the tool found.
+    vpU: version >= 7 ? v.getFloat32(512, true) : 0.5,
+    vpV: version >= 7 ? v.getFloat32(516, true) : 0.5,
+    vpRoomRatio: version >= 7 ? v.getFloat32(520, true) : 0,
+    vpSpread: version >= 7 ? v.getFloat32(524, true) : 0,
+    vpN: version >= 7 ? v.getUint32(528, true) : 0,
+    vpOnLines: version >= 7 ? v.getFloat32(532, true) : 0,
+    vpStraight: version >= 7 ? v.getFloat32(536, true) : 0,
+    vpFires: version >= 7 ? v.getUint8(540) === 1 : false,
+    hasRoom: version >= 7 ? v.getUint8(541) === 1 : false,
+    room: version >= 7 ? {
+      left: v.getFloat32(544, true), right: v.getFloat32(548, true),
+      ceil: v.getFloat32(552, true), depth: v.getFloat32(556, true),
+      fz: v.getFloat32(560, true), hfov: v.getFloat32(564, true),
+      eye: v.getFloat32(568, true),
+      back: [v.getFloat32(572, true), v.getFloat32(576, true),
+             v.getFloat32(580, true), v.getFloat32(584, true)],
+    } : null,
+    vpNull: version >= 7 ? v.getFloat32(588, true) : 0,
+    vpPeak: version >= 7 ? v.getFloat32(592, true) : 0,
+    vpBar: version >= 7 ? v.getFloat32(596, true) : 0,
     srcSha: hex(72), paramSha: hex(104),
     bytes: buf,
   };
@@ -444,6 +470,14 @@ const STROKE_VERT = /* glsl */`
   // changes is how far along them a stroke goes, which is exactly what M3's
   // gamma changes and is why they are one function.
   uniform float uPitch, uSkyOnly, uShell;
+  // M5. uBuilt makes the surface a room instead of a plain and a dome, and
+  // uRoom is that room in metres -- (left, right, ceiling, back wall) about the
+  // painter's own standpoint, every one of them off the canvas by tools/room.py.
+  // uAxisU is where the window's axis crosses the canvas: 0.5 on a hung canvas,
+  // and on a built one it is the vanishing point, because that is what a
+  // vanishing point *is* -- the direction he was facing.
+  uniform float uBuilt, uAxisU, uPresence;
+  uniform vec4 uRoom;
   // and the one motion. uCurlK is the blob's scale for the per-stroke
   // amplitude, uCurlGain the station's fraction of it, uCurlRate radians a
   // second. uTime is frozen at ?still, which is what makes the stills stills.
@@ -483,7 +517,7 @@ const STROKE_VERT = /* glsl */`
   // up as a disagreement rather than as bad art.
   vec3 liftAt(vec2 c, out float t) {
     vec3 eye = vec3(0.0, uEyeH, 0.0);
-    float x = (c.x - 0.5) * uAspect;
+    float x = (c.x - uAxisU) * uAspect;
     float y = uHorizon - c.y;
     vec3 r = vec3(x, y, -uFz);
     // the window tipped up. This is a rotation of the ray and nothing else, so
@@ -497,6 +531,25 @@ const STROKE_VERT = /* glsl */`
     // stroke rather than derived from the horizon. tools/shell.py writes it and
     // measures where it tears; the depth itself is invention and says so.
     if (uShell > 0.5) { t = max(aDepth, 0.05) / length(r); return eye + r * t; }
+    // DESIGN 4.4's built treatment. The room is simply the box these rays hit,
+    // and the box is not modelled: tools/room.py found the point the straight
+    // marks point at, put this window's axis through it, and read the width and
+    // the height off the back wall in units of the painter's eye height -- with
+    // uFz cancelling out of both, so neither of them carries a free constant at
+    // all. Only the depth carries one, and it is M3's same 50 degrees.
+    //
+    // Ray against box, from inside: five slabs, the nearest crossing wins.
+    // Every stroke stays on its own ray exactly as it does in the lift, so from
+    // where he stood the room *is* the painting and it is the walk that turns
+    // it into a room.
+    if (uBuilt > 0.5) {
+      t = uRoom.w / max(-r.z, 1e-6);
+      if (r.y < -1e-6)      t = min(t, uEyeH / -r.y);
+      else if (r.y > 1e-6)  t = min(t, max(uRoom.z - uEyeH, 0.05) / r.y);
+      if (r.x < -1e-6)      t = min(t, uRoom.x / -r.x);
+      else if (r.x > 1e-6)  t = min(t, uRoom.y / r.x);
+      return eye + r * t;
+    }
     if (y >= 0.0 || uSkyOnly > 0.5) { t = uDome / length(r); return eye + r * t; }
     float rho = length(vec2(x, uFz));
     float d0 = min(uEyeH * rho / (1.0 - uHorizon)
@@ -591,9 +644,30 @@ const STROKE_VERT = /* glsl */`
   }
 
   vec3 liftNormal(vec3 p, float sky) {
-    // a sky stroke and a shell stroke both face back down their own ray, which
-    // is where the painter was; only ground strokes lie on a surface.
-    if (sky > 0.5 || uSkyOnly > 0.5 || uShell > 0.5)
+    // In a room a stroke lies on whichever wall it landed on, and it is the
+    // only treatment where that is a real question: the floorboards catch the
+    // light along the floor and the pictures over the bedhead catch it flat
+    // off the back wall, which is most of why a built room reads as warm.
+    // Whichever face the point is on is whichever face it is nearest.
+    // a sky stroke, a shell stroke and a stroke in a built room all face back
+    // down their own ray, which is where the painter was; only ground strokes
+    // lie on a surface.
+    //
+    // The room was built the other way first -- each stroke taking the normal
+    // of the wall it landed on -- and it was wrong, for a reason worth keeping.
+    // A room's corners fall in the middle of the picture, and the light this
+    // world has comes from above: a floor normal takes 0.58 of it and a back
+    // wall 0.34, so the wall/floor line of the Bedroom lit up as a band ruled
+    // straight across the paint at 47% of the canvas, brightest exactly where
+    // the two faces meet. Blending the five faces over a hand's width turned
+    // the ruled line into a ruled band and fixed nothing, because the fault was
+    // not the hardness of the join. It was that lighting the paint by the wall
+    // it is on *relights the painting*, and this piece's one invariant is that
+    // from where he stood the world is the painting. The two differ by 0.081
+    // RMS and every row of that difference is at the crease. So the room is a
+    // room because of what the walk does to it and not because of how it is
+    // lit, and the warmth is the paint's, which is where it was to begin with.
+    if (uBuilt > 0.5 || sky > 0.5 || uSkyOnly > 0.5 || uShell > 0.5)
       return normalize(vec3(0.0, uEyeH, 0.0) - p);
     float h0 = terrain(p.xz);
     return normalize(vec3(h0 - terrain(p.xz + vec2(1.0, 0.0)), 1.0,
@@ -614,6 +688,21 @@ const STROKE_VERT = /* glsl */`
     float ghost = (arrive <= 0.0 && uGhost > 0.0 && contour > 0.5
                    && aOrder < uGhost) ? 1.0 : 0.0;
     if (arrive <= 0.0 && ghost < 0.5) { gl_Position = vec4(-2.0, -2.0, -2.0, 1.0); return; }
+
+    // M5, and the reason station 5 exists. Three canvases of one room, and
+    // which of them the paint is made of is where the viewer is standing.
+    // Deliberately not a cross-fade: a stroke is either laid or it is not, so
+    // nothing is ever half-transparent, no two rooms z-fight, and the light
+    // and the relief stay exactly what they are. Walking forward, his second
+    // and third versions of the same mark replace his first, one mark at a
+    // time -- which is what a repetition is, and no gallery can hang it.
+    // It costs no coverage: each canvas covers about four fifths of itself, so
+    // half of one and half of another cover four fifths together.
+    if (uPresence < 0.999) {
+      float hsh = fract(sin(dot(aP0 + aP2, vec2(12.9898, 78.233))
+                            + aWidth * 37.719) * 43758.5453);
+      if (hsh >= uPresence) { gl_Position = vec4(-2.0, -2.0, -2.0, 1.0); return; }
+    }
 
     vec2 k0 = aP0 * uCoordSpan + uCoordLo;
     vec2 k1 = aP1 * uCoordSpan + uCoordLo;
@@ -815,6 +904,13 @@ const CLOTH_VERT = /* glsl */`precision highp float;
 const CLOTH_FRAG = /* glsl */`
   precision highp float; varying vec2 vUv; varying vec3 vW;
   uniform float uWeaveM, uWeaveRough, uHasUnder, uPrimed, uFloor, uWeaveFlat, uDim;
+  // M5. A built room's cloth runs past the edge of the painting, because he
+  // cropped the ceiling and the near floor out of the Bedroom and a room with
+  // no ceiling is not a room. Past that edge there is no underlayer to show and
+  // none is invented: it is bare primed canvas, which is what station 0 is and
+  // what the whole piece says is under everything. It also softens the canvas's
+  // own rectangular edge, which every station until now has had hard.
+  uniform float uBeyond;
   uniform vec3 uGround, uEye, uGesso;
   uniform vec4 uTileUV;
   uniform sampler2D uUnder;
@@ -866,6 +962,19 @@ const CLOTH_FRAG = /* glsl */`
       wash = srgbToLinear(texture2D(uUnder, t, mix(9.0, 0.0, uPrimed)).rgb);
     }
     vec3 primed = mix(uGesso, wash, 0.34);
+    if (uBeyond > 0.5) {
+      // Past the edge of the painting there is no underlayer and none is
+      // invented. What is there is uGround -- the same "primed cloth of station
+      // 0, gone dark" that the whole unpainted world is made of -- so a built
+      // room fades out of the picture and into the dark it was painted in,
+      // rather than into a rectangle of glare. Before anything is painted it is
+      // still white cloth everywhere, because that is what station 0 is.
+      vec2 e = max(-vUv, vUv - vec2(1.0));
+      float d0 = max(e.x, e.y);
+      ground = mix(ground, uGround, smoothstep(0.0, 0.06, d0));
+      wash = mix(wash, uGround, smoothstep(0.0, 0.06, d0));
+      primed = mix(uGesso, wash, 0.34);
+    }
     vec3 c = mix(primed, ground, uPrimed);
 
     c *= (0.96 + amp * weave);
@@ -897,11 +1006,12 @@ const renderer = (() => {
 // volume, acts, pacing, letter. A station is data and this file is the
 // mechanism, which is the only way ten of them get built in the time there is
 // and the only way one can be changed without touching a shader.
-const STATIONS = { 4: 'stations/s04-harvest.json', 8: 'stations/s08-saint-remy.json' };
-// DESIGN 3.3: the map is the chronology. Two of the ten exist, they are laid
+const STATIONS = { 4: 'stations/s04-harvest.json', 5: 'stations/s05-yellow-house.json',
+                  8: 'stations/s08-saint-remy.json' };
+// DESIGN 3.3: the map is the chronology. Three of the ten exist, they are laid
 // out in the order he painted them, and tau runs along that order rather than
 // along France.
-const ORDER = [4, 8];
+const ORDER = [4, 5, 8];
 
 // One blob with no station around it: what ?blob and ?flat still mean, and what
 // M0b through M2 were. It is a real station of one canvas standing as a wall
@@ -1044,6 +1154,7 @@ async function main() {
   const floorUni = {
     uWeaveM: { value: weaveMm / 1000 * 3.6 },
     uWeaveRough: { value: rough }, uWeaveFlat: { value: 1 },
+    uBeyond: { value: 0 },              // the world's floor has no painting to be past
     // What is left when the paint has arrived and there is no paint here: the
     // primed cloth of station 0, gone dark. It has to be near the clear colour
     // rather than a mid grey, because a mid grey plane running to the horizon
@@ -1157,6 +1268,40 @@ async function main() {
   const canvases = [];
   const texLoader = new THREE.TextureLoader();
 
+  // M5. Which canvases share a room, and how far into it each of them *is* the
+  // room. A canvas with no `at` is alone in its space and is always fully
+  // present; two or more with one hand the paint between them as the viewer
+  // walks. Rebuilt as blobs land, because they land one at a time and a group
+  // of one is not a group yet.
+  const PRESENCE = [];
+  function rebuildPresence() {
+    PRESENCE.length = 0;
+    for (const sn of STS) {
+      const mine = canvases.filter(c => c && c.sn === sn);
+      const keyed = mine.filter(c => c.at !== undefined).sort((a, b) => a.at - b.at);
+      for (const c of mine) if (c.at === undefined) c.presence.value = 1;
+      if (keyed.length < 2) { for (const c of keyed) c.presence.value = 1; continue; }
+      // One room, three paintings of it -- and the box has to be the station's
+      // rather than each canvas's, which the shared cloth is what caught. The
+      // three canvases' own six numbers give rooms 3.18, 3.23 and 3.24 m wide
+      // and 4.37, 4.44 and 4.45 deep: a 1.9% disagreement, entirely from their
+      // scans having slightly different aspects, and 1.9% of four metres is
+      // seven centimetres. That is enough for the first Bedroom's back wall to
+      // stand in front of the second Bedroom's paint, and it did -- most of the
+      // room went missing at the second key with every stroke still drawn.
+      //
+      // Sharing the box costs nothing that matters. A canvas's *rays* stay its
+      // own, so from the standpoint each of the three is still exactly its own
+      // painting; all the box decides is how far along those rays the paint
+      // sits, which is what the walk is for.
+      const host = keyed.find(c => c.cloths.length) || keyed[0];
+      if (host.room) for (const c of keyed) if (c.room && c !== host)
+        c.uni.uRoom.value.set(host.room.left, host.room.right,
+                              host.room.ceil, host.room.depth);
+      PRESENCE.push({ origin: sn._origin.y, cv: keyed });
+    }
+  }
+
   function buildCanvas(spec, blob) {
     const sn = STS[spec._st ?? 0];
     // The treatment. tools/place.py writes the canvas's own answer into the
@@ -1168,14 +1313,24 @@ async function main() {
     // with the distance along them authored per stroke instead of derived.
     const measured = blob.lifted ? 'lifted' : 'present';
     const mode = flatMode ? 'present' : (spec.treatment ?? measured);
-    const ray = mode === 'lifted' || mode === 'sky' || mode === 'shell';
+    const ray = mode === 'lifted' || mode === 'sky' || mode === 'shell'
+             || mode === 'built';
     const lifted = ray;
-    const canvasM = [blob.canvasCm[0] / 100, blob.canvasCm[1] / 100];
+    // The shape of the canvas comes from the scan and its size from the
+    // catalogue, which is M5's correction and is not a nicety. The two
+    // disagree: measured across the nine canvases in the piece, the scan's own
+    // aspect runs from 0.1% to 3.1% away from the ratio of the centimetres the
+    // holder publishes -- worst on the Getty's Irises, which is the canvas
+    // lying at 1:1 under your feet. A museum's centimetres are very often a
+    // rounded conversion of rounded inches; the scan is the artifact, cropped
+    // to the picture's own edge by tools/canvas_edge.py. So the aspect is the
+    // scan's and the height is the holder's, and the width follows.
+    const aspect = blob.canvasPx[0] / blob.canvasPx[1];
+    const canvasM = [blob.canvasCm[1] / 100 * aspect, blob.canvasCm[1] / 100];
     const shortM = Math.min(canvasM[0], canvasM[1]);
     const [tx, ty, tw, th] = blob.tile[2] ? blob.tile : [0, 0, ...blob.canvasPx];
     const tileCentre = [(tx + tw / 2) / blob.canvasPx[0], (ty + th / 2) / blob.canvasPx[1]];
     const tileM = [tw / blob.canvasPx[0] * canvasM[0], th / blob.canvasPx[1] * canvasM[1]];
-    const aspect = canvasM[0] / canvasM[1];
     const hfov = num('hfov', spec.hfov ?? blob.hfov ?? 50);
     const pitch = (spec.pitch || 0) * Math.PI / 180;
     // which row of the canvas sits on the window's own axis. On a plain that is
@@ -1183,7 +1338,13 @@ async function main() {
     // measurable horizon in it -- the Starry Night's best level cut beats its
     // best upright one by two, which is what a self-portrait scores -- the
     // station says so and hangs it by its middle instead.
-    const vhorizon = spec.horizon ?? blob.horizon;
+    // and where it crosses it horizontally, which only a built canvas has an
+    // opinion about: a room's window looks along the vanishing point, because
+    // that is the direction the painter was facing, and everything else in the
+    // piece looks through the middle of its own canvas.
+    const axisU = mode === 'built' ? (spec.axis?.[0] ?? blob.vpU) : 0.5;
+    const vhorizon = mode === 'built' ? (spec.axis?.[1] ?? blob.vpV)
+                                      : (spec.horizon ?? blob.horizon);
     // the depth field the station authored, in the same words as tools/shell.py
     const dspec = spec.depth;
     const depthAt = (cu, cv) => {
@@ -1198,6 +1359,25 @@ async function main() {
       return acc / w;
     };
     const fz = (aspect / 2) / Math.tan(hfov * Math.PI / 360);
+    // M5's room, in metres about the painter's own standpoint. Rebuilt here
+    // from the vanishing point the blob measured and the four back-wall numbers
+    // the station authors, in the same words as tools/room.py -- the same
+    // arrangement the shell's depth points have, and for the same reason: what
+    // a person typed belongs in the file a person reads, so that arguing with
+    // it costs a reload and not a rebuild.
+    const eyeM = sn.eye ?? 1.65;
+    // How much of this canvas's paint is laid at all, driven by the walk. One
+    // everywhere except at station 5, where three canvases share a room and
+    // `at` says how far into it each of them is the room.
+    const presence = { value: 1 };
+    const room = (() => {
+      if (mode !== 'built') return null;
+      const b = spec.back ?? blob.room?.back;
+      if (!b || !(b[3] - vhorizon > 1e-4)) return null;
+      const [ul, ur, vc, vf] = b, k = eyeM / (vf - vhorizon);
+      return { left: k * (axisU - ul) * aspect, right: k * (ur - axisU) * aspect,
+               ceil: eyeM + k * (vhorizon - vc), depth: k * fz };
+    })();
     // A hung canvas: the paint is 3.6 m tall whatever it is a picture of, and
     // it stands on the ground rather than through it.
     // A hung canvas is 3.6 m tall whatever it is a picture of. A canvas laid on
@@ -1205,7 +1385,7 @@ async function main() {
     // and is the size he painted it.
     const scale = Q.has('scale') ? num('scale', 1)
                 : spec.scale ?? (mode === 'ground' ? 1 : 3.6 / tileM[1]);
-    const hang = flatMode || mode === 'ground' ? 0
+    const hang = flatMode || mode === 'ground' || mode === 'built' ? 0
                : num('hang', tileM[1] * scale * 0.5 + 0.12);
 
     const uni = {
@@ -1231,6 +1411,13 @@ async function main() {
       uLift: { value: ray ? 1 : 0 },
       uSkyOnly: { value: mode === 'sky' ? 1 : 0 },
       uShell: { value: mode === 'shell' ? 1 : 0 },
+      uBuilt: { value: mode === 'built' ? 1 : 0 },
+      uAxisU: { value: axisU },
+      uRoom: { value: new THREE.Vector4(room?.left ?? 0, room?.right ?? 0,
+                                        room?.ceil ?? 0, room?.depth ?? 0) },
+      // how much of this canvas's paint is laid at all. One on every canvas
+      // that is alone in its space; on the three Bedrooms it is the walk.
+      uPresence: presence,
       uPitch: { value: pitch },
       // The one motion. The amplitude is per stroke and measured; the gain is
       // the station's fraction of it and the rate is the station's, and that
@@ -1267,13 +1454,20 @@ async function main() {
       swellAt(sn._SW, cy_ * x + sy_ * z, -sy_ * x + cy_ * z);
     const lift = (cx, cy, out) => {
       const vh = vhorizon, g = uni.uGamma.value;
-      let x = (cx - 0.5) * aspect, y = vh - cy, z = -fz;
+      let x = (cx - axisU) * aspect, y = vh - cy, z = -fz;
       if (pitch) {
         const cp = Math.cos(pitch), sp = Math.sin(pitch);
         const ny = cp * y - sp * z; z = sp * y + cp * z; y = ny;
       }
       let t;
-      if (mode === 'shell') { t = Math.max(depthAt(cx, cy), 0.05) / Math.hypot(x, y, z); }
+      if (mode === 'built' && room) {
+        t = room.depth / Math.max(-z, 1e-6);
+        if (y < -1e-6) t = Math.min(t, eyeH / -y);
+        else if (y > 1e-6) t = Math.min(t, Math.max(room.ceil - eyeH, 0.05) / y);
+        if (x < -1e-6) t = Math.min(t, room.left / -x);
+        else if (x > 1e-6) t = Math.min(t, room.right / x);
+      }
+      else if (mode === 'shell') { t = Math.max(depthAt(cx, cy), 0.05) / Math.hypot(x, y, z); }
       else if (y >= 0 || mode === 'sky') { t = dome / Math.hypot(x, y, z); }
       else {
         const rho = Math.hypot(x, z);
@@ -1293,7 +1487,17 @@ async function main() {
 
     const group = new THREE.Group();
     group.rotation.y = (spec.yaw || 0) * Math.PI / 180;
-    group.position.set(sn._origin.x, 0, sn._origin.y);
+    // How far a canvas stands from the standpoint. Zero for everything that is
+    // a place, because a place *is* the standpoint's own rays and putting it
+    // anywhere else would be putting it where it is not. A canvas that is not a
+    // place has no rays to be on, so it is a wall, and a wall has to be some
+    // distance away -- the Sunflowers at station 5 stand a metre and a half
+    // behind where he stood, facing back at it.
+    {
+      const dd = spec.dist || 0, yw = (spec.yaw || 0) * Math.PI / 180;
+      group.position.set(sn._origin.x - dd * Math.sin(yw), 0,
+                         sn._origin.y - dd * Math.cos(yw));
+    }
     // a canvas laid on the ground rather than hung on the air: DESIGN 7's
     // Irises as the literal ground at your feet, at the size he painted them.
     // It is the wall treatment with the wall tipped flat, which is all "the
@@ -1312,7 +1516,10 @@ async function main() {
     uni.uActN.value = actList.length;
     const BASES = { near: [TIERS[tier].seg, TIERS[tier].col], mid: [2, 3] };
     const sphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
-                                    lifted ? dome * 1.2 : Math.max(...tileM) * scale);
+                                    room ? Math.hypot(room.left + room.right,
+                                                      room.ceil, room.depth)
+                                    : lifted ? dome * 1.2
+                                    : Math.max(...tileM) * scale);
     const orders = new Float32Array(blob.count);
     {
       const dv = new DataView(blob.bytes);
@@ -1361,6 +1568,7 @@ async function main() {
       uWeaveFlat: { value: 0 },
       uWeaveM: { value: sn._weaveMm / 1000 * (ray ? 1 : scale) },
       uWeaveRough: { value: sn._rough }, uDim: sn._dim,
+      uBeyond: { value: mode === 'built' ? 1 : 0 },
       uHasUnder: { value: 0 }, uUnder: { value: null },
       uSwell: { value: sn._SW }, uSwellC: { value: new THREE.Vector2(0, 0) },
       uTileUV: { value: new THREE.Vector4(tx / blob.canvasPx[0], ty / blob.canvasPx[1],
@@ -1423,11 +1631,42 @@ async function main() {
       // a horizon running through it where one surface becomes another -- so
       // one grid over the whole canvas is right, and the split that the lifted
       // treatment needs would be a seam here.
+      //
+      // A room is the exception: it creases, and a one-point room creases in
+      // exactly four places, which are the four edges of its own back wall. So
+      // the grid gets a line laid on each of them and every quad then lies flat
+      // on one wall. Without that the cloth chamfers each corner of the room by
+      // half a grid cell and the paint stands off the chamfer, which reads as
+      // the walls not quite meeting.
       const M = 40;
-      const g = new THREE.PlaneGeometry(1, 1, M, M);
+      // A room's cloth runs past the edge of the painting, and by a long way:
+      // he cropped the ceiling and the near floor out of the Bedroom, and a
+      // room you cannot see the ceiling of is not one you are standing in.
+      // Past the painting there is nothing to show and nothing is invented --
+      // the fragment shader takes it back to bare primed canvas, which is
+      // station 0 and is what is under every canvas in the piece.
+      const LO = room ? [-0.9, -1.2] : [0, 0], HI = room ? [1.9, 1.8] : [1, 1];
+      const seam = (keys, lo, hi) => {
+        const k = [lo, ...keys.filter(t => t > lo + 1e-4 && t < hi - 1e-4)
+                              .sort((a, b) => a - b), hi];
+        const out = [];
+        for (let i = 0; i < k.length - 1; i++) {
+          const n = Math.max(1, Math.round((k[i + 1] - k[i]) * M));
+          for (let j = 0; j < n; j++) out.push(k[i] + (k[i + 1] - k[i]) * j / n);
+        }
+        return out.concat([hi]);
+      };
+      const bk = room ? (spec.back ?? blob.room?.back) : null;
+      const us = seam(bk ? [bk[0], bk[1]] : [], LO[0], HI[0]);
+      const vs = seam(bk ? [bk[2], bk[3]] : [], LO[1], HI[1]);
+      const NU = us.length - 1, NV = vs.length - 1;
+      const g = new THREE.PlaneGeometry(1, 1, NU, NV);
       const pos = g.attributes.position, uv = g.attributes.uv;
       for (let i = 0; i < pos.count; i++) {
-        lift(uv.getX(i), 1 - uv.getY(i), p3);
+        const u = us[Math.round(uv.getX(i) * NU)];
+        const v = vs[Math.round((1 - uv.getY(i)) * NV)];
+        uv.setXY(i, u, 1 - v);
+        lift(u, v, p3);
         pos.setXYZ(i, p3.x, p3.y, p3.z);
       }
       g.computeVertexNormals();
@@ -1440,8 +1679,15 @@ async function main() {
       m.position.set(0, hang, -0.00006 * scale);
       cloths.push(m);
     }
+    // Three canvases of one room need one substrate, not three. The cloth is
+    // the plaster and the boards *under* the paint and the room has one of
+    // each; three of them would z-fight along every wall, and the strokes
+    // dissolving over a single shared shell is also a standing check on the
+    // measurement -- if the three rooms did not agree, the shared cloth would
+    // show through the two that did not fit it.
+    if (spec.cloth === false) cloths.length = 0;
     for (const m of cloths) group.add(m);
-    texLoader.load(spec.blob.replace(/\.bin$/, '-under.png'), tex => {
+    if (cloths.length) texLoader.load(spec.blob.replace(/\.bin$/, '-under.png'), tex => {
       tex.colorSpace = THREE.NoColorSpace;      // the shader decodes sRGB
       // flipY off, so v runs the way the image does and the tile sub-rect is in
       // the same coordinates the packer wrote. Left on, three.js flips the
@@ -1458,6 +1704,7 @@ async function main() {
 
     return { spec, blob, uni, mat, group, chunkList, actList, orders, cloths,
              clothUni, lifted, mode, measured, sn, scale, hang, tileM, aspect, place,
+             room, presence, at: spec.at,
              lo: 0, hi: 1, shownNear: 0, shownMid: 0, drawn: 0 };
   }
 
@@ -1551,6 +1798,7 @@ async function main() {
     fetched[i] = cv;
     arrived++;
     rebuildActs();
+    rebuildPresence();
     return cv;
   }
 
@@ -1616,7 +1864,13 @@ async function main() {
       // in the dark, so nothing is seen to go.
       cv.group.visible = (sc > 0 || has('noStrokes')) && cv.sn._dim.value > 0.004;
       chunkTotal += cv.chunkList.length;
-      if (!cv.group.visible) {
+      // and a canvas the walk has handed away submits no geometry at all. The
+      // vertex shader was already collapsing its strokes to nothing, which
+      // saves the fill and not the vertices -- three Bedrooms' worth of ribbon
+      // was being swept every frame so that two thirds of it could be thrown
+      // away. The group stays visible either way, because the group also holds
+      // the room's own cloth and the room does not go anywhere.
+      if (!cv.group.visible || cv.presence.value <= 0.002) {
         for (const c of cv.chunkList) { c.mesh.near.visible = c.mesh.mid.visible = false; }
         continue;
       }
@@ -1701,13 +1955,20 @@ async function main() {
   // Which of the two is right is exactly what the instrument below is for.
   // Per station, and read per frame rather than captured, because the body
   // walks inside whichever one tau is in and the two are not the same size.
+  //
+  // M5 adds a centre, because a room is not centred on where the painter put
+  // the easel: at station 5 the walls stand 2.4 m to the left of the standpoint
+  // and 0.8 m to its right, and a volume symmetric about the standpoint would
+  // walk you through one of them. It defaults to the standpoint, so nothing
+  // that had no opinion about it has changed.
   const volOf = sn => sn.volume || { half: [9, 9], ease: 1.5 };
   let VOL = volOf(st);
   let HX = num('volx', VOL.half[0]), HZ = num('volz', VOL.half[1]);
+  let CX = VOL.centre?.[0] ?? 0, CZ = VOL.centre?.[1] ?? 0;
   let EASE = VOL.ease ?? 1.5;
   const RETURN = 1.8;                              // m/s, above the walk's 1.45
   const NEAR_EDGE = 0.5, EDGE_LIMIT = 0.20;        // BUILD M3's own numbers
-  const edgeDist = (x, z) => Math.min(HX - Math.abs(x), HZ - Math.abs(z));
+  const edgeDist = (x, z) => Math.min(HX - Math.abs(x - CX), HZ - Math.abs(z - CZ));
   const walk = { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0 };
 
   const volBox = has('volume') ? new THREE.Group() : null;
@@ -1718,9 +1979,11 @@ async function main() {
     const pts = [];
     const V = volOf(sn);
     const HX = V.half[0], HZ = V.half[1], EASE = V.ease ?? 1.5;
+    const CX = V.centre?.[0] ?? 0, CZ = V.centre?.[1] ?? 0;
     const terrainJS = (x, z) => swellAt(sn._SW, x, z);
     const ring = (h, ax, az) => {
-      const c = [[ax, az], [-ax, az], [-ax, -az], [ax, -az]];
+      const c = [[CX + ax, CZ + az], [CX - ax, CZ + az],
+                 [CX - ax, CZ - az], [CX + ax, CZ - az]];
       for (let i = 0; i < 4; i++) {
         const a = c[i], b = c[(i + 1) % 4];
         for (let k = 0; k < 12; k++) {                 // follow the swell
@@ -1732,7 +1995,8 @@ async function main() {
       }
     };
     ring(0.02, HX, HZ); ring(1.65, HX, HZ); ring(0.02, HX + EASE, HZ + EASE);
-    for (const c of [[HX, HZ], [-HX, HZ], [-HX, -HZ], [HX, -HZ]])
+    for (const c of [[CX + HX, CZ + HZ], [CX - HX, CZ + HZ],
+                     [CX - HX, CZ - HZ], [CX + HX, CZ - HZ]])
       pts.push(c[0], terrainJS(c[0], c[1]) + 0.02, c[1],
                c[0], terrainJS(c[0], c[1]) + 1.65, c[1]);
     g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
@@ -1761,6 +2025,7 @@ async function main() {
     if (st !== was) {
       VOL = volOf(st);
       HX = num('volx', VOL.half[0]); HZ = num('volz', VOL.half[1]);
+      CX = VOL.centre?.[0] ?? 0; CZ = VOL.centre?.[1] ?? 0;
       EASE = VOL.ease ?? 1.5;
       BURST = st.pacing?.burst ?? 2000; HOLD = st.pacing?.hold ?? 2.4;
     }
@@ -2077,6 +2342,33 @@ async function main() {
       }
       const dt2 = clamp01((near - DIM_NEAR) / (DIM_FAR - DIM_NEAR));
       DIM.value = 1 - dt2 * dt2 * (3 - 2 * dt2);
+      // M5, and the one thing at station 5 the viewer does with their feet.
+      // Three canvases of one room, each with an `at` saying how far into the
+      // room it *is* the room, and walking forward hands the paint from one to
+      // the next. A plain tent between the two nearest keys, so the weights sum
+      // to exactly one and the room is never half-painted -- and the handover
+      // is per stroke rather than by transparency, so what the viewer sees is
+      // his second version of a mark replacing his first, not two rooms
+      // superimposed. Backwards along -z is the axis because that is the
+      // direction the window looks, which for a built canvas is the vanishing
+      // point and therefore the direction he was facing.
+      for (const keys of PRESENCE) {
+        for (const c of keys.cv) c.presence.value = 0;
+        // A canvas that has not been painted yet cannot be walked into. Two of
+        // station 5's three Bedrooms are September 1889 and the first is
+        // October 1888, so until tau has reached them the room stays the room
+        // he was living in however far you walk -- and once tau passes, the
+        // same walk reaches the asylum. The chronology is not decoration here;
+        // it is the gate.
+        const use = keys.cv.filter(c => c.uni.uScrub.value >= 0.999);
+        if (use.length < 2) { (use[0] ?? keys.cv[0]).presence.value = 1; continue; }
+        const fwd = -(wz - keys.origin);
+        let j = 0;
+        while (j < use.length - 2 && fwd > use[j + 1].at) j++;
+        const a = use[j], b = use[j + 1];
+        const u = clamp01((fwd - a.at) / Math.max(b.at - a.at, 1e-6));
+        a.presence.value = 1 - u; b.presence.value = u;
+      }
       const ground = terrainJS(wx, wz);
       const eye = EYE * (1 - lie.v) + LIE * lie.v;
       cam.position.set(wx, ground + eye + bob * (1 - lie.v), wz);
@@ -2208,7 +2500,16 @@ async function main() {
                  sizeRatio: fetched[i] ? fetched[i].blob.sizeRatio : null,
                  sizeDemand: fetched[i] ? fetched[i].blob.sizeDemand : null,
                })),
-               volume: window.vg.volume() };
+               volume: window.vg.volume(),
+               presence: window.vg.presence(),
+               rooms: canvases.filter(c => c && c.room).map(c => ({
+                 title: c.spec.title,
+                 wide: +(c.room.left + c.room.right).toFixed(3),
+                 high: +c.room.ceil.toFixed(3), deep: +c.room.depth.toFixed(3),
+                 vpMeasured: [+c.blob.vpU.toFixed(4), +c.blob.vpV.toFixed(4)],
+                 vpAuthored: c.spec.axis ?? null,
+                 vpRatio: +c.blob.vpRoomRatio.toFixed(3),
+               })) };
     },
     scrub: setScrub,
     // Going to a station means putting tau at the start of its making, because
@@ -2227,6 +2528,22 @@ async function main() {
       return { id: sn.id, title: sn.title, when: sn.when, where: sn.where,
                tau: [a.lo, a.hi] };
     },
+    // Stand somewhere. The walk is the only control the piece gives a viewer
+    // that tau does not, and at station 5 it is the control that changes the
+    // painting, so it has to be drivable from outside a pair of hands.
+    at: (x, z, yaw) => {
+      body.x = +x || 0; body.z = +z || 0;
+      if (yaw !== undefined) body.yaw = +yaw;
+      return { x: body.x, z: body.z, yaw: body.yaw };
+    },
+    // Which canvas the paint is made of, where there is more than one answer.
+    presence: () => PRESENCE.map(g => ({
+      station: g.cv[0].sn.id,
+      forward: +(-(carry.y + body.z - g.origin)).toFixed(3),
+      of: g.cv.map(c => ({ title: c.spec.title, at: c.at,
+                           painted: +c.uni.uScrub.value.toFixed(3),
+                           present: +c.presence.value.toFixed(4) })),
+    })),
     // and where the road is, so the transit can be driven from the console
     // rather than only walked into.
     axis: () => AXIS.map(a => (a.kind === 'station'
@@ -2307,6 +2624,16 @@ async function main() {
   // one; see vg.wander.
   if (Q.has('walk'))
     setTimeout(() => window.vg.wander(Q.get('walk') || 'wander', num('walksec', 40)), 200);
+
+  // ?at=x,z[,yaw]: stand somewhere, in the station's own metres. M5 needs it
+  // because at station 5 the walk is what changes the painting, so a
+  // reproducible frame has to be able to say where the body was standing --
+  // exactly as ?tau says where the scrub was.
+  if (Q.has('at')) {
+    const t = (Q.get('at') || '').split(',').map(Number);
+    if (t.length >= 2 && t.every(v => Number.isFinite(v)))
+      window.vg.at(t[0], t[1], t.length > 2 ? t[2] * Math.PI / 180 : undefined);
+  }
 
   // ?probe=N: run for N real milliseconds, then hand the state back to whoever
   // is serving this page. tools/shot.py listens for it. The alternative is

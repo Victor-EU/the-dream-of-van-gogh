@@ -75,9 +75,9 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 5 | *La Berceuse (Augustine Roulin)* | Stedelijk Museum, Amsterdam | `A965` | Commons | 4344 × 5258 | 23 | — † | **— †** |
 | 5 | *Sunflowers* | National Gallery, London | `NG3863` | Commons | 4719 × 6000 | 28 | — † | **— †** |
 | 5 | *Sunflowers* | Van Gogh Museum, Amsterdam | `s0031V1962` | museum IIIF (Micrio) | 6133 × 8061 | 49 | 73.0 × 95.0 | **84** |
-| 5 | *The Bedroom (first version)* | Van Gogh Museum, Amsterdam | `s0047V1962` | museum IIIF (Micrio) | 30000 × 23803 | 714 | 91.3 × 72.4 | **329** |
+| 5 | *The Bedroom (first version)* | Van Gogh Museum, Amsterdam | `s0047V1962` | Commons · Google Art Project ◊ | 30000 × 23803 | 714 | 91.3 × 72.4 | **329** |
 | 5 | *The Bedroom (second version)* | Art Institute of Chicago | `1926.417` | Commons · Google Art Project | 7171 × 5596 | 40 | 92.3 × 73.6 | **78** |
-| 5 | *The Bedroom (third version)* | Musée d'Orsay — C2RMF scan | `RF1959-2` | Commons · C2RMF research scan | 15016 × 11741 | 176 | — † | **— †** |
+| 5 | *The Bedroom (third version)* | Musée d'Orsay — C2RMF scan | `RF1959-2` | Commons · C2RMF research scan | 15016 × 11741 | 176 | 74.0 × 57.5 ◊◊ | **202 ◊◊** |
 | 5 | *The Yellow House (The Street)* | Van Gogh Museum, Amsterdam | `s0032V1962` | museum IIIF (Micrio) | 9234 × 7233 | 67 | 91.5 × 72.0 | **101** |
 | 5 | *Van Gogh's Chair* | National Gallery, London | `NG3862` | Commons | 4678 × 6000 | 28 | — † | **— †** |
 | 6 | *Café Terrace at Night* | Kröller-Müller Museum | `KM105.462` | Commons | 6415 × 8000 | 51 | — † | **— †** |
@@ -103,6 +103,21 @@ the National Gallery, Kröller-Müller, Saint Louis, the Stedelijk — dimension
 holder's own catalogue** and are left blank rather than filled in from Wikidata, which returns series-level entities
 for the three Bedrooms and would have put the same wrong figure against all of them.
 
+◊ **Corrected at M5.** This row said "museum IIIF (Micrio)" and was wrong: the file came from Commons, by way of
+Google Art Project, and `tools/sources.tsv` has always said so. It is also internally impossible — this document's
+own paragraph above records that the Micrio endpoint caps a single request at about 42 MP, and this is 714. Found by
+diffing every row of this table against `sources.tsv`: **one row of forty-one disagreed, and it was the one about to
+be used.** The other forty are right.
+
+◊◊ **Not verified against the holder, and this is the only canvas in the piece of which that is true.** The Musée
+d'Orsay answers a plain request with 403 and publishes nothing usable, which this document already records for two
+other works. 74.0 × 57.5 cm is the figure in general circulation; it is entered here as that and not as the museum's,
+and it is the reason the dagger rule has an exception at all. What depends on it is the working resolution and
+therefore every stroke width in millimetres this canvas reports. What does **not** depend on it is the room: M5's
+built treatment recovers a room in units of the painter's eye height and the scan's own aspect, so the one
+measurement this canvas is here for survives the dimension being wrong. The scan's aspect after cropping 53 px of
+black surround is 1.2834 against this figure's 1.2870 — consistent, which is not confirmation.
+
 ‡ **Confirmed at M4, when both canvases entered the piece.** The Getty publishes *Irises* as unframed
 74.3 × 94.3 cm on its own object page for `90.PA.20`; MoMA publishes *The Starry Night* as 29 × 36¼ in
 (73.7 × 92.1 cm) in its own open collection dataset, which is the museum's data rather than a third party's. Both
@@ -115,6 +130,35 @@ horizon in it at all, run through `tools/place.py` to find out whether the horiz
 the strongest edge in any picture. It scored 1.7×, the lowest in the collection. M4 puts it in station 8 as the
 ground at your feet, at 1:1, which is a use that depends on the dimension being right rather than only on px/cm —
 so it was confirmed against the Getty first, and the figure the museum publishes is the figure the file already had.*
+
+## The scan and the catalogue disagree about the shape
+
+*Measured at M5, when it started to matter.* Whole-canvas coordinates only mean anything if the shape they are
+fractions of is right, and there are two answers to what that shape is: the ratio of the centimetres the holder
+publishes, and the ratio of the scan's own pixels after `tools/canvas_edge.py` has cropped it to the picture's edge.
+**They differ, by 0.1% to 3.1%.**
+
+| canvas | scan | catalogue | apart |
+|---|---|---|---|
+| *Irises* (Getty) | 1.3084 | 1.2692 | **+3.1%** |
+| *The Bedroom* (Chicago) | 1.2815 | 1.2541 | **+2.2%** |
+| *Olive Grove* | 1.2804 | 1.2596 | +1.7% |
+| *The Starry Night* | 1.2628 | 1.2497 | +1.0% |
+| *The Harvest* | 1.2574 | 1.2507 | +0.5% |
+| *The Sower* | 1.2451 | 1.2400 | +0.4% |
+| *The Bedroom* (Amsterdam) | 1.2603 | 1.2610 | −0.1% |
+| *Wheatfield with a Reaper* | 1.2650 | 1.2664 | −0.1% |
+| *Self-Portrait* (1887) | 0.8039 | 0.8049 | −0.1% |
+
+The reason is often visible in the figure itself. Chicago publishes 92.3 × 73.6 cm for the second *Bedroom*, which is
+36¼ × 29 inches converted, and a rounded inch is ±1.3 cm on a canvas that size. The Van Gogh Museum, measuring its
+own canvases in centimetres, agrees with its own scans to a tenth of a percent on all three of its entries here.
+
+So the rule from M5 is **the shape from the scan, the size from the catalogue**: the scan is the artifact and the
+holder is the authority on how big it is, and neither is asked the other's question. It changed nothing that could
+be seen — all twelve goldens are byte-identical and every horizon ratio holds to a rounding — and it had to be done
+before station 5, because the claim that three Bedrooms are the same room is argued at a tolerance of 2% and one of
+the three carried a 2.2% error in its own shape.
 
 ## Known gaps
 

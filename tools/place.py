@@ -451,7 +451,10 @@ def place(doc, p, audit=False):
     f = features(doc)
     cw, ch = doc["canvas_px"]
     f["cw"], f["ch"] = cw, ch
-    aspect = doc["canvas_cm"][0] / doc["canvas_cm"][1]
+    # the scan's own shape, not the catalogue's: see M5. The strokes are
+    # fractions of the scan, so this is the ratio that squares them up, and
+    # the published centimetres are often a rounded conversion of inches.
+    aspect = doc["canvas_px"][0] / doc["canvas_px"][1]
     t = time.time()
 
     hc = horizon_colour(f, aspect)
