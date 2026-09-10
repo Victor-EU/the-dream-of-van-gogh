@@ -103,6 +103,14 @@ the National Gallery, Kröller-Müller, Saint Louis, the Stedelijk — dimension
 holder's own catalogue** and are left blank rather than filled in from Wikidata, which returns series-level entities
 for the three Bedrooms and would have put the same wrong figure against all of them.
 
+*One exception, and it is an exception on purpose. `params/irises.json` carries 94.3 × 74.3 cm for the Getty
+*Irises*, which is **not** verified against the Getty's catalogue and is not entered in the table above. The canvas
+is not in any station: it is M3's negative control, a picture that is all ground and has no horizon in it at all, run
+through `tools/place.py` to find out whether the horizon test is measuring a horizon or merely the strongest edge in
+any picture. The dimension enters that answer only through px/cm, which sets the tracer's smoothing scales; the test
+itself is a ratio of two colour splits and is scale-free. If the canvas is ever wanted for the piece, the dimension
+has to be confirmed first like every other.*
+
 ## Known gaps
 
 | work | station | best available | why it matters |

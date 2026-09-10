@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Van Gogh's Universe — M0b</title>
+<title>Van Gogh's Universe — M3</title>
 <style>
   :root { color-scheme: dark; }
   html, body { margin: 0; height: 100%; background: #0b0b0d; overflow: hidden; }
@@ -11,12 +11,17 @@
   #ui { position: fixed; inset: 0; pointer-events: none;
         font: 13px/1.5 ui-sans-serif, -apple-system, Helvetica, sans-serif;
         color: #e8e4dc; }
-  #caption { position: absolute; left: 24px; bottom: 22px; max-width: 30em;
-             text-shadow: 0 1px 12px rgba(0,0,0,.85); opacity: .85; }
-  #caption b { font-weight: 600; letter-spacing: .01em; }
-  #caption span { display: block; opacity: .6; margin-top: 4px; font-size: 12px; }
-  #hint { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
-          opacity: .45; font-size: 12px; letter-spacing: .04em;
+  /* DESIGN 11: a serif for the titles, system sans for the small labels, and
+     the chrome uses none of his colours -- it has to stay out of the painting. */
+  #caption { position: absolute; left: 24px; bottom: 34px; max-width: 31em;
+             text-shadow: 0 1px 12px rgba(0,0,0,.85); opacity: .92;
+             transition: opacity .9s ease; }
+  #caption.dim { opacity: .12; }
+  #caption b { font: 600 17px/1.35 ui-serif, Georgia, "Times New Roman", serif;
+               letter-spacing: .01em; display: block; }
+  #caption span { display: block; opacity: .62; margin-top: 5px; font-size: 12px; }
+  #hint { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%);
+          opacity: .42; font-size: 12px; letter-spacing: .04em; text-align: center;
           text-shadow: 0 1px 12px rgba(0,0,0,.9); }
   #debug { position: absolute; right: 16px; top: 14px; display: none;
            font: 11px/1.55 ui-monospace, Menlo, monospace; opacity: .8;
@@ -29,23 +34,41 @@
   #fail p { margin: 0 0 .5em; opacity: .7; font-size: 13px; }
   #fail code { font: 11px/1.6 ui-monospace, Menlo, monospace; opacity: .55;
                display: block; margin-top: 1em; white-space: pre-wrap; }
-  #scrubbar { position: absolute; left: 24px; right: 24px; bottom: 0; height: 2px;
-              background: rgba(255,255,255,.08); }
-  #scrubfill { height: 100%; width: 0; background: rgba(255,240,210,.55); }
+
+  /* The timeline: ten years, the station marks, the date and the position, and
+     the only persistent chrome there is. A hairline until the pointer comes
+     near it, then a band -- always there, never in the painting. */
+  #band { position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+          background: rgba(255,255,255,.07); pointer-events: auto;
+          transition: height .22s ease, background .22s ease; }
+  #band.open { height: 22px; background: rgba(10,10,12,.55); }
+  #bandfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+              background: rgba(255,240,210,.5); }
+  #band i { position: absolute; top: 0; bottom: 0; width: 1px;
+            background: rgba(255,255,255,.18); }
+  #band i.now { background: rgba(255,240,210,.8); width: 2px; }
+  #bandknob { position: absolute; top: 50%; width: 2px; height: 3px; margin-left: -1px;
+              background: #fff; transform: translateY(-50%);
+              transition: height .22s ease; }
+  #band.open #bandknob { height: 14px; }
+  #when { position: absolute; right: 24px; bottom: 34px; font-size: 11px;
+          letter-spacing: .06em; opacity: .45;
+          text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+  /* the same control, reachable by keyboard, per DESIGN 11 */
+  #scrubinput { position: absolute; left: 0; bottom: 0; width: 100%; height: 22px;
+                opacity: 0; pointer-events: auto; margin: 0; }
+  #scrubinput:focus-visible { outline: 1px solid rgba(255,240,210,.6); opacity: .01; }
 </style>
 </head>
 <body>
 <div id="ui">
-  <div id="caption"><b id="capt">Wheatfield with a Reaper</b><span id="caps">The order in
-      which the strokes arrive is reconstructed, not recorded. Where two marks overlap the
-      paint says which was laid second, and 8,172 of those readings are strong enough to
-      use; withhold a fifth of them and the reconstruction gets 52.8% of the withheld ones
-      right against 46.0% for the painter's habits alone. So the order is partly evidence
-      and mostly habit, and it correlates 0.89 with the habits it started from. The timing
-      is invention throughout.</span></div>
-  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; space to let it paint itself &nbsp;·&nbsp; Z lie down</div>
+  <div id="caption" role="status" aria-live="polite"><b id="capt">The Harvest</b><span id="caps"></span></div>
+  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; space to let it paint itself &nbsp;·&nbsp; Z lie down &nbsp;·&nbsp; C the caption</div>
+  <div id="when"></div>
   <div id="debug"></div>
-  <div id="scrubbar"><div id="scrubfill"></div></div>
+  <div id="band"><div id="bandfill"></div><div id="bandknob"></div></div>
+  <input id="scrubinput" type="range" min="0" max="1" step="0.002" value="1"
+         aria-label="the making of the station, from bare canvas to finished">
   <div id="fail"><div>
     <h1 id="failh">Nothing to show.</h1>
     <p id="failp"></p><code id="failc"></code>
@@ -147,6 +170,32 @@ function readBlob(buf) {
     orderFeedback: version >= 4 ? v.getFloat32(284, true) : 0,
     orderFeedbackShuf: version >= 4 ? v.getFloat32(288, true) : 0,
     orderBlock: version >= 4 ? v.getFloat32(300, true) : 0,
+    // M3: where this canvas stands. `treatment` was decided by a measurement
+    // rather than by the table in DESIGN 7 -- how much better the best level
+    // colour cut is than the best upright one, with two canvases that are not
+    // places run through the same code to say where that line goes. gamma and
+    // gammaMeasured are separate on purpose: the second is near zero on every
+    // canvas here, so the first is a construction, and a blob quoting only the
+    // number it was built with would be hiding that.
+    lifted: version >= 5 ? v.getUint8(380) === 1 : false,
+    gradient: version >= 5 ? v.getUint8(381) === 1 : false,
+    horizon: version >= 5 ? v.getFloat32(320, true) : 0.5,
+    gamma: version >= 5 ? v.getFloat32(324, true) : 1,
+    gammaMeasured: version >= 5 ? v.getFloat32(328, true) : 0,
+    horizonRatio: version >= 5 ? v.getFloat32(332, true) : 0,
+    split: version >= 5 ? v.getFloat32(336, true) : 0,
+    splitNull: version >= 5 ? v.getFloat32(340, true) : 0,
+    sizeRatio: version >= 5 ? v.getFloat32(344, true) : 0,
+    sizeDemand: version >= 5 ? v.getFloat32(348, true) : 0,
+    vpRatio: version >= 5 ? v.getFloat32(356, true) : 0,
+    skyStrokes: version >= 5 ? v.getUint32(360, true) : 0,
+    groundStrokes: version >= 5 ? v.getUint32(364, true) : 0,
+    hfov: version >= 5 ? v.getFloat32(368, true) : 50,
+    eyeH: version >= 5 ? v.getFloat32(372, true) : 1.65,
+    dome: version >= 5 ? v.getFloat32(376, true) : 90,
+    thins: version >= 5 ? v.getFloat32(384, true) : 0,
+    nearM: version >= 5 ? v.getFloat32(388, true) : 0,
+    reachM: version >= 5 ? v.getFloat32(392, true) : 0,
     srcSha: hex(72), paramSha: hex(104),
     bytes: buf,
   };
@@ -166,8 +215,17 @@ function readBlob(buf) {
 // ridge line down the middle and a silhouette made of straight edges. At 1:1
 // against the scan it reads as moulded plastic, which is exactly the failure
 // M0a's gate named and left for here.
-const TIERS = { light: { seg: 4, col: 4, dpr: 1 }, balanced: { seg: 7, col: 5, dpr: 2 },
-                rich: { seg: 11, col: 7, dpr: 2 } };
+// midpx is the screen-space stroke width below which a chunk drops to the mid
+// tier, and it belongs to the tier rather than being one number for the whole
+// piece. M3 is why: a lifted canvas puts every stroke on the ray it came off
+// the canvas on, so from the painter's position a stroke subtends exactly what
+// it subtends on the canvas -- eight pixels, at the horizon and at your feet
+// alike -- and a single 5 px threshold therefore demotes nothing anywhere. The
+// LOD only starts working once the viewer walks away from a wedge, which is
+// correct and is also not what a phone needs. So light demotes early.
+const TIERS = { light: { seg: 3, col: 3, dpr: 1, midpx: 9 },
+                balanced: { seg: 7, col: 5, dpr: 2, midpx: 5 },
+                rich: { seg: 11, col: 7, dpr: 2, midpx: 4 } };
 
 
 function measureTier() {
@@ -283,6 +341,43 @@ const COMMON = /* glsl */`
   }
 `;
 
+// The swell under the plain. DESIGN 4.4 asks for a heightfield and this is it,
+// and it is invention: tools/place.py could measure where the ground ends and
+// could not measure any recession at all, so there is certainly no evidence
+// here for the shape of a hill. What makes the invention safe is *where it is
+// applied* -- see liftAt below. Two wavelengths at an angle, which is a swell
+// and not a landscape; a landscape would be a modelled world and rule 2 is that
+// there isn't one.
+const TERRAIN = /* glsl */`
+  uniform vec4 uSwell;            // amplitude m, k1, k2, bearing rad
+  uniform float uYaw;             // this canvas's turn in the ring, radians
+  float terrain(vec2 p) {
+    if (uSwell.x <= 0.0) return 0.0;
+    // in world coordinates, always. A canvas is lifted in its own frame and
+    // then its group is turned to face out of the ring, so a swell sampled
+    // before that turn is a *different* swell for every canvas -- the ground
+    // under the Sower rode a hill rotated sixty-eight degrees away from the one
+    // the floor was riding, and the floor came up through the painting in a
+    // great smooth curve. Nothing in either formula was wrong. They were in
+    // different rooms.
+    float c = cos(uYaw), sn = sin(uYaw);
+    p = vec2(c * p.x + sn * p.y, -sn * p.x + c * p.y);
+    // and it dies out past the far half of the plain. Not for looks: the
+    // lifted ground is capped at the dome, so a stroke near the horizon has
+    // already been pushed to ninety metres, and the swell correction then
+    // multiplies *that* by (eye - height)/eye -- half a metre of swell against
+    // an eye at 1.65 moves it between sixty and a hundred and twenty. Adjacent
+    // rows land at wildly different distances, the sheet folds over itself, and
+    // what you see is holes. A swell is something you walk on; at sixty metres
+    // it is not doing any work, so it is faded out where it can only do harm.
+    float fall = 1.0 - smoothstep(14.0, 38.0, length(p));
+    if (fall <= 0.0) return 0.0;
+    vec2 d = vec2(cos(uSwell.w), sin(uSwell.w));
+    return uSwell.x * fall * (0.62 * sin(dot(p, d) * uSwell.y)
+                            + 0.38 * sin(dot(p, vec2(-d.y, d.x)) * uSwell.z + 1.7));
+  }
+`;
+
 const STROKE_VERT = /* glsl */`
   precision highp float;
   attribute float aRow, aCol;
@@ -296,16 +391,62 @@ const STROKE_VERT = /* glsl */`
   uniform float uShortM, uWidthK, uHeightM, uScale, uHang, uOrderLift;
   uniform float uScrub, uArrive, uXray, uGhost;
   uniform float uActHi[8];
-  uniform int uActN;
+  uniform int uActN, uActBase, uActTotal;
+  uniform float uLift, uHorizon, uGamma, uFz, uAspect, uEyeH, uDome;
 
-  varying vec3 vColor, vWorld;
-  varying vec2 vNrm;
+  varying vec3 vColor, vWorld, vNrm, vUp;
   varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
 
   ${COMMON}
+  ${TERRAIN}
 
   vec2 canvasToWorld(vec2 c) {
     return (c - uTileCentre) * vec2(uCanvasM.x, -uCanvasM.y) * uScale + vec2(0.0, uHang);
+  }
+
+  // DESIGN 4.4's lifted treatment. The canvas is a window and a point on it is
+  // a ray from where he stood. Above the horizon the ray runs to the dome;
+  // below it, it falls to the ground. Every stroke stays on its own ray, which
+  // is what makes M3's first exit criterion true by construction rather than by
+  // tuning: from the painter's position the lifted world *is* the painting.
+  //
+  // gamma says how far along the ray a stroke sits, never which ray it is on.
+  // At 1 the ground is flat; as it falls the far field stands up; at 0 the
+  // whole thing is a wall at one distance with a horizon painted on it. It is
+  // 1 on every canvas in the piece so far, and that is a construction, not a
+  // fit: tools/place.py looked for the recession in the paint and found mark
+  // size flat to a few percent across the whole depth of the picture, where a
+  // plane over the same depth demands a factor of twenty to forty.
+  //
+  // The swell enters here and only here: d is rescaled, which slides the point
+  // along the ray it was already on. So the invented hill is exactly invisible
+  // from the standpoint and exists only once the viewer walks. Two fixed-point
+  // steps; the surface is shallow and it converges immediately.
+  //
+  // tools/place.py's lift() is the same function in Python and is kept in the
+  // same words, so that a change to one that is not a change to the other shows
+  // up as a disagreement rather than as bad art.
+  vec3 liftAt(vec2 c, out float t) {
+    vec3 eye = vec3(0.0, uEyeH, 0.0);
+    float x = (c.x - 0.5) * uAspect;
+    float y = uHorizon - c.y;
+    vec3 r = vec3(x, y, -uFz);
+    if (y >= 0.0) { t = uDome / length(r); return eye + r * t; }
+    float rho = length(vec2(x, uFz));
+    float d0 = min(uEyeH * rho / (1.0 - uHorizon)
+                   * pow((1.0 - uHorizon) / max(-y, 1e-6), uGamma), uDome);
+    float d = d0;
+    for (int i = 0; i < 2; i++)
+      d = d0 * (uEyeH - terrain((eye + r * (d / rho)).xz)) / uEyeH;
+    t = d / rho;
+    return eye + r * t;
+  }
+
+  vec3 liftNormal(vec3 p, float sky) {
+    if (sky > 0.5) return normalize(vec3(0.0, uEyeH, 0.0) - p);
+    float h0 = terrain(p.xz);
+    return normalize(vec3(h0 - terrain(p.xz + vec2(1.0, 0.0)), 1.0,
+                          h0 - terrain(p.xz + vec2(0.0, 1.0))));
   }
 
   void main() {
@@ -323,19 +464,45 @@ const STROKE_VERT = /* glsl */`
                    && aOrder < uGhost) ? 1.0 : 0.0;
     if (arrive <= 0.0 && ghost < 0.5) { gl_Position = vec4(-2.0, -2.0, -2.0, 1.0); return; }
 
-    vec2 c0 = canvasToWorld(aP0 * uCoordSpan + uCoordLo);
-    vec2 c1 = canvasToWorld(aP1 * uCoordSpan + uCoordLo);
-    vec2 c2 = canvasToWorld(aP2 * uCoordSpan + uCoordLo);
+    vec2 k0 = aP0 * uCoordSpan + uCoordLo;
+    vec2 k1 = aP1 * uCoordSpan + uCoordLo;
+    vec2 k2 = aP2 * uCoordSpan + uCoordLo;
 
     // an arriving stroke extrudes along its own length
     float t = aRow * max(arrive, ghost);
     float mt = 1.0 - t;
-    vec2 pos = mt * mt * c0 + 2.0 * t * mt * c1 + t * t * c2;
-    vec2 tan = normalize(2.0 * mt * (c1 - c0) + 2.0 * t * (c2 - c1) + vec2(1e-9, 0.0));
-    vec2 nrm = vec2(-tan.y, tan.x);
 
-    float w = aWidth * uWidthK * uShortM * uScale * mix(1.0, 0.26, ghost);
-    float h = aHeight * uHeightM * uScale * (1.0 - ghost);
+    vec3 base, across3, up3;
+    // The magnification: metres of world per unit of canvas short edge. On a
+    // hung canvas it is one number for the whole wall; lifted, it is how far
+    // along the ray the stroke sits, so a mark on the far side of the plain is
+    // the same mark seen small rather than a smaller mark. Taken once at the
+    // stroke's own midpoint so the ribbon cannot shear along its length.
+    float magn = uScale;
+    if (uLift > 0.5) {
+      vec2 kc = mix(mix(k0, k1, t), mix(k1, k2, t), t);
+      vec2 km = 0.25 * k0 + 0.5 * k1 + 0.25 * k2;
+      float tm, td;
+      base = liftAt(kc, td);
+      liftAt(km, tm);
+      magn = tm / uShortM;
+      vec2 dk = 2.0 * mt * (k1 - k0) + 2.0 * t * (k2 - k1) + vec2(1e-9, 0.0);
+      float ts;
+      vec3 ahead = liftAt(kc + normalize(dk) * 0.002, ts);
+      vec3 tan3 = normalize(ahead - base + vec3(1e-9, 0.0, 0.0));
+      up3 = liftNormal(base, step(km.y, uHorizon));
+      across3 = normalize(cross(up3, tan3));
+    } else {
+      vec2 c0 = canvasToWorld(k0), c1 = canvasToWorld(k1), c2 = canvasToWorld(k2);
+      vec2 pos = mt * mt * c0 + 2.0 * t * mt * c1 + t * t * c2;
+      vec2 tan = normalize(2.0 * mt * (c1 - c0) + 2.0 * t * (c2 - c1) + vec2(1e-9, 0.0));
+      base = vec3(pos, 0.0);
+      across3 = vec3(-tan.y, tan.x, 0.0);
+      up3 = vec3(0.0, 0.0, 1.0);
+    }
+
+    float w = aWidth * uWidthK * uShortM * magn * mix(1.0, 0.26, ghost);
+    float h = aHeight * uHeightM * magn * (1.0 - ghost);
     if (uXray > 0.5) { w *= 0.12; h = 0.0; }
 
     // the ends of a mark are laid down by a brush, not cut off square
@@ -352,7 +519,7 @@ const STROKE_VERT = /* glsl */`
     // relief cap and invisible -- but it means two strokes laid flat in the
     // same pass cannot z-fight, and the paint is then physically stacked in
     // the order it was laid, which is the thing this piece is about.
-    vec3 p = vec3(pos + nrm * across, lift + aOrder * uOrderLift);
+    vec3 p = base + across3 * across + up3 * (lift + aOrder * uOrderLift * magn);
 
     vColor = mix(srgbToLinear(aColor), vec3(0.020, 0.019, 0.021), ghost);
     // ?xray paints the sequence itself: one hue an act, so a still at any tau
@@ -360,12 +527,15 @@ const STROKE_VERT = /* glsl */`
     if (uXray > 0.5) {
       int ai = 0;
       for (int i = 0; i < 7; i++) if (i < uActN - 1 && aOrder > uActHi[i]) ai = i + 1;
-      float f = float(ai) / max(float(uActN - 1), 1.0);
+      // the hue runs across the whole station, not each canvas separately, so
+      // three canvases painted one after another read as one sequence
+      float f = float(uActBase + ai) / max(float(uActTotal - 1), 1.0);
       vec3 h = clamp(abs(mod(f * 5.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
       vColor = srgbToLinear(h * 0.86 + 0.10);
     }
     vGhostF = ghost;
-    vNrm = nrm;
+    vNrm = across3;
+    vUp = up3;
     // the bow's slope constant; the fragment builds the normal from it, so the
     // paint has a rounded top rather than three flat facets
     vSlope = (w > 1e-6) ? (4.0 * h * taper / w) : 0.0;
@@ -381,8 +551,7 @@ const STROKE_VERT = /* glsl */`
 
 const STROKE_FRAG = /* glsl */`
   precision highp float;
-  varying vec3 vColor, vWorld;
-  varying vec2 vNrm;
+  varying vec3 vColor, vWorld, vNrm, vUp;
   varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
   uniform vec3 uLight, uEye;
   uniform float uFlat, uHeights, uAmbient, uFurrow, uFurrowMm, uXray;
@@ -402,7 +571,7 @@ const STROKE_FRAG = /* glsl */`
     // three times Nyquist and plainly resolvable
     float fade = 1.0 - smoothstep(1.7, 2.7, fwidth(ph));
     float fur = cos(ph) * uFurrow * fade * smoothstep(0.02, 0.25, vHeight);
-    vec3 n = normalize(vec3(vNrm * (vSlope * vAcross + fur), 1.0));
+    vec3 n = normalize(vNrm * (vSlope * vAcross + fur) + vUp);
     if (!gl_FrontFacing) n = -n;
     vec3 base = vColor;
 
@@ -462,18 +631,36 @@ const STROKE_FRAG = /* glsl */`
 // the thin ground wash over it. As the paint arrives it becomes the underlayer
 // the extractor measured: what is actually visible of the ground between the
 // marks, which is what stops a half-finished state looking like a loading bar.
-const CLOTH_VERT = `precision highp float; varying vec2 vUv; varying vec3 vW;
-  void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz;
+// uDisplace lifts the ground plane onto the swell -- the same two sines the
+// strokes ride, so the paint and the cloth under it cannot part company.
+const CLOTH_VERT = /* glsl */`precision highp float;
+  varying vec2 vUv; varying vec3 vW;
+  uniform float uDisplace;
+  ${TERRAIN}
+  void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0);
+    // and sinks it, by 0.8 mm for every metre away. A polygon offset handles
+    // the near field, where the two tessellations of the same ground argue; at
+    // the horizon the surface is exactly edge-on, the depth slope is infinite
+    // and no offset can win, so the floor is simply put underneath. 0.05 of a
+    // quarter of a degree of grade, which is nothing, against the metre of depth
+    // precision out there, which is not.
+    if (uDisplace > 0.5) w.y += terrain(w.xz) - 0.006 * length(w.xz);
+    vW = w.xyz;
     gl_Position = projectionMatrix * viewMatrix * w; }`;
 const CLOTH_FRAG = /* glsl */`
   precision highp float; varying vec2 vUv; varying vec3 vW;
-  uniform float uWeaveM, uWeaveRough, uHasUnder, uPrimed, uFloor;
+  uniform float uWeaveM, uWeaveRough, uHasUnder, uPrimed, uFloor, uWeaveFlat;
   uniform vec3 uGround, uEye, uGesso;
   uniform vec4 uTileUV;
   uniform sampler2D uUnder;
   ${COMMON}
   void main() {
-    vec2 g = vW.xy / uWeaveM;
+    // the weave runs in the plane of the cloth. A hanging canvas is upright, so
+    // its threads are x and y; the ground is not, so its are x and z. Reading xy
+    // on a floor gives one sine and a constant, which is not a weave, it is
+    // corduroy -- and it never showed until M3 made the ground the thing you
+    // look at.
+    vec2 g = (uWeaveFlat > 0.5 ? vW.xz : vW.xy) / uWeaveM;
     float d = length(uEye - vW);
     float fade = 1.0 - smoothstep(0.6, 6.0, d);          // weave is a near thing
     // the weave has to fade by how fast it is moving across the screen, not by
@@ -519,7 +706,7 @@ const CLOTH_FRAG = /* glsl */`
     c *= (0.96 + amp * weave);
 
     if (uFloor > 0.5) {                    // station 0: one charcoal line forward
-      float line = 1.0 - smoothstep(0.010, 0.030, abs(vW.x));
+      float line = 1.0 - smoothstep(0.010, 0.030, abs(vW.x));   // DESIGN 7's charcoal
       line *= (1.0 - uPrimed) * (1.0 - smoothstep(0.0, 26.0, -vW.z));
       c = mix(c, vec3(0.030, 0.028, 0.030), line * 0.88);
       c *= 1.0 - 0.55 * smoothstep(4.0, 34.0, d);        // the void takes it back
@@ -540,6 +727,25 @@ const renderer = (() => {
   }
 })();
 
+// --------------------------------------------------------------- stations --
+// DESIGN 13's stations/*.json, and M3 fixes the shape: canvases, treatment,
+// volume, acts, pacing, letter. A station is data and this file is the
+// mechanism, which is the only way ten of them get built in the time there is
+// and the only way one can be changed without touching a shader.
+const STATIONS = { 4: 'stations/s04-harvest.json' };
+
+// One blob with no station around it: what ?blob and ?flat still mean, and what
+// M0b through M2 were. It is a real station of one canvas standing as a wall
+// rather than a second code path, so the goldens and the flat parity go on
+// measuring the thing the piece actually draws.
+const loneStation = path => ({
+  id: null, title: null, when: '', where: '', eye: 1.65, lone: true,
+  canvases: [{ blob: path, yaw: 0, hfov: 50, treatment: 'present' }],
+  ground: { swell: { amp: 0, wave: [1, 1], dir: 0 } },
+  volume: { half: [9, 9], ease: 1.5 },
+  weave: { mm: 0.9, rough: 0 }, pacing: { burst: 2000, hold: 2.4 },
+});
+
 async function main() {
   if (!renderer) return;
   const flatMode = has('flat');
@@ -551,54 +757,129 @@ async function main() {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // the shader encodes
   renderer.setClearColor(0x14131a, 1);
   document.body.appendChild(renderer.domElement);
+  renderer.domElement.setAttribute('aria-label',
+    'A walkable painting. Drag to look, W A S D to walk, the left and right ' +
+    'arrows move through the making of it, and space lets it paint itself.');
 
   const scene = new THREE.Scene();
   const eyeVec = new THREE.Vector3();
   const EYE = 1.65, LIE = 0.18;
   const cam = flatMode
     ? new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 500)
-    : new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.02, 400);
+    // 4 cm near, 900 m far. The near plane was 2 cm and it cost more than it
+    // bought: depth resolution goes as the square of the distance over the near
+    // plane, and out at the horizon the ground is edge-on, where a metre of
+    // depth is a pixel of screen. Nothing in the piece needs to put an eye
+    // closer to the paint than four centimetres.
+    : new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.04, 900);
   const body = { x: 0, z: 0, yaw: 0, pitch: 0, lying: 0, phase: 0 };
   if (Q.has('cam')) {
     const c = Q.get('cam').split(',').map(Number);
     body.x = c[0]; body.z = c[2]; body.yaw = c[3] || 0; body.pitch = c[4] || 0;
   }
 
-  // Station 0, standing before anything has been fetched: white, woven, one
-  // charcoal line on the ground going forward. DESIGN 7 makes this the loading
-  // screen on purpose -- the wait is the thesis -- so it is built first and the
-  // painting is hung into it, rather than the other way round.
-  // Scale and height come from the blob rather than from a constant: a 25.6 cm
-  // tile and a 92.7 cm canvas cannot stand at the same magnification. The rule
-  // is that the paint is 3.6 m tall whatever it is a picture of -- which puts
-  // the tile at 14x, near where M0a had it by hand, and the whole canvas at 5x
-  // -- and that it stands on the ground rather than through it, which is what
-  // the first whole-canvas frame showed it doing.
-  const preH = 0.732, preScale = num('scale', 3.6 / preH);
+  // ------------------------------------------------ which station is this --
+  const single = Q.get('blob');
+  const want = Q.has('station') ? Q.get('station') : (single ? null : '4');
+  let st = null;
+  if (single || flatMode) {
+    st = loneStation(single || 'strokes/m3/reaper-canvas.bin');
+  } else if (!STATIONS[want]) {
+    // A hook that quietly does nothing is worse than one that is missing.
+    fail(`There is no station ${want} yet.`,
+         'M3 builds station 4, The Harvest. The others arrive with M4 and after.',
+         `stations: ${Object.keys(STATIONS).join(', ')}`);
+    return;
+  } else {
+    try {
+      st = await (await fetch(STATIONS[want])).json();
+    } catch (e) {
+      fail('The station did not load.', 'stations/*.json describes what stands where.',
+           `${STATIONS[want]}\n${e.message}`);
+      return;
+    }
+  }
+  state.station = st.lone ? 'one canvas, no station' : `${st.id} ${st.title}`;
+
+  const swell = st.ground?.swell || { amp: 0, wave: [1, 1], dir: 0 };
+  const SW = new THREE.Vector4(flatMode ? 0 : swell.amp,
+                               6.283185 / Math.max(swell.wave[0], 1e-6),
+                               6.283185 / Math.max(swell.wave[1], 1e-6),
+                               swell.dir * Math.PI / 180);
+  // the swell in JS, in the same words as TERRAIN in the shader. If one changes
+  // and the other does not, the body walks through the ground.
+  const terrainJS = (x, z) => {
+    if (SW.x <= 0) return 0;
+    const r = Math.hypot(x, z);
+    const t = Math.max(0, Math.min(1, (r - 14) / 24));
+    const fall = 1 - t * t * (3 - 2 * t);
+    if (fall <= 0) return 0;
+    const dx = Math.cos(SW.w), dz = Math.sin(SW.w);
+    return SW.x * fall * (0.62 * Math.sin((x * dx + z * dz) * SW.y)
+                        + 0.38 * Math.sin((-x * dz + z * dx) * SW.z + 1.7));
+  };
+
+  const weaveMm = num('weave', st.weave?.mm ?? 0.9);
+  const rough = clamp01(num('rough', st.weave?.rough ?? 0));
+
+  // ------------------------------------------------------------ station 0 --
+  // White, woven, empty, one charcoal line on the ground going forward. DESIGN
+  // 7 makes this the loading screen on purpose -- the wait is the thesis -- so
+  // it is built first and the painting is hung into it, not the other way
+  // round. Once a station is lifted it stays: it is the primed cloth the whole
+  // plain is painted onto, and it dims as the paint arrives rather than turning
+  // into a lawn. Rule 2: with ?noStrokes this is all there is, and it is cloth.
   const floorUni = {
-    uWeaveM: { value: 0.0009 * preScale },           // ~9 px of weave at 120 px/cm
-    uWeaveRough: { value: 0 },                       // 0 linen, 1 Saint-Remy jute
-    // the floor is primed canvas, not the painting's ground: it dims as the
-    // paint arrives rather than turning into it
-    uGround: { value: new THREE.Color(0.155, 0.150, 0.138) },
+    uWeaveM: { value: weaveMm / 1000 * 3.6 },
+    uWeaveRough: { value: rough }, uWeaveFlat: { value: 1 },
+    // What is left when the paint has arrived and there is no paint here: the
+    // primed cloth of station 0, gone dark. It has to be near the clear colour
+    // rather than a mid grey, because a mid grey plane running to the horizon
+    // is a floor in a game and rule 2 says there isn't one -- the unpainted
+    // world recedes into nothing, which is also what it is.
+    uGround: { value: new THREE.Color(0.045, 0.043, 0.048) },
     uGesso: { value: new THREE.Color(0.86, 0.845, 0.80) },
-    uEye: { value: eyeVec },
+    uEye: { value: eyeVec }, uDisplace: { value: 1 }, uSwell: { value: SW },
+    uYaw: { value: 0 },
     uHasUnder: { value: 0 }, uUnder: { value: null },
     uPrimed: { value: 0 }, uFloor: { value: 1 },
     uTileUV: { value: new THREE.Vector4(0, 0, 1, 1) },
   };
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), new THREE.ShaderMaterial({
+  // The floor and a lifted canvas's own cloth are the same surface, tessellated
+  // differently -- 3 m quads out here, centimetres inside the canvas -- so they
+  // interpenetrate, and what that looks like is great smooth gashes of void torn
+  // through the middle distance. A polygon offset is the right fix rather than
+  // sinking the floor by a constant, because the depth slope of a plane seen
+  // this close to edge-on is enormous and grows without bound toward the
+  // horizon, which is exactly what the factor term scales with.
+  const floorMat = new THREE.ShaderMaterial({
     vertexShader: CLOTH_VERT, fragmentShader: CLOTH_FRAG, uniforms: floorUni,
-    extensions: { derivatives: true } }));
+    polygonOffset: true, polygonOffsetFactor: 16, polygonOffsetUnits: 48,
+    extensions: { derivatives: true } });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(760, 760, 190, 190), floorMat);
   floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, 0, 6);
+  floor.frustumCulled = false;
   if (!flatMode) scene.add(floor);
+
+  // and the same cloth overhead, because a primed canvas has no horizon in it
+  // and the sky strokes have to land on something. No weave at ninety metres --
+  // the weave fades by six -- so this is one tone that dims as the sky arrives.
+  const domeUni = Object.assign({}, floorUni, {
+    uFloor: { value: 0 }, uDisplace: { value: 0 }, uWeaveFlat: { value: 0 },
+    uPrimed: { value: 0 },
+  });
+  const domeMat = new THREE.ShaderMaterial({
+    vertexShader: CLOTH_VERT, fragmentShader: CLOTH_FRAG, uniforms: domeUni,
+    side: THREE.BackSide });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(360, 28, 18), domeMat);
+  dome.frustumCulled = false;
+  if (!flatMode && !st.lone) scene.add(dome);
 
   let loading = true;
   if (!flatMode) {
     const pre = () => {
       if (!loading) return;
-      cam.position.set(body.x, EYE, body.z);
+      cam.position.set(body.x, EYE + terrainJS(body.x, body.z), body.z);
       cam.rotation.set(0, 0, 0); cam.rotateY(body.yaw); cam.rotateX(body.pitch);
       eyeVec.copy(cam.position);
       renderer.render(scene, cam);
@@ -607,164 +888,389 @@ async function main() {
     requestAnimationFrame(pre);
   }
 
-  const slug = Q.get('blob') || 'strokes/m2/reaper-canvas.bin';
-  let blob;
-  try {
-    const res = await fetch(slug);
+  // ----------------------------------------------------------- the acts ----
+  // One list for the whole station: each canvas's own acts, found by
+  // tools/order.py cutting its solved sequence, mapped into that canvas's share
+  // of the scrub. This is what the burst and the hold run on, and what ?xray
+  // colours by, so three canvases painted one after another read as one
+  // sequence rather than three.
+  let actList = [];
+  function rebuildActs() {
+    actList = [];
+    for (let i = 0; i < specs.length; i++) {
+      const cv = fetched[i];
+      const lo = specs[i]._lo, hi = specs[i]._hi;
+      if (!cv) { actList.push({ name: '...', hi, count: counts[i], canvas: i, pending: true }); continue; }
+      for (const a of cv.actList)
+        actList.push({ name: a.name, hi: lo + a.hi * (hi - lo), count: a.count, canvas: i });
+      if (!cv.actList.length) actList.push({ name: 'all', hi, count: cv.blob.count, canvas: i });
+    }
+    let base = 0;
+    for (let i = 0; i < specs.length; i++) {
+      const cv = fetched[i];
+      if (!cv) continue;
+      cv.uni.uActBase.value = base;
+      base += Math.max(cv.actList.length, 1);
+    }
+    for (const cv of canvases) if (cv) cv.uni.uActTotal.value = Math.max(base, 1);
+  }
+
+  // The scrub is declared here rather than with its controls below because the
+  // streaming reads it: which canvas is fetched next is which one the viewer is
+  // nearest to needing, and that question is asked before the first blob lands.
+  let scrub = num('tau', 1);
+
+  // ------------------------------------------------------------- a canvas --
+  // Everything that is true of one painting: its blob, its uniforms, its
+  // chunks, its share of the scrub. A station is a list of these and the loop
+  // does not care how many there are.
+  const canvases = [];
+  const texLoader = new THREE.TextureLoader();
+
+  function buildCanvas(spec, blob) {
+    const lifted = !flatMode && (spec.treatment ?? (blob.lifted ? 'lifted' : 'present')) === 'lifted';
+    const canvasM = [blob.canvasCm[0] / 100, blob.canvasCm[1] / 100];
+    const shortM = Math.min(canvasM[0], canvasM[1]);
+    const [tx, ty, tw, th] = blob.tile[2] ? blob.tile : [0, 0, ...blob.canvasPx];
+    const tileCentre = [(tx + tw / 2) / blob.canvasPx[0], (ty + th / 2) / blob.canvasPx[1]];
+    const tileM = [tw / blob.canvasPx[0] * canvasM[0], th / blob.canvasPx[1] * canvasM[1]];
+    const aspect = canvasM[0] / canvasM[1];
+    const hfov = num('hfov', spec.hfov ?? blob.hfov ?? 50);
+    const fz = (aspect / 2) / Math.tan(hfov * Math.PI / 360);
+    // A hung canvas: the paint is 3.6 m tall whatever it is a picture of, and
+    // it stands on the ground rather than through it.
+    const scale = Q.has('scale') ? num('scale', 1) : 3.6 / tileM[1];
+    const hang = flatMode ? 0 : num('hang', tileM[1] * scale * 0.5 + 0.12);
+
+    const uni = {
+      uCoordLo: { value: blob.coordLo }, uCoordSpan: { value: blob.coordHi - blob.coordLo },
+      uCanvasM: { value: new THREE.Vector2(...canvasM) },
+      uTileCentre: { value: new THREE.Vector2(...tileCentre) },
+      uShortM: { value: shortM }, uWidthK: { value: blob.widthK },
+      uHeightM: { value: blob.heightMm / 1000 * num('h', 1) },
+      uOrderLift: { value: (blob.orderLiftMm || 0) / 1000 * num('lift', 1) },
+      uScale: { value: scale }, uHang: { value: hang },
+      uScrub: { value: 1 }, uArrive: { value: num('arrive', 0.012) },
+      uXray: { value: has('xray') ? 1 : 0 },
+      uActHi: { value: new Float32Array(8) }, uActN: { value: 0 },
+      uActBase: { value: 0 }, uActTotal: { value: 1 },
+      uLight: { value: new THREE.Vector3(-0.52, 0.58, 0.34).normalize() },
+      uEye: { value: eyeVec },
+      uFlat: { value: flatMode ? 1 : 0 },
+      uHeights: { value: has('heights') ? 1 : 0 },
+      uAmbient: { value: 0.30 },
+      uFurrow: { value: num('furrow', 0.16) },
+      uFurrowMm: { value: num('hair', 0.55) / 1000 * scale },
+      uGhost: { value: num('ghost', 0.25) },
+      uLift: { value: lifted ? 1 : 0 },
+      uHorizon: { value: blob.horizon }, uGamma: { value: num('gamma', blob.gamma) },
+      uFz: { value: fz }, uAspect: { value: aspect },
+      // Where the sky is, and the distance the ground is capped at. It is a
+      // staging number rather than a measurement -- the plain really does run
+      // to the horizon -- so the station sets it and the blob's own value is
+      // only the one tools/place.py measured the thinning against. Bigger is
+      // better and nearly free: the strip of canvas that gets squeezed onto the
+      // cap goes as 1/dome, and at 90 m that strip was two and a half percent
+      // of the canvas standing up as a wall at the horizon.
+      uEyeH: { value: st.eye ?? 1.65 },
+      uDome: { value: num('dome', st.ground?.dome ?? blob.dome ?? 90) },
+      uSwell: { value: SW }, uYaw: { value: (spec.yaw || 0) * Math.PI / 180 },
+    };
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: STROKE_VERT, fragmentShader: STROKE_FRAG,
+      uniforms: uni, side: THREE.DoubleSide });
+
+    // canvas to world, in JS, in the same words as the vertex shader. Kept next
+    // to it on purpose: a chunk's box has to land where its strokes do, and if
+    // one changes and the other does not, chunks cull against the wrong box and
+    // strokes vanish at the edge of the screen for no visible reason.
+    const eyeH = uni.uEyeH.value, dome = uni.uDome.value;
+    const cy_ = Math.cos(uni.uYaw.value), sy_ = Math.sin(uni.uYaw.value);
+    const terrainLocal = (x, z) => terrainJS(cy_ * x + sy_ * z, -sy_ * x + cy_ * z);
+    const lift = (cx, cy, out) => {
+      const vh = blob.horizon, g = uni.uGamma.value;
+      const x = (cx - 0.5) * aspect, y = vh - cy;
+      let t;
+      if (y >= 0) { t = dome / Math.hypot(x, y, fz); }
+      else {
+        const rho = Math.hypot(x, fz);
+        const d0 = Math.min(eyeH * rho / (1 - vh)
+                            * Math.pow((1 - vh) / Math.max(-y, 1e-6), g), dome);
+        let d = d0;
+        for (let i = 0; i < 2; i++)
+          d = d0 * (eyeH - terrainLocal(x * (d / rho), -fz * (d / rho))) / eyeH;
+        t = d / rho;
+      }
+      return out.set(x * t, eyeH + y * t, -fz * t);
+    };
+    const wall = (cx, cy, out) => out.set(
+      (cx - tileCentre[0]) * canvasM[0] * scale,
+      -(cy - tileCentre[1]) * canvasM[1] * scale + hang, 0);
+    const place = lifted ? lift : wall;
+
+    const group = new THREE.Group();
+    group.rotation.y = (spec.yaw || 0) * Math.PI / 180;
+    scene.add(group);
+
+    const bufs = strokeBuffers(blob);
+    const chunkList = readChunks(blob);
+    const actList = readActs(blob);
+    for (let i = 0; i < actList.length - 1; i++) uni.uActHi.value[i] = actList[i].hi;
+    uni.uActN.value = actList.length;
+    const BASES = { near: [TIERS[tier].seg, TIERS[tier].col], mid: [2, 3] };
+    const sphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
+                                    lifted ? dome * 1.2 : Math.max(...tileM) * scale);
+    const orders = new Float32Array(blob.count);
+    {
+      const dv = new DataView(blob.bytes);
+      for (let i = 0; i < blob.count; i++)
+        orders[i] = dv.getUint16(blob.hdr + i * STRIDE + 20, true) / 65535;
+    }
+    const p3 = new THREE.Vector3();
+    for (const c of chunkList) {
+      c.mesh = {};
+      for (const k of ['near', 'mid']) {
+        const g = bindStrokes(ribbonBase(...BASES[k]), bufs, c.first);
+        g.instanceCount = 0;
+        g.boundingSphere = sphere;
+        const m = new THREE.Mesh(g, mat);
+        m.frustumCulled = false;
+        m.visible = false;
+        c.mesh[k] = m;
+        if (!has('noStrokes')) group.add(m);
+      }
+      // A lifted chunk is a curved patch, not a rectangle: near the horizon its
+      // far edge runs to the dome. So the box is sampled over the chunk rather
+      // than taken from its corners, and then let out by the widest stroke in
+      // it at the magnification where that stroke sits.
+      c.aabb = new THREE.Box3();
+      const N = lifted ? 5 : 2;
+      for (let i = 0; i < N; i++)
+        for (let j = 0; j < N; j++) {
+          const u = c.box[0] + (c.box[2] - c.box[0]) * i / (N - 1);
+          const v = c.box[1] + (c.box[3] - c.box[1]) * j / (N - 1);
+          c.aabb.expandByPoint(place(u, v, p3));
+        }
+      const pad = lifted
+        ? c.wmax * blob.widthK * dome * 0.5
+        : Math.max(0.002 * scale, blob.heightMm / 1000 * scale);
+      c.aabb.expandByScalar(pad);
+      c.centre = c.aabb.getCenter(new THREE.Vector3());
+    }
+
+    // The underlayer, laid into the world as the canvas itself: what the
+    // extractor could see of the ground between the marks, on the same rays the
+    // strokes are on, one part in a thousand further off so it cannot fight
+    // them for the depth buffer. Without it the gaps between the strokes show
+    // the primed cloth of station 0 rather than the tone he painted onto.
+    const clothUni = Object.assign({}, floorUni, {
+      uFloor: { value: 0 }, uPrimed: { value: 0 }, uDisplace: { value: 0 },
+      uWeaveFlat: { value: 0 },
+      uWeaveM: { value: weaveMm / 1000 * (lifted ? 1 : scale) },
+      uWeaveRough: { value: rough },
+      uHasUnder: { value: 0 }, uUnder: { value: null },
+      uSwell: { value: SW },
+      uTileUV: { value: new THREE.Vector4(tx / blob.canvasPx[0], ty / blob.canvasPx[1],
+                                          tw / blob.canvasPx[0], th / blob.canvasPx[1]) },
+    });
+    // DoubleSide because a sheet laid onto a curved ground can fold, and a
+    // folded single-sided sheet is a hole in the world rather than a crease.
+    const clothMat = new THREE.ShaderMaterial({
+      vertexShader: CLOTH_VERT, fragmentShader: CLOTH_FRAG, uniforms: clothUni,
+      side: THREE.DoubleSide, extensions: { derivatives: true } });
+    const cloths = [];
+    if (lifted) {
+      // Two sheets, split exactly at the horizon, and that split is the whole
+      // point. One grid across the whole canvas has a row of quads straddling
+      // the horizon, and each of those quads has its top corners on the dome
+      // ninety metres up and its bottom corners on the ground forty metres out.
+      // What that looks like is a black sheet standing across the middle
+      // distance, and it took a ?noStrokes frame to see it for what it was.
+      // The ground's rows are spaced geometrically in distance rather than
+      // evenly down the canvas, and that is not a nicety. A flat ground is
+      // exact under any tessellation -- a planar quad with four right corners
+      // is the plane -- so the only thing a row schedule has to do is follow
+      // the swell, and the swell is a near thing. Evenly down the canvas, the
+      // rows out at forty metres are ten metres apart and their chords cut
+      // twenty centimetres under a swell the floor is following at four, and
+      // that difference is the floor coming up through the painting.
+      //
+      // The first row is the horizon itself and not the first geometric step.
+      // Everything past the dome is capped to the dome, so the strip of canvas
+      // between the horizon and that cap stands up as a wall out there -- and
+      // without a row on the horizon the wall is simply missing, which reads as
+      // a hairline of void ruled across the picture exactly where the land
+      // meets the sky.
+      const M = 48, vh = blob.horizon;
+      const dNear = eyeH * fz / (1 - vh), R = Math.pow(dome / dNear, 1 / (M - 1));
+      const rows = { sky: [], ground: [vh] };
+      for (let k = 0; k <= M; k++) rows.sky.push(vh * k / M);
+      for (let k = 1; k <= M; k++) rows.ground.push(vh + (1 - vh) * Math.pow(R, k - M));
+      for (const which of ['sky', 'ground']) {
+        const vs = rows[which];
+        const g = new THREE.PlaneGeometry(1, 1, M, M);
+        const pos = g.attributes.position, uv = g.attributes.uv;
+        for (let i = 0; i < pos.count; i++) {
+          const u = uv.getX(i);
+          const v = vs[Math.round((1 - uv.getY(i)) * M)];
+          uv.setXY(i, u, 1 - v);
+          // exactly on the surface: the strokes stand above it by their own
+          // relief, which is millimetres at the near edge and centimetres at
+          // the far one -- always more than the depth buffer can confuse there.
+          lift(u, v, p3);
+          pos.setXYZ(i, p3.x, p3.y, p3.z);
+        }
+        g.computeVertexNormals();
+        const m = new THREE.Mesh(g, clothMat);
+        m.frustumCulled = false;
+        cloths.push(m);
+      }
+    } else {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(tileM[0] * scale, tileM[1] * scale), clothMat);
+      m.position.set(0, hang, -0.00006 * scale);
+      cloths.push(m);
+    }
+    for (const m of cloths) group.add(m);
+    texLoader.load(spec.blob.replace(/\.bin$/, '-under.png'), tex => {
+      tex.colorSpace = THREE.NoColorSpace;      // the shader decodes sRGB
+      // flipY off, so v runs the way the image does and the tile sub-rect is in
+      // the same coordinates the packer wrote. Left on, three.js flips the
+      // upload and the shader's own flip puts the sky under the wheat.
+      tex.flipY = false;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      clothUni.uUnder.value = tex;
+      clothUni.uHasUnder.value = 1;
+      state.under = `${tex.image.width}x${tex.image.height}`;
+    }, undefined, () => { state.under = 'missing'; });
+
+    return { spec, blob, uni, mat, group, chunkList, actList, orders, cloths,
+             clothUni, lifted, scale, hang, tileM, aspect, place,
+             lo: 0, hi: 1, shownNear: 0, shownMid: 0, drawn: 0 };
+  }
+
+  // -------------------------------------------------------- the streaming --
+  // The spans are known before anything is fetched, because the station records
+  // each canvas's stroke count and the runtime checks it against the blob that
+  // arrives. That is what makes the scrub a prefetch signal rather than a
+  // report: at any tau the piece knows which canvas is being painted next and
+  // fetches that one, and the station's timing does not shift under the viewer
+  // as the blobs land.
+  const specs = st.canvases;
+  const counts = specs.map(c => c.strokes || 1);
+  const total = counts.reduce((a, b) => a + b, 0);
+  {
+    let acc = 0;
+    specs.forEach((c, i) => { c._lo = acc / total; acc += counts[i]; c._hi = acc / total; });
+  }
+  const fetched = new Array(specs.length).fill(null);
+  let arrived = 0;
+
+  async function pull(i) {
+    if (fetched[i]) return fetched[i];
+    const res = await fetch(specs[i].blob);
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    blob = readBlob(await res.arrayBuffer());
+    const blob = readBlob(await res.arrayBuffer());
+    if (specs[i].strokes && specs[i].strokes !== blob.count)
+      console.warn(`${specs[i].blob}: the station says ${specs[i].strokes} strokes, ` +
+                   `the blob has ${blob.count}. The station's timing is stale.`);
+    const cv = buildCanvas(specs[i], blob);
+    cv.lo = specs[i]._lo; cv.hi = specs[i]._hi;
+    canvases[i] = cv;
+    fetched[i] = cv;
+    arrived++;
+    rebuildActs();
+    return cv;
+  }
+
+  try {
+    await pull(0);
   } catch (e) {
     loading = false;
     fail('The strokes did not load.',
-         'The page needs the packed blob that tools/extract.py and tools/pack.py produce, ' +
-         'served over http rather than opened from the file system.',
-         `${slug}\n${e.message}\n\n  python3 -m http.server 8710`);
+         'The page needs the packed blob that tools/extract.py and tools/pack.py ' +
+         'produce, served over http rather than opened from the file system.',
+         `${specs[0].blob}\n${e.message}\n\n  python3 -m http.server 8710`);
     return;
   }
   loading = false;
 
-  // metres
-  const canvasM = [blob.canvasCm[0] / 100, blob.canvasCm[1] / 100];
-  const shortM = Math.min(canvasM[0], canvasM[1]);
-  // a whole-canvas blob carries no tile rect; it is the canvas
-  const [tx, ty, tw, th] = blob.tile[2] ? blob.tile : [0, 0, ...blob.canvasPx];
-  const tileCentre = [(tx + tw / 2) / blob.canvasPx[0], (ty + th / 2) / blob.canvasPx[1]];
-  const tileM = [tw / blob.canvasPx[0] * canvasM[0], th / blob.canvasPx[1] * canvasM[1]];
-
-  // The tile is 25.6 cm of canvas. It stands here as a wall of paint at a
-  // uniform magnification -- DESIGN 4.4's "present" treatment -- and the start
-  // position is set so a stroke subtends what it would at arm's length from the
-  // real canvas. Walking closer is the magnifying glass.
-  const world = new THREE.Group();
-  scene.add(world);
-  const scale = Q.has('scale') ? num('scale', 1) : 3.6 / tileM[1];
-  const hang = flatMode ? 0 : num('hang', tileM[1] * scale * 0.5 + 0.12);
-  body.z = num('back', 0.40 * scale);
-  // the cloth: period in millimetres of real canvas, roughness 0 to 1. Linen
-  // by default; ?weave=2.4&rough=1 is the jute of station 8. Both come from the
-  // station data at M3 -- this is the mechanism, exercised.
-  const weaveMm = num('weave', 0.9), rough = clamp01(num('rough', 0));
-  floorUni.uWeaveM.value = weaveMm / 1000 * scale;
-  floorUni.uWeaveRough.value = rough;
-  if (Q.has('cam')) { const c = Q.get('cam').split(',').map(Number); body.z = c[2]; }
-
-  // the same mapping the vertex shader does, so a chunk's box lands where its
-  // strokes do. Kept next to it on purpose: if one changes and the other does
-  // not, chunks cull against the wrong rectangle and strokes vanish at the edge
-  // of the screen for no visible reason.
-  const canvasToWorldJS = (cx, cy) => new THREE.Vector3(
-    (cx - tileCentre[0]) * canvasM[0] * scale,
-    -(cy - tileCentre[1]) * canvasM[1] * scale + hang, 0);
-
-  const uni = {
-    uCoordLo: { value: blob.coordLo }, uCoordSpan: { value: blob.coordHi - blob.coordLo },
-    uCanvasM: { value: new THREE.Vector2(...canvasM) },
-    uTileCentre: { value: new THREE.Vector2(...tileCentre) },
-    uShortM: { value: shortM }, uWidthK: { value: blob.widthK },
-    uHeightM: { value: blob.heightMm / 1000 * num('h', 1) },
-    uOrderLift: { value: (blob.orderLiftMm || 0) / 1000 * scale * num('lift', 1) },
-    uScale: { value: scale }, uHang: { value: hang },
-    uScrub: { value: 1 }, uArrive: { value: num('arrive', 0.012) },
-    uXray: { value: has('xray') ? 1 : 0 },
-    uActHi: { value: new Float32Array(8) }, uActN: { value: 0 },
-    uLight: { value: new THREE.Vector3(-0.52, 0.58, 0.34).normalize() },
-    uEye: { value: eyeVec },
-    uFlat: { value: flatMode ? 1 : 0 },
-    uHeights: { value: has('heights') ? 1 : 0 },
-    uAmbient: { value: 0.30 },
-    uFurrow: { value: num('furrow', 0.16) },
-    uFurrowMm: { value: num('hair', 0.55) / 1000 * scale },   // brush-hair pitch
-    uGhost: { value: num('ghost', 0.25) },
-  };
-
-  const mat = new THREE.ShaderMaterial({
-    vertexShader: STROKE_VERT, fragmentShader: STROKE_FRAG,
-    uniforms: uni, side: THREE.DoubleSide,
-  });
-  // One mesh a chunk a tier, all sharing one interleaved buffer and one
-  // material. `near` is the quality tier's full ribbon; `mid` is the same
-  // ribbon at two segments and three columns, which is what a stroke a few
-  // pixels wide is worth. The design's third tier -- baked to a texture -- is
-  // deferred and the reason is measured, not assumed: M0b counted 18,924
-  // strokes on a whole canvas against the design's thirty to eighty thousand,
-  // so everything visible fits at the near tier. See BUILD.md, Deferred.
-  const bufs = strokeBuffers(blob);
-  const chunkList = readChunks(blob);
-  const actList = readActs(blob);
-  for (let i = 0; i < actList.length - 1; i++) uni.uActHi.value[i] = actList[i].hi;
-  uni.uActN.value = actList.length;
-  const BASES = { near: [TIERS[tier].seg, TIERS[tier].col], mid: [2, 3] };
-  const sphere = new THREE.Sphere(new THREE.Vector3(0, hang, 0),
-                                  Math.max(...tileM) * scale);
-  const orders = new Float32Array(blob.count);
-  {
-    const dv = new DataView(blob.bytes);
-    for (let i = 0; i < blob.count; i++)
-      orders[i] = dv.getUint16(blob.hdr + i * STRIDE + 20, true) / 65535;
-  }
-  for (const c of chunkList) {
-    c.mesh = {};
-    for (const k of ['near', 'mid']) {
-      const g = bindStrokes(ribbonBase(...BASES[k]), bufs, c.first);
-      g.instanceCount = 0;
-      g.boundingSphere = sphere;
-      const m = new THREE.Mesh(g, mat);
-      m.frustumCulled = false;
-      m.visible = false;
-      c.mesh[k] = m;
-      if (!has('noStrokes')) world.add(m);
+  // the rest, nearest to the scrub first
+  (async () => {
+    while (arrived < specs.length) {
+      let best = -1, bd = Infinity;
+      for (let i = 0; i < specs.length; i++) {
+        if (fetched[i]) continue;
+        const d = Math.max(specs[i]._lo - scrub, scrub - specs[i]._hi, 0);
+        if (d < bd) { bd = d; best = i; }
+      }
+      if (best < 0) break;
+      state.streaming = specs[best].blob;
+      try { await pull(best); } catch (e) { console.warn(specs[best].blob, e.message); break; }
     }
-    // world-space box: x and y from the canvas mapping, z is the paint standing
-    // off the cloth, which is a millimetre and is what keeps the box honest
-    const w0 = canvasToWorldJS(c.box[0], c.box[3]), w1 = canvasToWorldJS(c.box[2], c.box[1]);
-    c.aabb = new THREE.Box3(
-      new THREE.Vector3(Math.min(w0.x, w1.x), Math.min(w0.y, w1.y), -0.002 * scale),
-      new THREE.Vector3(Math.max(w0.x, w1.x), Math.max(w0.y, w1.y),
-                        blob.heightMm / 1000 * scale + 0.002 * scale));
-    c.centre = c.aabb.getCenter(new THREE.Vector3());
-  }
-  const mesh = chunkList[0].mesh.near;      // the reload hook's handle
+    state.streaming = 'done';
+  })();
 
+  // ------------------------------------------------------------ the chunks --
   // A few dozen chunks is a loop that never touches a stroke. Three things come
   // out of it: a chunk entirely past the scrub is not drawn at all, a chunk
   // outside the frustum is not drawn at all, and a chunk that is drawn is drawn
   // only as far as the scrub has reached -- because it is order-sorted, so the
   // arrived strokes are a prefix and the scrub is the instance *count*.
   const frustum = new THREE.Frustum(), pv = new THREE.Matrix4(), tmpBox = new THREE.Box3();
-  let shownNear = 0, shownMid = 0, chunksDrawn = 0;
-  function updateChunks(scrub) {
+  const tmpV = new THREE.Vector3();
+  let shownNear = 0, shownMid = 0, chunksDrawn = 0, chunkTotal = 0;
+  function updateChunks() {
     pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
     frustum.setFromProjectionMatrix(pv);
     // ?flat uses an orthographic camera, which has no fov: reading one off it
     // gives NaN, and NaN compares false, so every chunk silently fell to the
-    // mid tier -- in the one mode whose whole job is to agree with
-    // tools/flat.py pixel for pixel. Found while chasing a parity number that
-    // turned out to be a bad measurement on my side, and true regardless.
+    // mid tier -- in the one mode whose whole job is to agree with tools/flat.py
+    // pixel for pixel.
     const px = cam.isPerspectiveCamera
       ? renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2))
       : Infinity;
-    shownNear = shownMid = chunksDrawn = 0;
-    for (const c of chunkList) {
-      let near = null;
-      if (c.olo <= scrub) {
-        tmpBox.copy(c.aabb).applyMatrix4(world.matrixWorld);
-        if (frustum.intersectsBox(tmpBox)) {
-          // screen-space stroke width, which is what the tier is chosen by --
-          // not distance, because a 25 cm tile and a 93 cm canvas do not hang
-          // at the same magnification
-          const d = Math.max(0.05, cam.position.distanceTo(
-            c.centre.clone().applyMatrix4(world.matrixWorld)));
-          const wpx = c.wmax * blob.widthK * shortM * scale / d * px;
-          near = wpx >= num('midpx', 5);
-        }
+    shownNear = shownMid = chunksDrawn = chunkTotal = 0;
+    for (const cv of canvases) {
+      if (!cv) continue;
+      const local = (scrub - cv.lo) / Math.max(cv.hi - cv.lo, 1e-9);
+      const sc = Math.max(0, Math.min(1, local));
+      cv.uni.uScrub.value = sc;
+      cv.clothUni.uPrimed.value = Math.min(1, Math.max(0, (sc - 0.004) / 0.09));
+      cv.group.visible = sc > 0 || has('noStrokes');
+      chunkTotal += cv.chunkList.length;
+      if (!cv.group.visible) {
+        for (const c of cv.chunkList) { c.mesh.near.visible = c.mesh.mid.visible = false; }
+        continue;
       }
-      const n = near === null ? 0 : (c.ohi <= scrub ? c.count
-                : upperBound(orders, c.first, c.first + c.count, scrub) - c.first);
-      c.mesh.near.visible = near === true && n > 0;
-      c.mesh.mid.visible = near === false && n > 0;
-      c.mesh.near.geometry.instanceCount = c.mesh.near.visible ? n : 0;
-      c.mesh.mid.geometry.instanceCount = c.mesh.mid.visible ? n : 0;
-      if (n > 0 && near !== null) { chunksDrawn++; near ? shownNear += n : shownMid += n; }
+      cv.shownNear = cv.shownMid = cv.drawn = 0;
+      for (const c of cv.chunkList) {
+        let near = null;
+        if (c.olo <= sc) {
+          tmpBox.copy(c.aabb).applyMatrix4(cv.group.matrixWorld);
+          if (frustum.intersectsBox(tmpBox)) {
+            // screen-space stroke width, which is what the tier is chosen by --
+            // not distance, because a canvas hung as a wall and a canvas lying
+            // out to the horizon are nothing like the same magnification
+            const d = Math.max(0.05, cam.position.distanceTo(
+              tmpV.copy(c.centre).applyMatrix4(cv.group.matrixWorld)));
+            const m = cv.lifted ? d / cv.uni.uShortM.value : cv.scale;
+            const wpx = c.wmax * cv.blob.widthK * cv.uni.uShortM.value * m / d * px;
+            near = wpx >= num('midpx', TIERS[tier].midpx);
+          }
+        }
+        const n = near === null ? 0 : (c.ohi <= sc ? c.count
+                  : upperBound(cv.orders, c.first, c.first + c.count, sc) - c.first);
+        c.mesh.near.visible = near === true && n > 0;
+        c.mesh.mid.visible = near === false && n > 0;
+        c.mesh.near.geometry.instanceCount = c.mesh.near.visible ? n : 0;
+        c.mesh.mid.geometry.instanceCount = c.mesh.mid.visible ? n : 0;
+        if (n > 0 && near !== null) { cv.drawn++; near ? cv.shownNear += n : cv.shownMid += n; }
+      }
+      shownNear += cv.shownNear; shownMid += cv.shownMid; chunksDrawn += cv.drawn;
     }
   }
   function upperBound(a, lo, hi, x) {           // first index past x, a sorted
@@ -772,58 +1278,22 @@ async function main() {
     return lo;
   }
 
-  // The underlayer is a small PNG beside the blob: what the extractor could
-  // see of the ground between the marks, normalised-convolved out under them.
-  // If it is missing the cloth falls back to one measured tone and says so, so
-  // a missing file is never a mystery.
-  const clothUni = Object.assign({}, floorUni, {
-    uFloor: { value: 0 }, uPrimed: { value: 0 },
-    uWeaveM: { value: weaveMm / 1000 * scale },
-    uWeaveRough: { value: rough },
-    uHasUnder: { value: 0 }, uUnder: { value: null },
-    uTileUV: { value: new THREE.Vector4(tx / blob.canvasPx[0], ty / blob.canvasPx[1],
-                                        tw / blob.canvasPx[0], th / blob.canvasPx[1]) },
-  });
-  const clothMat = new THREE.ShaderMaterial({
-    vertexShader: CLOTH_VERT, fragmentShader: CLOTH_FRAG, uniforms: clothUni,
-    extensions: { derivatives: true } });
-  const cloth = new THREE.Mesh(
-    new THREE.PlaneGeometry(tileM[0] * scale, tileM[1] * scale), clothMat);
-  cloth.position.set(0, hang, -0.00006 * scale);   // just under the paint
-  world.add(cloth);
-
-  const underUrl = slug.replace(/\.bin$/, '-under.png');
-  new THREE.TextureLoader().load(underUrl, tex => {
-    tex.colorSpace = THREE.NoColorSpace;           // the shader decodes sRGB
-    // flipY off, so v runs the way the image does and the tile sub-rect below
-    // is in the same coordinates the packer wrote. Left on, three.js flips the
-    // upload and the shader's own flip puts the sky under the wheat -- the
-    // flipped-V case BUILD.md names as the reason ?flat exists.
-    tex.flipY = false;
-    tex.minFilter = THREE.LinearMipmapLinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = true;
-    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-    clothUni.uUnder.value = tex;
-    clothUni.uHasUnder.value = 1;
-    state.under = `${tex.image.width}x${tex.image.height}`;
-  }, undefined, () => { state.under = 'missing'; });
-
-  // ------------------------------------------------------------- the walk --
+  // ------------------------------------------------------- the walk --------
   const keys = new Set();
+  const first = canvases[0];
 
   const resize = () => {
     renderer.setSize(innerWidth, innerHeight);
     if (flatMode) {
-      const a = tileM[0] / tileM[1], s = tileM[1] * scale * 0.5;
-      cam.position.set(0, hang, 40); cam.lookAt(0, hang, 0);
+      const a = first.tileM[0] / first.tileM[1], s = first.tileM[1] * first.scale * 0.5;
+      cam.position.set(0, first.hang, 40); cam.lookAt(0, first.hang, 0);
       const va = innerWidth / innerHeight;
       const w = va > a ? s * va : s * a, h = va > a ? s : s * a / va;
       cam.left = -w; cam.right = w; cam.top = h; cam.bottom = -h;
     } else { cam.aspect = innerWidth / innerHeight; }
     cam.updateProjectionMatrix();
   };
-  addEventListener('resize', resize); resize();
+  addEventListener('resize', resize);
 
   const look = (dx, dy) => {
     body.yaw -= dx * 0.0022;
@@ -831,10 +1301,9 @@ async function main() {
   };
   let dragging = false;
   renderer.domElement.addEventListener('pointerdown', e => { dragging = true; e.target.setPointerCapture(e.pointerId); });
-  renderer.domElement.addEventListener('pointerup', e => { dragging = false; });
+  renderer.domElement.addEventListener('pointerup', () => { dragging = false; });
   renderer.domElement.addEventListener('pointermove', e => {
-    if (document.pointerLockElement) look(e.movementX, e.movementY);
-    else if (dragging) look(e.movementX, e.movementY);
+    if (document.pointerLockElement || dragging) look(e.movementX, e.movementY);
   });
   renderer.domElement.addEventListener('click', () => {
     if (!document.pointerLockElement) renderer.domElement.requestPointerLock?.();
@@ -842,41 +1311,85 @@ async function main() {
   addEventListener('keydown', e => {
     keys.add(e.code);
     if (e.code === 'KeyZ') body.lying = body.lying > 0.5 ? 0 : 1;
+    if (e.code === 'KeyC') showCaption();
   });
   addEventListener('keyup', e => keys.delete(e.code));
   addEventListener('wheel', e => setScrub(scrub - e.deltaY * 0.0006), { passive: true });
 
-  let scrub = num('tau', 1);
-  const fillEl = document.getElementById('scrubfill');
+  // ---------------------------------------------------- the viewing volume --
+  // DESIGN 4.4's rule, and the thing DESIGN 15 is most afraid of. Inside it you
+  // walk freely; at its edge you are eased back over `ease` metres, and the
+  // return is a return -- never a collider, never a stop, and the way out is
+  // the scrub, which is the transport.
+  //
+  // The z half is measured: tools/place.py reports where the lifted paint has
+  // thinned to a quarter of the density it has underfoot. The x half is chosen.
+  // Which of the two is right is exactly what the instrument below is for.
+  const VOL = st.volume || { half: [9, 9], ease: 1.5 };
+  const HX = num('volx', VOL.half[0]), HZ = num('volz', VOL.half[1]);
+  const EASE = VOL.ease ?? 1.5, RETURN = 1.8;      // m/s, above the walk's 1.45
+  const NEAR_EDGE = 0.5, EDGE_LIMIT = 0.20;        // BUILD M3's own numbers
+  const edgeDist = (x, z) => Math.min(HX - Math.abs(x), HZ - Math.abs(z));
+  const walk = { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0 };
+
+  if (has('volume')) {
+    const g = new THREE.BufferGeometry();
+    const pts = [];
+    const ring = (h, ax, az) => {
+      const c = [[ax, az], [-ax, az], [-ax, -az], [ax, -az]];
+      for (let i = 0; i < 4; i++) {
+        const a = c[i], b = c[(i + 1) % 4];
+        for (let k = 0; k < 12; k++) {                 // follow the swell
+          const p = [a[0] + (b[0] - a[0]) * k / 12, a[1] + (b[1] - a[1]) * k / 12];
+          const q = [a[0] + (b[0] - a[0]) * (k + 1) / 12, a[1] + (b[1] - a[1]) * (k + 1) / 12];
+          pts.push(p[0], terrainJS(p[0], p[1]) + h, p[1],
+                   q[0], terrainJS(q[0], q[1]) + h, q[1]);
+        }
+      }
+    };
+    ring(0.02, HX, HZ); ring(1.65, HX, HZ); ring(0.02, HX + EASE, HZ + EASE);
+    for (const c of [[HX, HZ], [-HX, HZ], [-HX, -HZ], [HX, -HZ]])
+      pts.push(c[0], terrainJS(c[0], c[1]) + 0.02, c[1],
+               c[0], terrainJS(c[0], c[1]) + 1.65, c[1]);
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    const vm = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x66ffcc }));
+    vm.frustumCulled = false;
+    scene.add(vm);
+  }
+
+  // --------------------------------------------------------------- the scrub --
+  const bandFill = document.getElementById('bandfill');
+  const knob = document.getElementById('bandknob');
+  const slider = document.getElementById('scrubinput');
+  const whenEl = document.getElementById('when');
   const setScrub = t => {
     scrub = Math.max(0, Math.min(1, t));
-    uni.uScrub.value = scrub;
-    // the primed canvas gives way to the ground he actually laid, over the
-    // first breath of the scrub rather than all at once
-    const primed = Math.min(1, Math.max(0, (scrub - 0.004) / 0.09));
-    clothUni.uPrimed.value = primed;
+    for (const cv of canvases) if (cv) cv.uni.uScrub.value =
+      Math.max(0, Math.min(1, (scrub - cv.lo) / Math.max(cv.hi - cv.lo, 1e-9)));
+    const primed = Math.min(1, Math.max(0, (scrub - 0.004) / 0.30));
     floorUni.uPrimed.value = primed;
-    fillEl.style.width = (scrub * 100).toFixed(2) + '%';
+    domeUni.uPrimed.value = primed;
+    if (slider) slider.value = String(scrub);
+    paintBand();
   };
-  setScrub(scrub);
 
   // ---------------------------------------------------- burst and hold --
-  // BUILD.md M2 fixes the compression constant here, and it is one constant for
-  // the whole piece so that every relative tempo stays true. The rate he worked
-  // at is now measured rather than assumed: 2.75 strokes a square centimetre,
-  // within six percent across three canvases spanning three times the area and
-  // three stations, so the Reaper is 18,924 strokes and a canvas of that size is
-  // something like ten hours of painting -- about half a stroke a second.
-  // DESIGN 5.2's burst is 2,000 a second, so the constant is 4,000x, and the
-  // absolute rate is fiction in a way no version of this avoids.
+  // BUILD.md M2 fixes the compression constant and it is one constant for the
+  // whole piece so that every relative tempo stays true. The rate he worked at
+  // is measured rather than assumed: 2.75 strokes a square centimetre, within
+  // six percent across three canvases spanning three times the area and three
+  // stations, so a canvas of the Reaper's size is something like ten hours of
+  // painting -- about half a stroke a second. DESIGN 5.2's burst is 2,000 a
+  // second, so the constant is 4,000x, and the absolute rate is fiction in a
+  // way no version of this avoids.
   //
   // The hold is not compressed by it. A hold stands for the gap between two
-  // painting sessions, and a night at 4,000x would be eleven seconds of nothing:
-  // it is a punctuation mark, fixed at 2.4 s, and what the record supplies is
-  // how *many* there are, not how long. Acts are where they go, because an act
-  // boundary is where the sequence itself changed its mind about what it was
-  // laying down.
-  const BURST = 2000, HOLD = 2.4, COMPRESSION = 4000;
+  // painting sessions, and a night at 4,000x would be eleven seconds of
+  // nothing: it is a punctuation mark, fixed at 2.4 s, and what the record
+  // supplies is how *many* there are, not how long. Acts are where they go,
+  // because an act boundary is where the sequence itself changed its mind about
+  // what it was laying down.
+  const BURST = st.pacing?.burst ?? 2000, HOLD = st.pacing?.hold ?? 2.4;
   let playing = has('play'), held = 0;
   const actAt = t => {
     let i = 0;
@@ -884,10 +1397,10 @@ async function main() {
     return i;
   };
   const advance = dt => {
-    if (!blob.count) return;
+    if (!total) return;
     const a = actAt(scrub);
     if (held > 0) { held = Math.max(0, held - dt); return; }
-    const next = scrub + dt * BURST / blob.count;
+    const next = scrub + dt * BURST / total;
     if (a < actList.length - 1 && next > actList[a].hi) {
       setScrub(actList[a].hi + 1e-6);
       held = HOLD;
@@ -903,28 +1416,97 @@ async function main() {
     playing = !playing;
   });
 
+  // ------------------------------------------------------- the timeline ----
+  // DESIGN 11: a thin band at the bottom edge -- ten years, the station marks,
+  // the date and the position -- and it is the only persistent chrome. It
+  // thins to a hairline when the pointer is away from it. The ten years are
+  // real and the station marks are where those stations fall in them; the
+  // handle moves inside this station's mark, because tau is station-local
+  // until M4 makes it the global axis with the transits in it.
+  const T0 = Date.UTC(1880, 7, 1), T1 = Date.UTC(1890, 6, 29);
+  const frac = iso => (Date.parse(iso) - T0) / (T1 - T0);
+  const MARKS = [['1885-04-01', 1], ['1886-06-01', 2], ['1888-02-15', 3],
+                 ['1888-06-15', 4], ['1888-09-20', 5], ['1888-09-28', 6],
+                 ['1888-12-23', 7], ['1889-05-08', 8], ['1890-05-21', 9],
+                 ['1890-07-27', 10]];
+  const HERE = [frac('1888-06-05'), frac('1888-06-25')];
+  const band = document.getElementById('band');
+  if (band) {
+    for (const [iso, n] of MARKS) {
+      const d = document.createElement('i');
+      d.style.left = (frac(iso) * 100).toFixed(3) + '%';
+      if (n === (st.id ?? -1)) d.className = 'now';
+      d.dataset.n = n;
+      band.appendChild(d);
+    }
+    const openBand = e => band.classList.toggle('open', innerHeight - e.clientY < 96);
+    addEventListener('pointermove', openBand);
+    band.addEventListener('pointerdown', e => {
+      const r = band.getBoundingClientRect();
+      setScrub((e.clientX - r.left) / r.width);
+      playing = false;
+    });
+  }
+  if (slider) {
+    slider.addEventListener('input', () => { setScrub(parseFloat(slider.value)); playing = false; });
+    slider.addEventListener('focus', () => band?.classList.add('open'));
+    slider.addEventListener('blur', () => band?.classList.remove('open'));
+  }
+  const canvasAt = t => {
+    for (let i = specs.length - 1; i >= 0; i--) if (t >= specs[i]._lo) return i;
+    return 0;
+  };
+  function paintBand() {
+    if (!bandFill) return;
+    const w = HERE[0] + (HERE[1] - HERE[0]) * scrub;
+    bandFill.style.width = (w * 100).toFixed(3) + '%';
+    if (knob) knob.style.left = (w * 100).toFixed(3) + '%';
+    if (whenEl) {
+      const i = canvasAt(scrub), a = actList[actAt(scrub)];
+      whenEl.textContent = (specs[i].date || st.when || '') +
+        (a && a.name !== '...' ? '  ·  ' + a.name : '');
+    }
+  }
+
+  // --------------------------------------------------------- the caption ---
+  // DESIGN 11's gallery plaque: the painting, its date, its collection. It
+  // fades rather than persisting, and it comes back on C or with the pointer in
+  // its corner, because this one also carries what is measured and what is not
+  // and that is worth being able to re-read.
+  const capEl = document.getElementById('caption');
+  const captEl = document.getElementById('capt'), capsEl = document.getElementById('caps');
+  let capTimer = 0, capShown = -1;
+  function showCaption(i) {
+    if (!capEl) return;
+    const k = i ?? canvasAt(scrub);
+    const cv = specs[k];
+    if (st.caption && (k === 0 || st.lone)) {
+      captEl.textContent = st.caption.title;
+      capsEl.textContent = st.caption.sub;
+    } else if (!st.lone) {
+      captEl.textContent = cv.title || '';
+      capsEl.textContent = [cv.date, cv.place, cv.collection].filter(Boolean).join(' · ') +
+        (cv.note ? '  ' + cv.note : '');
+    }
+    capEl.classList.remove('dim');
+    clearTimeout(capTimer);
+    capTimer = setTimeout(() => capEl.classList.add('dim'), 4200);
+    capShown = k;
+  }
+  addEventListener('pointermove', e => {
+    if (e.clientX < 460 && innerHeight - e.clientY < 190 && capEl?.classList.contains('dim'))
+      showCaption();
+  });
+
   // ------------------------------------------------------------ the loop --
   const still = has('still');
-  // Hooks the harness declares that nothing can answer yet. They are recognised
-  // and they say so, in the console and in the readout, rather than being
-  // accepted and quietly doing nothing -- which is the failure mode where you
-  // spend an afternoon wondering why ?station=8 changed nothing.
-  if (has('station')) {
-    state.station = `?station=${Q.get('station')} ignored: stations arrive at M3`;
-    console.warn(state.station);
-  }
-  if (has('volume')) {
-    state.volume = 'no viewing volume yet: a station declares one, and stations arrive at M3';
-    console.warn(state.volume);
-  }
   const dbgEl = document.getElementById('debug');
   if (has('debug')) dbgEl.style.display = 'block';
   // Two numbers, because they measure different things and only one of them is
   // the frame. ft is how long the callback takes to submit the frame, which
-  // WebGL returns from before the GPU has drawn any of it -- it came out at
-  // 0.85 ms here and means only that the CPU is not the constraint. fps is the
-  // interval between callbacks, which with no display attached is unthrottled
-  // and is therefore actual throughput.
+  // WebGL returns from before the GPU has drawn any of it. fps is the interval
+  // between callbacks, which with no display attached is unthrottled and is
+  // therefore actual throughput.
   let last = performance.now(), ft = 16, frames = 0;
   let winStart = last, winFrames = 0, fps = 0;
 
@@ -970,17 +1552,42 @@ async function main() {
       if (keys.has('ArrowRight')) { setScrub(scrub + dt * 0.18); playing = false; }
       const sp = 1.45 * (keys.has('ShiftLeft') ? 3.2 : 1);
       const sy = Math.sin(body.yaw), cy = Math.cos(body.yaw);
-      if (!still && (fwd || str)) {
+      const moving = !still && (fwd || str);
+      if (moving) {
         const m = 1 / Math.hypot(fwd || 0, str || 0);
         body.x += (-sy * fwd + cy * str) * sp * dt * m;
         body.z += (-cy * fwd - sy * str) * sp * dt * m;
         body.phase += dt * sp * 2.6;
       }
+      // the eased return. It builds over `ease` metres and then holds at a
+      // little more than a walking pace, so a viewer who pushes feels the
+      // ground take them back rather than a wall arrive.
+      if (!still) {
+        const back = (v, half) => {
+          const o = Math.abs(v) - half;
+          return o <= 0 ? 0 : -Math.sign(v) * Math.min(1, o / EASE) * RETURN * dt;
+        };
+        body.x += back(body.x, HX);
+        body.z += back(body.z, HZ);
+      }
+      // DESIGN 15's open question, instrumented. Over a fifth of the time spent
+      // within half a metre of the edge and the volume is wrong -- or the idea
+      // is, and we would rather learn that here than at M6.
+      if (!still) {
+        const e = edgeDist(body.x, body.z);
+        walk.t += dt;
+        if (e < NEAR_EDGE) walk.near += dt;
+        if (e < 0) walk.out += dt;
+        walk.far = Math.max(walk.far, -Math.min(e, 0));
+        if (moving) { walk.moving += dt; if (e < NEAR_EDGE) walk.movingNear += dt; }
+      }
+
       lie.v += (body.lying - lie.v) * Math.min(1, dt * 4.5);
       // the head moves on each step; it is the only thing saying you have a body
       const bob = still ? 0 : Math.sin(body.phase * 2) * 0.019 + Math.sin(body.phase) * 0.006;
+      const ground = terrainJS(body.x, body.z);
       const eye = EYE * (1 - lie.v) + LIE * lie.v;
-      cam.position.set(body.x, eye + bob * (1 - lie.v), body.z);
+      cam.position.set(body.x, ground + eye + bob * (1 - lie.v), body.z);
       cam.rotation.set(0, 0, 0);
       cam.rotateY(body.yaw);
       cam.rotateX(body.pitch + lie.v * 1.15);
@@ -989,8 +1596,10 @@ async function main() {
     eyeVec.copy(cam.position);
     // per frame, not per scrub: the frustum moves when the body does
     cam.updateMatrixWorld();
-    world.updateMatrixWorld();
-    updateChunks(scrub);
+    scene.updateMatrixWorld();
+    updateChunks();
+    const at = canvasAt(scrub);
+    if (at !== capShown && !st.lone && arrived > at) showCaption(at);
 
     const gq = gpuBegin();
     renderer.render(scene, cam);
@@ -1003,12 +1612,14 @@ async function main() {
     }
     if (has('debug') && (frames & 7) === 0) {
       const info = renderer.info.render;
+      const b = first.blob;
+      const edge = walk.t > 0 ? walk.near / walk.t : 0;
       dbgEl.textContent =
-        `tau      ${scrub.toFixed(4)}\n` +
-        `station  ${state.station ?? 'none yet (M3)'}\n` +
-        `volume   ${state.volume ?? 'none yet (M3)'}\n` +
-        `strokes  ${blob.count}  shown ${countShown()}  (near ${shownNear}  mid ${shownMid})\n` +
-        `chunks   ${chunksDrawn} of ${chunkList.length} drawn\n` +
+        `tau      ${scrub.toFixed(4)}   ${specs[at].title || ''}\n` +
+        `station  ${state.station}\n` +
+        `canvases ${arrived} of ${specs.length}  ${state.streaming || 'loading'}\n` +
+        `strokes  ${total}  shown ${countShown()}  (near ${shownNear}  mid ${shownMid})\n` +
+        `chunks   ${chunksDrawn} of ${chunkTotal} drawn\n` +
         `quality  ${tier}  seg ${TIERS[tier].seg}x${TIERS[tier].col}  dpr ${renderer.getPixelRatio()}\n` +
         `draws    ${info.calls}\n` +
         `tris     ${(info.triangles / 1000).toFixed(1)} k\n` +
@@ -1016,18 +1627,23 @@ async function main() {
         `gpu      ${gpuMs ? gpuMs.toFixed(2) + ' ms' : 'no timer query'}\n` +
         `frame    ${fps ? (1000 / fps).toFixed(2) + ' ms   ' + fps.toFixed(0) + ' fps' : '...'}\n` +
         `cam      ${body.x.toFixed(2)},${cam.position.y.toFixed(2)},${body.z.toFixed(2)}\n` +
-        `blob     ${blob.slug}  v${blob.version}\n` +
+        `volume   ${HX}x${HZ} m  ease ${EASE}   edge ${(edge * 100).toFixed(1)}%` +
+        ` of ${walk.t.toFixed(0)}s  (over ${(EDGE_LIMIT * 100).toFixed(0)}% and it is wrong)\n` +
+        `place    ${first.lifted ? 'lifted' : 'present'}  horizon ${b.horizon.toFixed(3)}` +
+        `  ${b.horizonRatio.toFixed(0)}x the upright cut   gamma ${b.gamma.toFixed(2)} built,` +
+        ` ${b.gammaMeasured >= 0 ? '+' : ''}${b.gammaMeasured.toFixed(2)} measured\n` +
+        `blob     ${b.slug}  v${b.version}\n` +
         `under    ${state.under}\n` +
-        `colour   ${blob.profile || (blob.colourFlags ? '?' : 'no ICC in the scan')}\n` +
-        `bandpass ${blob.bandpass ? blob.bandpass.toFixed(2) : 'n/a'}\n` +
-        `order    ${blob.orderMethod ? 'crossings' : 'habits only'}  ` +
-        `${blob.orderEdges} edges  held out ` +
-        `${(blob.orderSolver * 100).toFixed(1)}% vs ${(blob.orderHeur * 100).toFixed(1)}%` +
-        ` (${(blob.orderMargin * 100 >= 0 ? '+' : '')}${(blob.orderMargin * 100).toFixed(1)})\n` +
-        `acts     ${actList.map(a => a.name + ' ' + a.count).join('  ') || 'none'}` +
+        `colour   ${b.profile || (b.colourFlags ? '?' : 'no ICC in the scan')}\n` +
+        `bandpass ${b.bandpass ? b.bandpass.toFixed(2) : 'n/a'}\n` +
+        `order    ${b.orderMethod ? 'crossings' : 'habits only'}  ` +
+        `${b.orderEdges} edges  held out ` +
+        `${(b.orderSolver * 100).toFixed(1)}% vs ${(b.orderHeur * 100).toFixed(1)}%` +
+        ` (${(b.orderMargin * 100 >= 0 ? '+' : '')}${(b.orderMargin * 100).toFixed(1)})\n` +
+        `acts     ${actList.map(a => a.name).join(' ') || 'none'}` +
         `${held > 0 ? '   (holding ' + held.toFixed(1) + ' s)' : playing ? '   (painting)' : ''}\n` +
-        `src      ${blob.srcSha.slice(0, 12)}\n` +
-        `params   ${blob.paramSha.slice(0, 12)}`;
+        `src      ${b.srcSha.slice(0, 12)}\n` +
+        `params   ${b.paramSha.slice(0, 12)}`;
     }
     requestAnimationFrame(frame);
   }
@@ -1037,33 +1653,97 @@ async function main() {
   // ------------------------------------------------------------ debug API --
   window.vg = {
     get state() {
+      const b = first.blob;
       return { tau: scrub, cam: [body.x, cam.position.y, body.z, body.yaw, body.pitch],
-               strokes: blob.count, shown: countShown(),
-               near: shownNear, mid: shownMid,
-               chunks: chunkList.length, chunksDrawn,
+               strokes: total, resident: canvases.reduce((a, c) => a + (c ? c.blob.count : 0), 0),
+               shown: countShown(), near: shownNear, mid: shownMid,
+               chunks: chunkTotal, chunksDrawn,
                submitMs: +ft.toFixed(2), gpuMs: +gpuMs.toFixed(2), fps: +fps.toFixed(1),
                frameMsMeasured: +(1000 / Math.max(fps, 1e-3)).toFixed(2),
                draws: renderer.info.render.calls,
                triangles: renderer.info.render.triangles,
                quality: tier, dpr: renderer.getPixelRatio(),
-               blob: blob.slug, version: blob.version, src: blob.srcSha,
-               params: blob.paramSha, heightMethod: blob.heightMethod,
-               profile: blob.profile, colourFlags: blob.colourFlags,
-               bandpass: blob.bandpass, under: state.under,
-               orderMethod: blob.orderMethod, orderEdges: blob.orderEdges,
-               orderMargin: blob.orderMargin, orderSolver: blob.orderSolver,
-               orderHeur: blob.orderHeur, orderBlock: blob.orderBlock,
-               acts: actList.map(a => ({ name: a.name, count: a.count, hi: a.hi })),
+               blob: b.slug, version: b.version, src: b.srcSha,
+               params: b.paramSha, heightMethod: b.heightMethod,
+               profile: b.profile, colourFlags: b.colourFlags,
+               bandpass: b.bandpass, under: state.under,
+               orderMethod: b.orderMethod, orderEdges: b.orderEdges,
+               orderMargin: b.orderMargin, orderSolver: b.orderSolver,
+               orderHeur: b.orderHeur, orderBlock: b.orderBlock,
+               acts: actList.map(a => ({ name: a.name, hi: a.hi, canvas: a.canvas })),
                playing, held: +held.toFixed(2),
-               station: state.station, volume: state.volume };
+               station: st.lone ? null : st.id, stationTitle: st.title,
+               streaming: state.streaming || 'loading',
+               canvases: specs.map((s, i) => ({
+                 title: s.title, blob: s.blob, yaw: s.yaw,
+                 loaded: !!fetched[i], span: [s._lo, s._hi],
+                 treatment: fetched[i] ? (fetched[i].lifted ? 'lifted' : 'present') : null,
+                 horizon: fetched[i] ? fetched[i].blob.horizon : null,
+                 horizonRatio: fetched[i] ? fetched[i].blob.horizonRatio : null,
+                 gammaMeasured: fetched[i] ? fetched[i].blob.gammaMeasured : null,
+                 sizeRatio: fetched[i] ? fetched[i].blob.sizeRatio : null,
+                 sizeDemand: fetched[i] ? fetched[i].blob.sizeDemand : null,
+               })),
+               volume: window.vg.volume() };
     },
     scrub: setScrub,
-    // The hooks the harness declares. There are no stations until M3 and no
-    // viewing volume until a station declares one, so these say so rather than
-    // accepting the call and doing nothing -- a hook that silently no-ops is
-    // worse than one that is missing.
-    station: n => { console.warn(`station ${n}: stations arrive at M3`); return null; },
-    volume: () => null,
+    // The station hooks are real now. Another station is still a warning
+    // rather than a no-op, because the transit between two of them is M4 and a
+    // hook that silently does nothing is worse than one that is missing.
+    station: n => {
+      if (st.lone || +n !== st.id) {
+        console.warn(`station ${n}: this build is station ${st.lone ? 'none' : st.id};` +
+                     ' the transit between stations arrives at M4');
+        return null;
+      }
+      setScrub(0); body.x = 0; body.z = 0; body.yaw = 0; body.pitch = 0;
+      return { id: st.id, title: st.title, when: st.when, where: st.where };
+    },
+    volume: () => ({
+      half: [HX, HZ], ease: EASE, shape: VOL.shape || 'slab',
+      seconds: +walk.t.toFixed(1),
+      nearEdge: walk.t > 0 ? +(walk.near / walk.t).toFixed(4) : 0,
+      nearEdgeMoving: walk.moving > 0 ? +(walk.movingNear / walk.moving).toFixed(4) : 0,
+      outside: walk.t > 0 ? +(walk.out / walk.t).toFixed(4) : 0,
+      furthestOut: +walk.far.toFixed(2), limit: EDGE_LIMIT,
+      verdict: walk.t < 20 ? 'not enough walking yet'
+               : (walk.near / walk.t) > EDGE_LIMIT ? 'the volume is wrong' : 'the volume holds',
+    }),
+    // Three walkers, so the instrument can be read without a person in the
+    // chair. They are not the test DESIGN 15 asks for and they do not pretend
+    // to be one -- a person is the test, and what a person does is the thing
+    // nobody here can guess. What these are for is to say what the instrument
+    // returns for three ways of moving, so that when there is a number from a
+    // person it can be read against something.
+    //
+    //   forward   hold W and never turn. The naive worst case, and the first
+    //             thing a viewer who has been told nothing actually does.
+    //   wander    walk, and every few seconds pick a new heading within a
+    //             third of a turn and swing onto it. An amble.
+    //   look      walk a few paces, stop, turn, look, walk again.
+    wander: (kind = 'forward', seconds = 60) => new Promise(res => {
+      const t0 = performance.now();
+      let prev = t0, aim = body.yaw, next = 0, go = true;
+      Object.assign(walk, { t: 0, near: 0, moving: 0, movingNear: 0, out: 0, far: 0 });
+      const step = now => {
+        const dt = Math.min(0.05, (now - prev) / 1000), el = (now - t0) / 1000;
+        prev = now;
+        keys.clear();
+        if (kind === 'forward') {
+          keys.add('KeyW');
+        } else if (kind === 'wander') {
+          if (el > next) { aim = body.yaw + (rnd() - 0.5) * 2.1; next = el + 2 + rnd() * 3; }
+          body.yaw += Math.max(-1.6 * dt, Math.min(1.6 * dt, aim - body.yaw));
+          keys.add('KeyW');
+        } else {
+          if (el > next) { go = !go; next = el + (go ? 1.5 + rnd() * 2.5 : 2 + rnd() * 3); }
+          if (go) keys.add('KeyW'); else body.yaw += (rnd() - 0.5) * 1.4 * dt;
+        }
+        if (el < seconds) requestAnimationFrame(step);
+        else { keys.clear(); res(window.vg.volume()); }
+      };
+      requestAnimationFrame(step);
+    }),
     strokes: () => ({ near: shownNear, mid: shownMid, far: 0 }),
     cam: (x, y, z, yaw, pitch) => { body.x = x; body.z = z; body.yaw = yaw ?? body.yaw; body.pitch = pitch ?? body.pitch; },
     // render immediately before reading: the drawing buffer is not preserved,
@@ -1071,16 +1751,25 @@ async function main() {
     snap: () => { renderer.render(scene, cam); return renderer.domElement.toDataURL('image/png'); },
     reload: async (path) => {
       const b = readBlob(await (await fetch(path + '?t=' + Date.now())).arrayBuffer());
+      const cv = canvases[0];
       const g = bindStrokes(ribbonBase(TIERS[tier].seg, TIERS[tier].col),
                             strokeBuffers(b), 0);
-      g.boundingSphere = mesh.geometry.boundingSphere;
+      g.boundingSphere = cv.chunkList[0].mesh.near.geometry.boundingSphere;
       g.instanceCount = b.count;
-      mesh.geometry.dispose(); mesh.geometry = g;
-      Object.assign(blob, b);
+      cv.chunkList[0].mesh.near.geometry.dispose();
+      cv.chunkList[0].mesh.near.geometry = g;
+      Object.assign(cv.blob, b);
       return b.count;
     },
   };
-  addEventListener('keydown', e => { if (e.code === 'KeyR') window.vg.reload(slug); });
+  addEventListener('keydown', e => { if (e.code === 'KeyR') window.vg.reload(specs[0].blob); });
+
+  // ?walk=forward|wander|look runs the walker for ?walksec seconds and leaves
+  // the numbers in vg.state.volume, so the instrument DESIGN 15 asks for can be
+  // read from a headless frame. It is not that test and does not pretend to be
+  // one; see vg.wander.
+  if (Q.has('walk'))
+    setTimeout(() => window.vg.wander(Q.get('walk') || 'wander', num('walksec', 40)), 200);
 
   // ?probe=N: run for N real milliseconds, then hand the state back to whoever
   // is serving this page. tools/shot.py listens for it. The alternative is
@@ -1095,11 +1784,20 @@ async function main() {
     }, num('probe', 3000));
   }
 
-  const cm = blob.canvasCm;
-  document.getElementById('capt').textContent =
-    `Wheatfield with a Reaper — ${tw === blob.canvasPx[0] ? 'the canvas'
-      : (tw / blob.pxPerCm).toFixed(1) + ' cm of it'}, ` +
-    `${blob.count.toLocaleString()} strokes`;
+  resize();
+  setScrub(scrub);
+  if (st.lone) {
+    const b = first.blob;
+    const [, , tw] = b.tile[2] ? b.tile : [0, 0, ...b.canvasPx];
+    document.getElementById('capt').textContent =
+      `${b.slug} — ${tw === b.canvasPx[0] ? 'the canvas'
+        : (tw / b.pxPerCm).toFixed(1) + ' cm of it'}, ${b.count.toLocaleString()} strokes`;
+    document.getElementById('caps').textContent = '';
+    body.z = num('back', 0.40 * first.scale);
+    if (Q.has('cam')) body.z = Q.get('cam').split(',').map(Number)[2];
+  } else {
+    showCaption(0);
+  }
   document.body.dataset.ready = '1';
   requestAnimationFrame(frame);
 }

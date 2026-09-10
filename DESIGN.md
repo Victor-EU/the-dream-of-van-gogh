@@ -327,6 +327,32 @@ Four treatments:
 - **Present.** Some paintings are not places and should not be made into places. The self-portraits, the Sunflowers.
   They stand in space, enormous, close, as walls of paint.
 
+*M3 builds the lifted treatment and finds that only half of what it assumes is in the paint. The **horizon is
+measured**: the row that best splits the canvas into two colour populations, and what says it is a horizon rather
+than merely the strongest boundary on the canvas is that it is horizontal — the best level cut beats the best upright
+cut by 72×, 39× and 11× on the three canvases of station 4, and by 2.4× and 2.1× on a self-portrait and a bed of
+irises run through the same code as controls. The lines land on the Alpilles, on the wall at the far edge of the
+Reaper's field, and on the edge of the ploughed ground under the Sower's sun.*
+
+*The **recession is not measured**, and the shape of the nothing is worth having. If a canvas encodes a receding
+plane its marks shrink with distance. Across the whole depth of these pictures the marks vary by under a fifth —
+5.8 mm at the horizon against 5.3 mm at the viewer's feet on the Reaper — where a plane over the same depth demands a
+factor of twenty-six. On two canvases of three the drift runs the wrong way. It is statistically real and physically
+negligible: the brush does not know how far away anything is. The one other place the evidence could have been, the
+convergence of the marks themselves on the measured horizon, fires on the Harvest at 1.21× a shuffled control and
+fires on a self-portrait at exactly the same 1.21×, so it separates nothing.*
+
+*So a lifted canvas is a measured line with a constructed plane hung under it, and the piece says so in the caption
+rather than in a footnote. The construction has one property that earns it: **every stroke stays on the ray it came
+off the canvas on**, so from the painter's position the lifted world is the painting, exactly, whatever the plane
+does behind it. The scale is not chosen either — it is DESIGN 6's eye height of 1.65 m and the measured horizon,
+which between them put the bottom edge of the canvas 4.7 m in front of you on the Harvest. The one free constant is
+how wide the canvas is taken to be from where he stood, and it is 50°.*
+
+*And the treatment is now chosen by that measurement rather than asserted in §7's table. A canvas whose level cut
+does not beat its upright cut by 5× has no horizon in it and is not a place; it stands as a wall of paint, which is
+what *present* already meant.*
+
 The rule that keeps this from becoming a promise we cannot keep: **every station declares a viewing volume**, sized by
 how much depth information its canvases really carry. Inside it you walk freely. At its boundary you are eased back,
 not blocked — and the way to leave is the scrub, which is the transport. The Potato Eaters is a small dark room. The
@@ -433,6 +459,14 @@ which is both true of him and a much better transition than a fade.
 - The viewing volume (§4.4) bounds the walk. Its boundary is a gentle return, never a wall and never an invisible
   collider — if the viewer is fighting the edge, the volume is the wrong size.
 
+*M3 instruments that last sentence and it is not comfortable reading. Station 4's slab is 12 × 7 m, its depth taken
+from where the lifted paint thins to a quarter of the density it has underfoot — six metres on the Harvest. Three
+scripted walkers spend 93%, 83% and 72% of their time within half a metre of the boundary, because any walker with a
+net forward drift arrives at the edge and then stays, and a body walks 87 m in a minute. Growing the slab, the amble
+comes under a fifth at **50 × 40 m** — a hundred metres by eighty. So the volume the canvas can justify and the
+volume a walking body wants differ by about seven times in each direction, and one of the two has to give. This is
+§15's open question with numbers on it; a person is still what decides it.*
+
 ---
 
 ## 7. The stations
@@ -483,6 +517,16 @@ which are not places at all, and it lets us drop the geographic filler that a pr
 | 9 | **Auvers** | May–Jul 1890 | Descend into cool green and grey-blue. Thatch, *Daubigny's Garden*, the church with its two paths splitting around it. The canvases go double-square here (50 × 100 cm) — so **the frame of the world itself widens**, which the viewer will feel and not notice. | lifted |
 | 10 | **The wheatfield** | 27 Jul 1890 | Three paths. Crows — the only living creatures in the universe, and if the viewer looks back they have been in the corner of the eye since Arles. The rush with no holds. Then the strokes stop arriving and you are standing on bare primed canvas with the field behind you. | lifted |
 | 11 | **After** | — | Nothing, held far too long. Then the crows again, and the end. | — |
+
+*M3 builds station 4 and the treatment column moves for it: **lifted**, not shelled. Shelled is per-stroke depth and
+that is M4's; what M3 establishes is that the lifted treatment is not a fallback but the thing the canvas can
+actually support, because the horizon is measurable and the depth is not. The station stands three canvases at 0°,
++68° and −68° around one standpoint, on one continuous plain under one dome, painted in the order he painted them.
+One of the three is out of place and knowingly so: *Wheatfield with a Reaper* is Saint-Rémy, September 1889, and by
+this table it belongs at station 8 — §8.2's own list asks for* Haystacks in Provence *here instead. It is at station 4
+because it is the canvas the whole pipeline was built and measured on. The station file records that, and the date
+readout says September 1889 while the timeline's handle is still inside June 1888. It has to be settled at M6, when τ
+becomes a chronology.*
 
 The arc: **dark → flood → yellow → night → stop → stars → green → end.** The brightness peaks immediately before
 there is nothing, which is the true shape, and because the scrub is in the viewer's hand **the ending is something
@@ -638,6 +682,19 @@ Strokes-as-geometry is heavier than patches-as-quads, and the LOD tiers (§4.5) 
 | Blob streamed per station | ≤ 6 MB | ≤ 12 MB | ≤ 3 MB |
 | Pixel ratio cap | 2 | 2 | 1.5 |
 
+*M3 measures station 4 — three canvases, 37,535 strokes, 0.89 MB of blob — from the painter's position with
+everything visible: 1.94 M triangles and 24 draw calls at Balanced, 6.3 ms of GPU. The table holds with room, and one
+row is revised with the measurement that justifies it. "Strokes at near tier ≤ 20 k" was written when a near-tier
+ribbon was about 24 triangles; the Light ribbon is now three segments by three columns, so 32,805 of them is 0.49 M
+triangles — less than 20,000 cost when the number was set. The row that means anything is the triangle row.*
+
+*What the tessellation cannot fix is that at a lifted station **the level-of-detail never fires from where the viewer
+starts**. A lifted canvas puts every stroke back on the ray it came off the canvas on, so a stroke subtends exactly
+what it subtends on the canvas — about eight pixels, at the horizon and at your feet alike — and a screen-space
+threshold demotes nothing at all. The LOD begins to work only once the viewer walks away from a wedge. That is
+correct behaviour and it is also the reason the far tier will come back: a station of four lifted canvases will not
+fit the way one of three does.*
+
 Quality is **measured, not chosen**: sample frame time over the first three seconds and settle on a tier, then adjust
 once per station. The viewer is never asked.
 
@@ -716,6 +773,14 @@ Van Gogh universe/
 - **Is the viewing volume enough walking?** The fear is that it reads as a rail. Test at M3 with someone who has not
   seen the design: if they spend their time pushing at the boundary rather than looking, the volumes are wrong or the
   idea is.
+  *M3 built the instrument and could not supply the person. What the instrument returns for three scripted ways of
+  moving is 93%, 83% and 72% of walk-time within half a metre of the boundary, against a limit of 20%; the amble
+  needs a slab of 50 × 40 m to come in under it, and the paint thins to a quarter of its density six metres out.
+  Read plainly: for a viewer who keeps walking, the volume the canvas justifies **is** a rail. That leaves three
+  answers and the milestone that has to pick one is M6 — the volumes are much larger than the paint supports and the
+  far field is thin; or the walk is not a free walk and the boundary should be something other than a return; or the
+  metric is wrong because it counts standing at the edge as pushing at it, and what should be counted is a viewer
+  who is trying to leave.*
 - **Continuous scrub or quantised to stations?** Current position: continuous, because the transits are part of the
   arc. Revisit if the transits turn out to be dead time.
 - **How much impasto is too much.** The height estimate of §4.1 is weak, and a slightly exaggerated relief will read

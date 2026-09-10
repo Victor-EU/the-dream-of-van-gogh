@@ -454,6 +454,10 @@ Ground strokes onto a heightfield, sky strokes onto a dome (the *lifted* treatme
 boundary; `stations/*.json` fixed as a schema — canvases, treatment, volume, acts, pacing, letter; blob streaming and
 the scrub as a prefetch signal; the caption; the timeline band.
 
+*Done, and the volume question fired. The Progress entry below carries the numbers; the short version is that the
+horizon is measurable and the plane is not, so the station is built with one of those as evidence and the other
+named as construction — and that a viewer who keeps walking lives at the edge of the volume the paint can justify.*
+
 **Exit criteria.**
 - Standing at the painter's position, the framing reads as *The Harvest* to someone who knows it.
 - The scrub paints the station from bare canvas to finished with acts, bursts and holds, and nothing is rebuilt.
@@ -584,6 +588,12 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
   above. M1 built the chunk table and the near/mid tiers on top of it, and measured that **mid is never selected at
   one canvas** — a stroke stays above the threshold out to about forty metres. The machinery the far tier would need
   is therefore already in the blob and in the runtime; what is missing is a reason.*
+  *M3 found the reason it will eventually need, and it is structural rather than a matter of counts: a lifted canvas
+  puts every stroke back on the ray it came off the canvas on, so from the painter's position a stroke subtends
+  exactly what it subtends on the canvas — about eight pixels, at the horizon and at your feet alike — and a
+  screen-space threshold therefore demotes nothing at all from where the viewer starts. The LOD only begins to work
+  once the viewer walks away from a wedge. Station 4 is 37,535 strokes and fits anyway; a station of four lifted
+  canvases at 15,000 each will not, and that is where this comes back.*
 - **Monocular depth estimation.** Hand-authored depth first. Re-open if M5's interiors need more shells than hand
   authoring can carry.
 - **The other four Sunflowers.** One version at M5. The rest are a data file each once the pipeline is frozen.
@@ -616,7 +626,17 @@ turned out to buy is local order — two marks that touch, put the right way rou
 the solved sequence still correlates 0.89 with the habits it started from. The claim stands and is now stated at
 that size, in §4.3 and in the caption, rather than at the size the design first gave it.*
 
-| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 |
+| The volume reads as a rail | the viewer fights the boundary instead of looking | > 20% of walk-time within 0.5 m of it | M3 — **the instrument says yes** |
+
+*The instrument is built and reads out; the tester is not, and a person is what the criterion actually asks for. What
+it returns for three scripted ways of moving is 93%, 83% and 72% of the time within half a metre of the boundary —
+because any walker with a net forward drift arrives at the edge and then stays there, which the metric counts as
+pushing at it. Sweeping the volume's size says the amble would need a slab of **50 × 40 m** to come in under a fifth,
+and the paint has thinned to a quarter of its own density by **6 metres** out. So the volume the canvas can justify
+and the volume a walking body wants differ by about seven times in each direction. That is the open question of §15
+answered as far as it can be without a person in the chair, and it is a real result rather than a missing feature:
+either the volumes are much larger than the paint supports and the far field is thin, or the walk is not a free walk.
+The decision belongs to M6, with these numbers in front of it.*
 | We drift into modelling Provence | the world stops being made of strokes | `?noStrokes` shows a scene | every |
 | Station 1 loses the viewer | too dark, too long, and no reason to continue | tested at M6, not argued about before | M6 |
 
@@ -1209,3 +1229,245 @@ act, so a still at any τ shows what the order is doing instead of what the pale
   are found; the names are asserted.
 
 **Not started, per scope:** the far LOD tier, any station past 0, the transit, interiors, the voice, sound, mobile.
+
+---
+
+### M3 — The first station
+
+**Asked.** Station 4, *The Harvest*: three canvases, ground strokes onto a heightfield and sky strokes onto a dome,
+a walk with weight inside a declared viewing volume, `stations/*.json` fixed as a schema, blob streaming with the
+scrub as the prefetch signal, a caption and a timeline band. And §15's open question instrumented: over a fifth of
+walk-time spent within half a metre of the volume's boundary and the volume is wrong, or the idea is.
+
+**The question this milestone actually turns on.** DESIGN 4.4 says ground strokes go onto a heightfield and sky
+strokes onto a dome, which quietly assumes two things about a canvas: that there is a line where one becomes the
+other, and that the ground behind that line recedes. Both are testable on the strokes, and `tools/place.py` is
+written the way M1 wrote the light and M2 wrote the order — the estimator and the test that could refute it are the
+same code, and two canvases that are not places are run through it as controls.
+
+**One of the two is there.**
+
+A horizon is not the strongest colour boundary on a canvas — every picture has one of those, including a face. It is
+a boundary that is *horizontal*. So the same two-population split (Otsu's criterion in Lab, weighted by arc length)
+is scanned across the rows and again down the columns, and what decides is the ratio between them:
+
+| | strokes | best level cut | best upright cut | **ratio** | horizon | against shuffled colours |
+|---|---|---|---|---|---|---|
+| *The Harvest* | 14,934 | 1.062 | 0.015 | **71.8×** | v = 0.210 | 792× |
+| *Wheatfield with a Reaper* | 18,924 | 1.001 | 0.026 | **38.9×** | v = 0.398 | 953× |
+| *The Sower* | 3,677 | 1.367 | 0.123 | **11.1×** | v = 0.464 | 193× |
+| *Self-Portrait 1887* — control | 3,588 | 0.504 | 0.211 | **2.4×** | — | 68× |
+| *Irises*, Getty — control | 10,359 | 0.303 | 0.142 | **2.1×** | — | 144× |
+
+The lines land where a person would put them: the base of the wall at the far side of the Reaper's wheatfield, the
+Alpilles behind the Harvest, the edge of the ploughed field under the Sower's sun. **The pre-registered threshold was
+2× and it was wrong** — both controls came back above it, and a bed of irises would have been called a plain by a
+tenth. The controls are the only thing in the file that knows where the line goes, and they put it at **5×**, in the
+gap between 2.4 and 11.1. That is a threshold set by two negative controls, which is two more than a threshold
+usually gets and fewer than it deserves.
+
+**The other one is not, and the shape of the nothing is the finding.** If a canvas encodes a receding plane then the
+marks on it shrink with distance, so their apparent size falls to zero at the horizon and the fit's zero crossing is
+a second, independent estimate of the same line. It was fitted. It returned this:
+
+| | far bin | near bin | **observed** | a plane over that depth demands | γ if fitted | by arc |
+|---|---|---|---|---|---|---|
+| *The Harvest* | 75 px | 77 px | **×1.03** | ×34.0 | −0.09 [−0.11, −0.08] | −0.06 |
+| *Reaper* | 70 px | 64 px | **×0.91** | ×26.2 | −0.02 [−0.03, −0.01] | +0.00 |
+| *The Sower* | 93 px | 76 px | **×0.82** | ×23.7 | −0.10 [−0.13, −0.06] | −0.00 |
+| *Self-Portrait* — control | 84 px | 80 px | ×0.96 | ×28.9 | −0.02 | −0.03 |
+| *Irises* — control | 81 px | 86 px | ×1.06 | ×29.7 | −0.07 | −0.03 |
+
+At 120 px/cm those far and near bins are 5.8 mm and 5.3 mm. **The brush does not know how far away anything is.**
+Across the entire depth of the picture — from the paint at your feet to the far side of the plain — the marks vary by
+under a fifth, and on two of three canvases they get *narrower* toward the viewer, which is the opposite of
+foreshortening. The drift is real: on all three landscapes it beats a null built by permuting the strokes' heights on
+the canvas, at the 0.00 percentile of 400 shuffles. It is real, negligible and pointing the wrong way, which is
+exactly why the null was pre-registered as a percentile and exactly why a percentile is not enough on its own. And it
+is not a floor artefact: 0% of far-field widths and 2% of far-field arcs sit on the parameter clip.
+
+There is a confound and it is worth naming rather than hiding: a painter reaches for a smaller brush to paint the far
+side of a field, and that produces the same gradient as optics. But the confound only matters when there *is* a
+gradient, and there is not one.
+
+**The one other place evidence for a plane could live is the drawing rather than the touch**, so the long ground
+strokes were extended to the measured horizon and their crossings counted: parallel lines on a ground converge, and
+where they converge is on the horizon. That fired on the Harvest and it does not survive its control:
+
+| | long ground strokes | peak | shuffled | ratio |
+|---|---|---|---|---|
+| *The Harvest* | 2,032 | 0.104 | 0.086 | **1.21×** |
+| *The Sower* | 364 | 0.151 | 0.139 | 1.09× |
+| *Reaper* | 2,650 | 0.089 | 0.095 | 0.94× |
+| *Self-Portrait* — control | 235 | 0.306 | 0.253 | **1.21×** |
+
+A face converges on its own painted horizon exactly as hard as the plain of La Crau does. The test does not separate a
+place from a portrait, so it is reported and not used.
+
+**So the station is built with one measurement and one construction, and the piece says which is which.** The horizon
+is evidence. The plane hung under it is not: it is built at γ = 1, which is what a plane *is*, rather than at a fitted
+exponent, because there is no exponent to fit. The caption says so, in those terms, standing in front of it.
+
+**The construction, and the one property that makes it honest.** The canvas is a window and a point on it is a ray
+from where he stood. Above the horizon the ray runs to the dome; below it, it falls to the ground. **Every stroke
+stays on its own ray** — γ says how far along the ray a stroke sits and never which ray it is on — so from the
+painter's position the lifted world *is* the painting, by construction rather than by tuning. The exponent bends the
+surface the ground lies on rather than moving the picture: at 1 it is flat, and as it falls the far field stands up
+until at 0 the whole thing is a wall at one distance with the horizon painted on it, which is DESIGN 4.4's *present*
+treatment arrived at from the other end.
+
+Nothing in the geometry is a free constant except one. The scale of the world is the eye height of DESIGN 6 — 1.65 m
+— and the measured horizon; standing that tall in front of that line is what puts the bottom edge of the canvas
+where it goes. The free one is **hfov, how wide the canvas is taken to be from where he stood, and it is 50°**: a
+painter at an easel looking at the whole canvas at once. Widen it and the plain runs closer and steeper.
+
+| | horizon | near paint | far paint | the plain thins to a quarter |
+|---|---|---|---|---|
+| *The Harvest* | 0.210 | 4.7 m | 21 m | **6 m** |
+| *Reaper* | 0.398 | 6.2 m | 27 m | **8 m** |
+| *The Sower* | 0.464 | 7.1 m | 30 m | **9 m** |
+
+The swell on top of the plane is invention on top of construction, and what makes it safe is *where it is applied*:
+along the ray, so a stroke slides toward or away from the eye and never off the line it came in on. From the
+standpoint the invented hill is therefore exactly invisible, and it only exists once the viewer walks.
+
+**The station.** `stations/s04-harvest.json` fixes the schema — canvases, treatment, volume, ground, weave, pacing,
+letter, caption — and station 4 fills it with three canvases in the order he painted them, standing at 0°, +68° and
+−68° around one standpoint, on one continuous plain and under one dome. Treatment is `null` per canvas, meaning *take
+what the measurement decided*; a string there overrides it and carries its reason. Stroke counts are cached in the
+file and checked against the blob that arrives, which is what lets the scrub be a prefetch signal — the spans are
+known before anything is fetched, so the station's timing does not shift under the viewer as the blobs land.
+
+**And the station contains a canvas that does not belong to it, knowingly.** *Wheatfield with a Reaper* is
+Saint-Rémy, September 1889 — by the chronology of DESIGN 7 it belongs at station 8, and DESIGN 8.2's own list for
+station 4 asks for *Haystacks in Provence* instead. It is here because it is the canvas M0a, M1 and M2 were built and
+measured on and because M3's scope names it. The `note` field in the station file says so, and the date readout on
+the band says so at run time: the handle sits inside the June 1888 mark while the caption reads September 1889. It
+will fight station 8 at M6, when τ becomes a chronology rather than a station-local scrub, and that is the milestone
+to settle it in.
+
+**Verified.**
+
+| | measured | |
+|---|---|---|
+| The framing from the painter's position | *The Harvest*, whole, filling the view | exit criterion 1 |
+| `?flat` parity against `tools/flat.py` | RMS **0.0472** | M2 0.050, M1 0.051, M0b 0.047 |
+| Golden colour and relief, all three canvases | RMS **0.00000**, identical | geometry, colour and height did not move |
+| `?still` twice | byte-identical PNG | seed 18531890 holds |
+| Blobs streamed for the station | **0.89 MB** | ≤ 6 MB |
+| The scrub as prefetch | nearest-to-τ first, spans fixed in advance | |
+| Acts across the station | **15**, from the three canvases' own cuts | one hue sweep in `?xray` |
+| The station paints itself | 18.8 s of arrival + 14 holds × 2.4 s = **52 s** | at M2's 4,000× |
+
+§12's budget, measured at 1600 × 1113 from the standpoint with everything visible:
+
+| | Light | Balanced | Rich | budget (L / B / R) |
+|---|---|---|---|---|
+| Strokes resident | 37,535 | 37,535 | 37,535 | 150 k / 400 k / 800 k ✓ |
+| At the near tier | 32,805 | 32,805 | 32,805 | **20 k ✗** / 80 k ✓ / 180 k ✓ |
+| Triangles | 0.49 M | **1.94 M** | 4.43 M | 0.8 M ✓ / **2.5 M ✓** / 5 M ✓ |
+| Draw calls | 24 | 24 | 24 | 90 / 120 / 160 ✓ |
+| GPU | 1.6 ms | 6.3 ms | 9.7 ms | of 16.7 ✓ |
+
+Balanced holds, which is what the exit criterion asks. **The Light row for near-tier strokes is exceeded and the table
+is revised here with the measurement that justifies it**: that row was written when a near-tier stroke was ~24
+triangles, and the Light ribbon is now three segments by three columns, so 32,805 of them is 0.49 M triangles —
+*less* than 20,000 cost when the number was set. The budget that matters is triangles, draws and frame time, and all
+three hold with room. What cannot be fixed by tessellation is that the LOD never fires: a lifted canvas puts every
+stroke back on its own ray, so from the standpoint a stroke subtends what it subtends on the canvas, and a
+screen-space threshold demotes nothing. See Deferred.
+
+**The volume, instrumented — and the criterion fired.** The instrument is what M3 owed and it is built: the runtime
+logs walk-time, time within half a metre of the boundary, time outside it and the furthest excursion, and
+`vg.volume()` returns them with a verdict. What it does not have is the tester, and a person is what the criterion
+asks for. So three scripted walkers calibrate it instead — they are not that test and do not pretend to be:
+
+| | within 0.5 m of the edge | outside it | furthest out |
+|---|---|---|---|
+| **forward** — hold W, never turn | 92.9% | 92.3% | 1.18 m |
+| **look** — walk a few paces, stop, turn, look | 82.8% | 82.2% | 1.17 m |
+| **wander** — an amble, new heading every few seconds | **72.0%** | 69.6% | 1.18 m |
+
+Any walker with a net forward drift arrives at the boundary and then stays, and the metric counts standing there as
+pushing at it. Sweeping the volume rather than arguing about it:
+
+| slab, half-extents | 12 × 7 m | 20 × 14 m | 32 × 24 m | 50 × 40 m |
+|---|---|---|---|---|
+| the amble's time at the edge | 72.0% | 60.0% | 38.8% | **20.2%** |
+
+**So the amble needs a hundred metres by eighty to come in under a fifth, and the paint has thinned to a quarter of
+its own density by six metres out.** Those two numbers are the answer to §15's question as far as it can be answered
+without a person: the volume a canvas can justify and the volume a walking body wants differ by about seven times in
+each direction. Station 4 ships at 12 × 7 m — the depth measured from the thinning, the width chosen — with the
+numbers above beside it, because sizing the volume to make the instrument look good is exactly the move the
+instrument exists to catch. The decision belongs to M6.
+
+**Rule 2.** `?noStrokes` renders the primed cloth of station 0 — a ground, a dome, and each canvas's own ground wash
+laid into the world on the same rays its strokes are on. There is no modelled tree, roof or hill anywhere in it. It
+is more than M1's canvas-on-a-wall showed, because a lifted wash fills the view rather than hanging in a rectangle,
+and the number that says it cannot carry the picture is the band-pass ratio the extractor measures: **1.17 on the
+Harvest, 0.95 on the Reaper, 1.16 on the Sower**, against a kill line of 0.6. The wash is a wash.
+
+**Seven things were wrong, and five of them were the same kind of wrong.**
+
+1. **The swell was sampled in each canvas's own frame.** A canvas is lifted about the standpoint and then its group is
+   turned to face out of the ring, so the ground under the Sower was riding a hill rotated 68° away from the one the
+   floor was riding. What that looks like is the floor coming up through the middle of the painting in a great smooth
+   curve. Neither formula was wrong; they were in different rooms. The terrain now rotates its argument into world
+   coordinates and everything — floor, cloth, strokes, and the body's own eye height — agrees by construction.
+2. **A quad straddling the horizon has its top corners on the dome and its bottom corners on the ground.** One grid
+   across the whole canvas therefore contains a row of enormous sheets standing across the middle distance, black
+   because they face away. The canvas's cloth is now two meshes split exactly at the horizon.
+3. **And then a hairline of void, ruled across the picture where the land meets the sky**, because everything past
+   the dome is capped to the dome and the strip of canvas between the horizon and that cap stands up as a wall out
+   there — which the mesh had no row for. The first row of the ground is now the horizon itself.
+4. **The dome cap and the swell correction multiplied.** A point already pushed out to the cap was then scaled by
+   (eye − height)/eye, and half a metre of swell against an eye at 1.65 m moves it between sixty and a hundred and
+   twenty metres. Adjacent rows landed at wildly different distances and the sheet folded through itself. The swell
+   now dies out past forty metres, where it was never doing any work.
+5. **The floor and a lifted canvas's cloth are the same surface, tessellated differently**, and they interpenetrated.
+   A polygon offset handles the near field, where the depth slope is what the factor term is for; at the horizon the
+   surface is exactly edge-on and no offset can win, so the floor is put underneath, sinking six millimetres for every
+   metre away. A quarter of a degree of grade against a metre of depth precision out there.
+6. **The weave on the floor was reading x and y.** A hanging canvas is upright so its threads are x and y; a ground is
+   not. One sine and a constant is not a weave, it is corduroy, and it never showed until M3 made the ground the thing
+   you look at.
+7. **The act list was rebuilt before it existed.** The first blob to land calls `rebuildActs`, and the prefetch reads
+   the scrub to decide what to fetch next — both of them from above their own `let`. The station showed the "strokes
+   did not load" panel with a temporal-dead-zone error in it, which is at least a page that says what happened.
+
+**And one that was a bad measurement rather than a bug**, recorded because it will happen again: the `?flat` parity
+first came back at **0.195** against M2's 0.050, which looks exactly like a broken renderer. `tools/shot.py --size`
+sets the *window*, and headless Chrome's viewport comes out about 87 px shorter, so the orthographic frustum was
+letterboxing the canvas and a tenth of the frame was black in one image and paint in the other. The renderer was
+fine. Measured at a viewport that actually matches the canvas aspect it is 0.0472.
+
+**Two things were tried and taken out, both for the same reason.** A ±4° tilt scan on the horizon, whose idea was
+that a horizon a degree off level is a fact about how he stood: what it actually fitted was the diagonal of the
+Alpilles, climbing to the edge of the search and dragging the Reaper's horizon 16% of the canvas up onto the hills. A
+knob a mountain can turn is not measuring the easel. And the first `wander` walker, whose heading was a random walk
+with no mean reversion: it spun, walked in tight circles near the origin and reported **0.0%** at the boundary —
+a clean null that was entirely an artefact of the walker.
+
+**Still visible, and named rather than fixed.**
+
+- **The volume fails its own instrument** on every scripted walker, and the sweep says it would have to be seven
+  times bigger in each direction to pass. Named above; the decision is M6's.
+- **The Harvest's acts are lopsided.** M2's cutter gives it contour 1,156, subject 13,227, light 373, land 178 —
+  one act holding 89% of the canvas, because several adjacent spans all earned the name *subject* and merged. Its
+  arrival is one long burst with its punctuation in the wrong places. Changing the naming rule to make the pacing
+  nicer is tuning the evidence to taste, so it stands.
+- **The canvases have hard rectangular edges** where they meet the void, because that is what the edge of a painted
+  region is. It is honest and it is startling.
+- **A `present` canvas inside a station is implemented and unexercised** — all three of station 4's are lifted, and
+  the only thing driving that path is `?blob` and `?flat`.
+- **The letter is a citation and not a quotation.** `letter` carries the number, the recipient and the date; `text`
+  is deliberately `null` until M7, which owns the voice and the verification against the Van Gogh Museum and Huygens
+  edition. A quotation typed from memory is not a quotation.
+- **The timeline's fill runs from the left edge of the ten years**, which reads as though 1880–1888 has been painted.
+  τ is station-local until M4 makes it the global axis with the transits in it.
+- **The Sower is 3,677 strokes over a whole plain** and it shows: lifted, its far field is nearly bare. The thinning
+  number says 9 m and means it.
+
+**Not started, per scope:** the far LOD tier, the shelled treatment and per-stroke depth, any other station, the
+transit, interiors, the voice, sound, mobile, photo mode, the sound button.

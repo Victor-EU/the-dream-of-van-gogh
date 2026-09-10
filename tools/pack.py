@@ -48,6 +48,17 @@ margin without it would be quoting a number out of context. The act table is the
 sequence's own structure: DESIGN 5.2's named groups, each one a span of order,
 found by cutting the solved sequence rather than by drawing lines on the canvas.
 
+Version 5 adds what M3 found out about where the canvas stands. `treatment`
+says whether this canvas is a plain or a wall, and it is decided by a
+measurement rather than by the table in DESIGN 7: how much better the best
+level colour cut is than the best upright one, with two canvases that are not
+places run through the same code to say where that line goes. `horizon` is
+the level cut itself. `gamma` is the exponent the ground is built with and
+`gamma_measured` is what the canvas's own foreshortening returned, and they
+are stored separately on purpose -- the second one is near zero on every
+canvas here, so the first is a construction and a blob that quoted only the
+number it was built with would be hiding that.
+
 Every reader takes hdr_len from the header rather than assuming it, so the
 growth costs nothing.
 
@@ -57,8 +68,8 @@ import json, os, struct, sys
 import numpy as np
 
 MAGIC = b"VGST"
-VERSION = 4
-HDR = 320
+VERSION = 5
+HDR = 448
 STRIDE = 24
 CSTRIDE = 24
 ASTRIDE = 24
@@ -198,6 +209,26 @@ def pack(doc, dest):
     struct.pack_into("<II", buf, 292, int(rep.get("stacking", 0)),
                      int(rep.get("overlaps", 0)))
     struct.pack_into("<f", buf, 300, float(aud.get("block", 0.0)))
+
+    pl = doc.get("place") or {}
+    struct.pack_into("<ffff", buf, 320, float(pl.get("horizon", 0.5)),
+                     float(pl.get("gamma", 1.0)), float(pl.get("gamma_measured", 0.0)),
+                     float(pl.get("horizon_ratio", 0.0)))
+    struct.pack_into("<ff", buf, 336, float(pl.get("split", 0.0)),
+                     float(pl.get("split_null", 0.0)))
+    struct.pack_into("<ff", buf, 344, float(pl.get("size_ratio", 0.0)),
+                     float(pl.get("size_demand", 0.0)))
+    struct.pack_into("<ff", buf, 352, float(pl.get("null_p", 0.0)),
+                     float(pl.get("vp_ratio", 0.0)))
+    struct.pack_into("<II", buf, 360, int(pl.get("sky_strokes", 0)),
+                     int(pl.get("ground_strokes", 0)))
+    struct.pack_into("<fff", buf, 368, float(pl.get("hfov", 50.0)),
+                     float(pl.get("eye", 1.65)), float(pl.get("dome", 90.0)))
+    struct.pack_into("<BB", buf, 380, 1 if pl.get("treatment") == "lifted" else 0,
+                     1 if pl.get("gradient") else 0)
+    struct.pack_into("<ffff", buf, 384, float(pl.get("far", 0.0)),
+                     float(pl.get("near", 0.0)), float(pl.get("reach", 0.0)),
+                     float(pl.get("dmax", 0.0)))
     for j, t in enumerate(table):
         o = coff + j * CSTRIDE
         struct.pack_into("<II", buf, o, t["first"], t["count"])
@@ -246,6 +277,12 @@ def main():
           f" {aud.get('heuristic', 0)*100:.1f}%"
           f"  (margin {aud.get('margin', 0)*100:+.1f})")
     print(f"  acts    " + "  ".join(f"{a['name']} {a['count']}" for a in acts))
+    pl = doc.get("place") or {}
+    if pl:
+        print(f"  place   {pl['treatment']}   horizon v {pl['horizon']:.3f}"
+              f"  ({pl['horizon_ratio']:.0f}x the best upright cut)"
+              f"   gamma {pl['gamma']:.2f} built, {pl['gamma_measured']:+.2f} measured"
+              f"   sky/ground {pl['sky_strokes']}/{pl['ground_strokes']}")
     print(f"  relief  method {doc.get('height_method', 0)}"
           f"   cap {doc.get('height_mm', 0):.2f} mm"
           f"   light {math.degrees(math.atan2(-lt[1], lt[0])):+.0f} deg"
