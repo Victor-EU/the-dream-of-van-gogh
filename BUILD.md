@@ -657,6 +657,10 @@ the only real defence is that nothing in it is polished) and M8 (which the desig
   station's blobs are committed when that station is frozen. *M6 freezes none — its own scope is "roughed in and
   nothing polished" — so they stay out. What is committed is the goldens, and thirty canvases at two 1200 px images
   each is **55 MB**, which is the first time that line has cost anything worth noticing.*
+  *After M9, on the author's word, the records the page loads are committed: each station canvas's blob and its
+  underlayer, 62 files and 12 MB, so that a clone, or any static host serving the repository, shows the paintings.
+  The rest of each build (the stroke JSON, the flats and the height maps) stays a gitignored output, and so does the
+  old station 7's stand-in, which nothing hangs.*
 - **Sound design beyond the brush.** Mistral, cicadas, rooks. After M7's brush exists at scale.
 
 ---
@@ -3246,3 +3250,22 @@ canvases in their museums. M8 built the nothing and called the decision the auth
   face, so on a phone it starts at the window's edge.
 - **Walk it again does not repaint it**, as it does not repaint any canvas on the road.
 - **Measured headless on this machine only**, not on a phone or an integrated GPU.
+
+### After M9 — The README, and the paintings in the repository
+
+**What was asked.** A README for the repository on GitHub, and then the stroke records committed, so that a clone
+shows the paintings.
+
+**What changed.**
+
+- `README.md`: what the piece is, how to run it, the controls, the eleven places, how the strokes are extracted and
+  ordered, what is evidence and what is invention (DESIGN §4.3's disclosure paragraph, which M9 owed the README),
+  the URL parameters and the debug API, how to rebuild a canvas, the layout, and the credits and licences.
+- `docs/`: five frames for it, shot headless from this build: Saint-Rémy, the opening, *Sunflowers* partway through
+  painting itself, the red vineyard and the end.
+- The stroke records: 62 files, 12 MB, the blob and the underlayer of every canvas a station hangs, now tracked.
+  `.gitignore` lets them through and keeps out the rest of each build and the unhung *La berceuse*.
+
+**How it was verified.** Before the records were committed, an exact copy of `HEAD` served on its own showed the whole
+world with every easel empty and the opening lifting without its painting, which is what the first draft of the README
+said. After, the same copy of the new `HEAD` loads every record with no 404.

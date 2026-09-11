@@ -21,6 +21,14 @@ strokes/**/*.wav
 !strokes/golden/
 !strokes/golden/*.png
 
+# ...and, after M9, the records the page loads: each canvas's strokes and its
+# underlayer, 12 MB for all of them, so that a clone shows the paintings. The
+# rest of a build stays out, and so does La berceuse, the stand-in for the old
+# station 7, which no station hangs any more.
+!strokes/s[0-9][0-9]/*-canvas.bin
+!strokes/s[0-9][0-9]/*-canvas-under.png
+strokes/s07/berceuse-*
+
 # tools/letters.py keeps the edition's pages it read, so a check can be re-run
 # without asking the edition again. letters/letters.json is the record; this is
 # only the cache behind it.
