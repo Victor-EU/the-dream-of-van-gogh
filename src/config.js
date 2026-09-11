@@ -127,6 +127,24 @@ export const STATIONS = [
       cobble: 0.9, cobbleA: '#6a7a8e', plaza: 16 },
     audio: { wind: 0.15, night: 1.0, river: 0.6, cafe: 0.5 } },
 
+  { id: 7, file: 'stations/s07-the-red-vineyard.json', place: 'Arles', year: '1888',
+    sky: { zenith: '#c8b858', mid: '#dcc052', horizon: '#f0d070',
+      low: ['#e8b848', '#e6c455', '#f0cc5c', '#dca640', '#e8c870'],
+      high: ['#d6c25a', '#c8b04a', '#d8c878', '#e0cc60', '#bcae52'],
+      light: ['#f4dc84', '#f8e8a8', '#f0d890'], swirl: 0.15, wave: 0.35, eddies: 2,
+      sun: { az: 34, el: 7, r: 3.2, col: '#fbf6d8', halo: ['#f6eca0', '#f0da6a', '#e6c450', '#d8b040'] } },
+    light: { az: 34, el: 9, col: '#ffd878', k: 2.3, sky: '#d8c868', gnd: '#a8402a', amb: 0.78, night: 0, exposure: 1.0 },
+    fog: '#d8b85a', fogDen: 0.0045, fogStart: 28,
+    ground: { c0: '#3a1420', c1: '#7a2020', c2: '#b04a2a',
+      wheat: 0.8, wheatA: '#b82a1e', wheatB: '#7c1c1e', tip: '#e0602e', wheatH: 0.6,
+      grass: 0.12, grassA: '#5c5c26', grassB: '#8e7c2e', grassH: 0.3,
+      furrow: 0.3, furrowA: '#3c2c5e', furrowB: '#6c4c86',
+      flower: 0.2, flowerA: '#f0c040', flowerB: '#e05a2a',
+      road: '#57539c', roadEdge: '#8a3a4a', roadW: 1.8,
+      dots: 0.3, wind: 0.3, hill: 0.25, valley: 0.1, swirl: 0.25, plaza: 6,
+      waterA: '#d8b43e', waterB: '#6a8ab8', canal: 1, glint: '#fff4c8' },
+    audio: { wind: 0.35, birds: 0.45 } },
+
   { id: 8, file: 'stations/s08-saint-remy.json', place: 'Saint-Rémy', year: '1889',
     sky: { zenith: '#081a44', mid: '#1a3a82', horizon: '#3f64a8',
       low: ['#2e417a', '#3a5a9a', '#4b6b95', '#1f3a78'],
@@ -206,5 +224,5 @@ export const STATIONS = [
 // defaults for anything a station leaves out
 export const GROUND_DEFAULTS = {
   dots: 0, snow: 0, bare: 0, swirl: 0, water: 0, waterA: '#10203a', waterB: '#2a4a7a',
-  cobble: 0, cobbleA: '#8a8070',
+  cobble: 0, cobbleA: '#8a8070', canal: 0, glint: '#000000',
 };

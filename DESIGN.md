@@ -20,6 +20,11 @@
 > Starry Night* painting itself on a primed canvas from its own stroke record while the world is built; then it
 > comes towards you, dissolves into the world, and the world is walkable at once. §11's "a single line on first load"
 > is back, as the line of keys that waits for the first touch of a hand. `BUILD.md` records it after M9.
+>
+> **The red vineyard, on the author's word.** Later the same day the author asked for a place after *The Red
+> Vineyard*, and it stands where station 7 stood: the road goes from the night of Arles through a red vineyard in
+> November 1888 to Saint-Rémy. The land is painted from what he wrote he saw there, and his canvas stands in it on an
+> easel. `BUILD.md` records it.
 
 A single web page. You begin on bare primed canvas — white, woven, nothing on it but a charcoal line going forward.
 You drag one control, and the world starts being painted around you: strokes arriving in order, in his direction, at
@@ -611,6 +616,8 @@ which are not places at all, and it lets us drop the geographic filler that a pr
                                  olive groves where the ground writhes
             ——————————————————— the climb, the Alpilles ——————————————
                              [7] THE STROKES STOP — 23 December 1888   (removed after M9)
+                             [7] THE RED VINEYARD — November 1888   (added after M9)
+                                 red rows · a canal · the sun low in a yellow sky
                              [6] THE NIGHT OF ARLES — September 1888
                                  the terrace · the café · the Rhône
                              [5] THE YELLOW HOUSE, INSIDE — Sept–Oct 1888
@@ -636,6 +643,7 @@ which are not places at all, and it lets us drop the geographic filler that a pr
 | 5 | **The Yellow House, inside** | Sept–Oct 1888 | Home, and it is small. Up the stairs: **the three Bedrooms occupying the same space**, so that walking forward changes the colour of the room around you without a cut. That is what a repetition actually *is*, and no gallery can hang it that way. The Sunflowers enormous and close. The two chairs facing each other across the floor. The only safe place in the universe. | built |
 | 6 | **The night of Arles** | Sep 1888 | Out into dusk. The Café Terrace, the Night Café, the Rhône under the Dipper. Here each individual stroke becomes **a star or a gaslight** — the atom of the paint and the atom of the subject are the same object, which happens nowhere else in his work. | built + shelled |
 | 7 | **The strokes stop** | 23 Dec 1888 | No ear. No blood. No razor. **The painting simply stops mid-canvas**, the brush sound cuts, and the scrub refuses to advance for a beat. Then it resumes somewhere else, on rougher cloth. The restraint is the entire effect and it will be tempting to ruin. | removed after M9 |
+| 7 | **The red vineyard** | Arles, Nov 1888 | A vineyard by a canal after the rain, the sun low in a yellow sky: red like red wine, he wrote, yellow in the distance, the wet ground violet and catching the setting sun. Nobody in the rows. The pickers and the woman under the parasol are on his canvas, which stands among them on an easel, and the canal carries the sun's broken path toward you. | added after M9 |
 | 8 | **Saint-Rémy** | 1889 | The walled garden, *Irises* as the literal ground at your feet — he painted them in that garden. Then the window, and the night: **The Starry Night as a sky, overhead, each spiral turning along its own curl.** Cypresses. Olive groves where the ground itself writhes. The summit of the piece, and the reason to lie down. | lifted + shelled |
 | 9 | **Auvers** | May–Jul 1890 | Descend into cool green and grey-blue. Thatch, *Daubigny's Garden*, the church with its two paths splitting around it. The canvases go double-square here (50 × 100 cm) — so **the frame of the world itself widens**, which the viewer will feel and not notice. | lifted |
 | 10 | **The wheatfield** | 27 Jul 1890 | Three paths. Crows — the only living creatures in the universe, and if the viewer looks back they have been in the corner of the eye since Arles. The rush with no holds. Then the strokes stop arriving and you are standing on bare primed canvas with the field behind you. | lifted |
@@ -764,6 +772,9 @@ Philadelphia); *Van Gogh's Chair* and *Gauguin's Chair*; *La Berceuse*; *The Pos
 (Orsay). All three motifs are within about three hundred metres of each other in the real Arles, which is a gift: the
 station is geographically honest even though the piece is not.
 
+**Station 7** — *The Red Vineyard* (early November 1888, Pushkin State Museum of Fine Arts, Moscow): the station added
+after M9.
+
 **Station 8** — *Irises* (Getty); *The Starry Night* (MoMA); *Wheat Field with Cypresses* (Met, and the National
 Gallery London); *The Olive Trees* (MoMA) and the other olive groves; *Cypresses*; the asylum corridor and garden
 studies; *Enclosed Field with Rising Sun* as the daylight state of the Starry Night enclosure.
@@ -791,6 +802,7 @@ Everything is public domain; he died in 1890. Reproduction access is considerabl
 | Yale University Art Gallery | open access |
 | J. Paul Getty Museum | Open Content |
 | Musée d'Orsay, Kröller-Müller, MoMA | not open access; use the highest-resolution Wikimedia Commons files and record the provenance |
+| Pushkin State Museum of Fine Arts, Moscow | not open access; its own photograph of *The Red Vineyard* is on Commons at 11,406 × 9,092, and that is the file used |
 
 `paintings/CREDITS.md` follows `monets-universe`'s example exactly: every canvas, its collection and accession number,
 the reproduction used, its pixel dimensions, and any reason one source was preferred over another. That file was one

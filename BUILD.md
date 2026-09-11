@@ -2958,6 +2958,92 @@ It uses DOM key events and a synthetic wheel event.
 
 No exceptions and no console errors, at 60 fps. The probe lives in the session's scratchpad, like M9's driver.
 
+### After M9 — The red vineyard
+
+**What was asked.** A place after *The Red Vineyard*. The author gave the painting, as the Commons file they had saved,
+and then the word to fetch the museum's own photograph instead.
+
+**What was decided.**
+
+- **Where it stands.** Between the night of Arles, September 1888, and Saint-Rémy, 1889, where station 7 stood until
+  it was taken out. It is station 7 again, *The red vineyard*, November 1888.
+  - The road is 90 m longer again, and the line along the bottom has eleven ticks.
+  - The digits 1 to 9 and 0 reach the ten painted places, and the end is walked to or clicked on the line, as in M9.
+- **What the land is painted from.** His own description of what he saw on the Sunday walk, in letter 717: the
+  vineyard red like red wine, yellow in the distance, a green sky with a sun, and the violet ground sparkling yellow
+  after the rain where the setting sun was in it. The colours are sampled from the scan and pushed.
+- **No one in the rows.** The world keeps no people anywhere on the road, and it keeps none here. The pickers and the
+  woman under the parasol are on his canvas, which stands among the vines on an easel.
+
+**What changed.**
+
+- `journey.js` and `ground.js`: a canal the ground table can ask for.
+  - It lies on the right of the road, 16 to 27 m out, wherever a station sets `canal`. Only the red vineyard does.
+  - The terrain dips for its bed, in GLSL and JS line for line, and the water marks and the blades follow it.
+  - By day the sun lies on its water as a path of broken light: the view reflected in the surface, falling near the
+    sun's own direction, and twinkling slowly. The ground table's new row carries the canal and the colour of that
+    light, which is black, meaning none, at every other station.
+- `config.js`: the station's art direction.
+  - A golden sky of short strokes, with a white sun in rings of yellow low on the right of the road.
+  - Wine-red vines, violet furrows, a violet road, and a yellow haze so that the distance turns yellow.
+- `scenes.js`: what stands in the land.
+  - About 750 bush vines in rows along both sides of the road, each a gnarled stock, often a stake, and a low dome of
+    red leaves.
+  - The blue cart, a farm on the horizon to the left of the sun, and the wind-bent trees of his top left corner.
+  - Puddles on the road that catch the sun.
+  - The easel, turned back up the road so that, standing at it, the sun is just past the canvas's right edge;
+    `easelsAt` takes an optional turn for it.
+  - No crows. The crow plan is M9's again, so every other station keeps its birds.
+- `audio.js`: the station's chord is E, the night of Arles' key by daylight.
+- The canvas, its source and its records:
+  - `params/redvineyard.json`, `strokes/s07/redvineyard-canvas.*` (the blob is not committed), its two goldens,
+    `sizes.js`, `tools/sources.tsv` and `paintings/CREDITS.md`.
+  - The source is the Pushkin Museum's photograph as Commons carries it, 11,406 × 9,092, about 123 px/cm.
+  - The file the author gave first, 2001 × 1560, is a sixth of that resolution and 3.4% off the canvas's shape. It was
+    set aside before a build of it finished.
+  - It has 11,249 strokes and covers 81.1% of the canvas. `tools/place.py` finds no horizon in it (1.9×), so it is a
+    wall, which on an easel is what it is.
+  - Its size is the edition's 75 × 93 cm and not the holder's. CREDITS § says so.
+- `stations/s07-the-red-vineyard.json` and its letter:
+  - Letter 717, to Theo, about 3 November 1888, paragraph 21, ten words.
+  - The edition ties the canvas to paragraph 4 of the same letter and to letter 718. This paragraph names no canvas:
+    it is the place, and the station file's `why` says so.
+  - `letters/letters.json` and `letters/README.md` carry it.
+- `DESIGN.md` records the station on the author's word.
+
+**How it was verified.**
+
+- The tools:
+  - `tools/make.py redvineyard` built the canvas and created its goldens; asked again, it reports both identical.
+  - `tools/make.py --check` passes the params file.
+  - `tools/station.py` passes over the eleven station files.
+  - `tools/letters.py --check` finds ten lines and nothing wrong.
+- Headless Chrome, driven by the same scratch harness as M9:
+  - No exceptions and no console errors.
+  - Eleven ticks with the right names, and 7 jumps to the red vineyard.
+  - Frames from the road in and out, the easel, both sides of the road, and the canal bank. Both roads into its
+    neighbours were checked too: the night going into the vineyard, and the vineyard into Saint-Rémy.
+  - The canvas paints itself on its easel; a frame at 4 s shows it half laid.
+- What the scenery costs:
+  - The station's scenery is 65,883 marks, between Saint-Rémy's 54,891 and the orchards' 73,773.
+  - A first cut had 94,908 and cost 8 fps against the scenery hidden, so it was thinned.
+  - The frame rate was measured with five other headless browsers running on the machine, and every station was held
+    at 30 frames a second (median frame 33.3 ms).
+  - Back to back in one page: the orchards 38.0 and 38.7 fps, the vineyard 39.3 and 38.4, Saint-Rémy 38.0. So the
+    vineyard costs what the orchards do. M9's 60 fps could not be re-measured on a machine that busy.
+
+**Still visible.**
+
+- **The canal is about 80 m long.** A station's ground holds for about 27 m either side of it, so the water ends in a
+  shallow basin where the ground table hands over to the neighbours.
+- **The vines are invention, and the pickers are not in them, deliberately.** Putting them in would be a new prop,
+  not a switch.
+- **The canvas's size is the edition's, not the holder's.**
+- **The farm and the far trees stand in the land between the vineyard and Saint-Rémy.** The road passes them at a
+  distance on the way there.
+- **Coming from the night of Arles, the vineyard's yellow sky arrives mark by mark through the night's blue**, as every
+  sky does.
+
 ### After M9 — The opening, after Monet's
 
 **What was asked.** The opening should be more like Monet's Universe's, and its animation could be inspired by *The

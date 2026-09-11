@@ -5,7 +5,9 @@ Every work here is by Vincent van Gogh (1853–1890) and is in the public domain
 is deliberately outside the repository — 1.7 GB of scans does not belong in git.
 
 Gathered 10 September 2026 by `tools/vgm_resolve.py`, `tools/commons_resolve.py`, `tools/fetch.py`,
-`tools/fetch_commons.py` and `tools/micrio_stitch.py`. **40 scans, 4.41 gigapixels, 1.70 GB.**
+`tools/fetch_commons.py` and `tools/micrio_stitch.py`. **40 scans, 4.41 gigapixels, 1.70 GB.** One more
+after M9, on the author's word: *The Red Vineyard*, 104 MP and 41 MB, fetched on 11 September 2026 from the Commons
+address in `tools/sources.tsv`.
 
 ## How resolution was judged
 
@@ -93,6 +95,7 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 6 | *Café Terrace at Night* | Kröller-Müller Museum | `KM 108.565` ✕ | Commons | 6415 × 8000 | 51 | 65.3 × 80.7 ‡‡ | **98 ‡‡** |
 | 6 | *Starry Night Over the Rhône* | Musée d'Orsay, Paris | `RF1975-19` | Commons · Google Art Project | 4331 × 3346 | 14 | — † | **— †** |
 | 6 | *The Night Café* | Yale University Art Gallery | `1961.18.34` | Commons | 7408 × 5848 | 43 | 92.1 × 72.4 ‡‡ | **80 ‡‡** |
+| 7 | *The Red Vineyard* | Pushkin State Museum of Fine Arts, Moscow | `Ж-3372` | Commons · the museum's photograph | 11406 × 9092 | 104 | — § | **— §** |
 | 8 | *Cypresses* | The Metropolitan Museum of Art | `1949.30` | Commons | 4177 × 5306 | 22 | — † | **— †** |
 | 8 | *Irises* | J. Paul Getty Museum | `90.PA.20` | Commons | 11516 × 8801 | 101 | 94.3 × 74.3 ‡ | **122** |
 | 8 | *Irises (still life)* | Van Gogh Museum, Amsterdam | `s0050V1962` | museum IIIF (Micrio) | 13278 × 16806 | 223 | 73.9 × 92.7 | **180** |
@@ -165,6 +168,16 @@ the strongest edge in any picture. It scored 1.7×, the lowest in the collection
 ground at your feet, at 1:1, which is a use that depends on the dimension being right rather than only on px/cm —
 so it was confirmed against the Getty first, and the figure the museum publishes is the figure the file already had.*
 
+§ **Added after M9, on the author's word, and not confirmed by the holder.** The Pushkin Museum's own page on the
+canvas gives neither a size nor an inventory number. The number, **Ж-3372**, is the one both Commons records of the
+museum's photographs carry. The size is the edition's, 75 × 93 cm, from its notes to letters 717 and 718, and it is
+what `params/redvineyard.json` enters, under a note that says so; one of the two Commons records says 73 × 91
+instead. By the edition's width the scan is about 123 px/cm, which is the collection's target. So *Starry Night Over
+the Rhône* is no longer the only canvas in the piece whose size nobody who owns it has confirmed: this is the second.
+The scan's own shape, 1.2545, is 1.2% from the edition's figure and 0.6% from the other, inside the band the next
+section measures. The file the author gave first, `File:Red_vineyards.jpg` at 2001 × 1560, is 3.4% off the canvas's
+shape and a sixth of the resolution, and was set aside.
+
 ## The scan and the catalogue disagree about the shape
 
 *Measured at M5, when it started to matter.* Whole-canvas coordinates only mean anything if the shape they are
@@ -220,7 +233,9 @@ and has no note beside it. Seven are outside; all seven have notes.
 
 Every date in `stations/*.json` is the holder's own words in `date` and an ISO date in `when`. Where the holder
 publishes only a year — the Art Institute for both its canvases, Joconde for the third *Bedroom* — the ISO date is a
-month chosen inside that year and the canvas's note says so.
+month chosen inside that year and the canvas's note says so. The Pushkin gives *early November 1888* for *The Red
+Vineyard*, and its `when` is the 5th, inside the week between letter 717, where he is at work on it, and letter 718,
+where it is finished.
 
 ## Known gaps
 

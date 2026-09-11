@@ -15,6 +15,10 @@ export const ZEND = stationZ(NST - 1) - 34;
 
 export const roadX = z => 3.0 * Math.sin(z * 0.021) + 1.6 * Math.sin(z * 0.057 + 1.3);
 export const roadSlope = z => 0.063 * Math.cos(z * 0.021) + 0.0912 * Math.cos(z * 0.057 + 1.3);
+// the red vineyard's canal, on the right of the road from 16 to 27 m out, wherever
+// a station's ground asks for one: its bed, and where its water lies
+export const CANAL = [16, 27];
+const canalBed = u => smoothstep(CANAL[0] - 1.2, CANAL[0], u) * (1 - smoothstep(CANAL[1], CANAL[1] + 1.2, u));
 export function stationAt(z) {
   const s = (Z1 - z) / SPAN, f = s - Math.floor(s);
   return clamp(Math.floor(s) + smoothstep(0.3, 0.7, f), 0, NST - 1);
@@ -28,7 +32,7 @@ const ROWS = [
   ['c0', 'wheat'], ['c1', 'grass'], ['c2', 'furrow'], ['wheatA', 'wheatH'], ['wheatB', 'wind'],
   ['tip', 'flower'], ['grassA', 'grassH'], ['grassB', 'dots'], ['furrowA', 'snow'], ['furrowB', 'bare'],
   ['flowerA', 'hill'], ['flowerB', 'valley'], ['road', 'roadW'], ['roadEdge', 'swirl'],
-  ['waterA', 'water'], ['waterB', 'cobble'], ['cobbleA', 'plaza'],
+  ['waterA', 'water'], ['waterB', 'cobble'], ['cobbleA', 'plaza'], ['glint', 'canal'],
 ];
 const G = STATIONS.map(st => ({ ...GROUND_DEFAULTS, ...st.ground }));
 
@@ -53,12 +57,13 @@ export function gnum(key, s) {
 // the body's height; the same function the ground is drawn with, line for line
 export function terrainH(x, z) {
   const s = stationAt(z);
-  const hill = gnum('hill', s), valley = gnum('valley', s), water = gnum('water', s);
+  const hill = gnum('hill', s), valley = gnum('valley', s), water = gnum('water', s), canal = gnum('canal', s);
   const d = Math.abs(x - roadX(z));
   let h = valley * smoothstep(14, 120, d) * 9;
   h += hill * (1.4 * Math.sin(x * 0.043 + 1.7 * Math.sin(z * 0.021)) + 1.1 * Math.sin(z * 0.061 + x * 0.017)) * smoothstep(3, 16, d);
   h -= 0.05 * (1 - smoothstep(0, 2.2, d));
   h = lerp(h, -0.8, water * smoothstep(0.5, 1.5, (roadX(z) - 13) - x));
+  h = lerp(h, -0.8, canal * canalBed(x - roadX(z)));
   return h;
 }
 
@@ -77,6 +82,7 @@ export const TERRAIN = /* glsl */`
   ${macros}
   float roadX(float z) { return 3.0 * sin(z * 0.021) + 1.6 * sin(z * 0.057 + 1.3); }
   float roadSlope(float z) { return 0.063 * cos(z * 0.021) + 0.0912 * cos(z * 0.057 + 1.3); }
+  float canalBed(float u) { return smoothstep(${(CANAL[0] - 1.2).toFixed(1)}, ${CANAL[0].toFixed(1)}, u) * (1.0 - smoothstep(${CANAL[1].toFixed(1)}, ${(CANAL[1] + 1.2).toFixed(1)}, u)); }
   float stationAt(float z) {
     float s = (Z1 - z) / SPAN;
     return clamp(floor(s) + smoothstep(0.3, 0.7, fract(s)), 0.0, float(NSTI - 1));
@@ -88,6 +94,7 @@ export const TERRAIN = /* glsl */`
     h += HILL(s) * (1.4 * sin(p.x * 0.043 + 1.7 * sin(p.y * 0.021)) + 1.1 * sin(p.y * 0.061 + p.x * 0.017)) * smoothstep(3.0, 16.0, d);
     h -= 0.05 * (1.0 - smoothstep(0.0, 2.2, d));
     h = mix(h, -0.8, WATER(s) * smoothstep(0.5, 1.5, (roadX(p.y) - 13.0) - p.x));
+    h = mix(h, -0.8, CANAL(s) * canalBed(p.x - roadX(p.y)));
     return h;
   }
   vec3 terrainN(vec2 p) {
@@ -103,7 +110,11 @@ export const TERRAIN = /* glsl */`
     float R = PLAZA(s);
     return 1.0 - smoothstep(R - 3.0, R, length(vec2(p.x - roadX(zc), (p.y - zc) * 0.75)));
   }
-  float riverMask(vec2 p, float s) { return WATER(s) * step(0.5, (roadX(p.y) - 13.0) - p.x); }
+  float riverMask(vec2 p, float s) {
+    float u = p.x - roadX(p.y);
+    return max(WATER(s) * step(0.5, (roadX(p.y) - 13.0) - p.x),
+               CANAL(s) * step(${(CANAL[0] - 0.6).toFixed(1)}, u) * step(u, ${(CANAL[1] + 0.6).toFixed(1)}));
+  }
   // a patchwork of fields, each one crop; x wheat, y grass, z ploughed, w the field's own number
   vec4 crops(vec2 p, float s) {
     vec2 q = p + (vec2(fbm(p * 0.017), fbm(p * 0.017 + 31.7)) - 0.5) * 30.0;

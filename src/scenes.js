@@ -1,7 +1,8 @@
 // What stands in the land: poplars at Nuenen, a windmill over Paris, orchards
 // in blossom, haystacks, the Yellow House, the café terrace and the gaslit
-// Rhône, the cypress under the Starry Night, the church at Auvers -- and at
-// each station an easel, where his painting of the place will paint itself.
+// Rhône, the red vineyard, the cypress under the Starry Night, the church at
+// Auvers -- and at each station an easel, where his painting of the place will
+// paint itself.
 import * as THREE from 'three';
 import { StrokeBuilder, CoreBuilder } from './strokes.js';
 import * as J from './journey.js';
@@ -310,12 +311,12 @@ function easel(c, x, z, yaw, cv) {
 }
 
 function easelsAt(c, list) {
-  for (const [k, s, dz, off = 3.4] of list) {
+  for (const [k, s, dz, off = 3.4, yaw = -s * 0.42] of list) {
     const cv = c.st.json.canvases?.[k];
     if (!cv) continue;
     const slug = cv.blob.split('/').pop().replace('-canvas.bin', '');
     const z = c.z0 + dz;
-    easel(c, c.rx(z) + s * off, z, -s * 0.42, { slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'),
+    easel(c, c.rx(z) + s * off, z, yaw, { slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'),
       title: cv.title, date: cv.date, collection: cv.collection, k, key: `${c.i}-${k}` });
   }
 }
@@ -444,6 +445,32 @@ function bush(c, x, z, cols, r = 0.5) {
   }
 }
 
+// a bush vine, pruned low the way they grow round Arles: a gnarled stock, often
+// a stake, and a low dome of leaves the autumn has turned red
+function vine(c, x, z, o) {
+  const R = c.R; c.at(x, z);
+  const b = c.gy(x, z), H = R.range(0.5, 0.8), r0 = R.range(0.36, 0.52);
+  for (let k = 0; k < 3; k++) {
+    const a = R() * 6.28, lean = norm3([Math.cos(a) * 0.3, 1, Math.sin(a) * 0.3]);
+    c.add([x + lean[0] * H * 0.15, b + H * 0.17, z + lean[2] * H * 0.15], lean, norm3([Math.cos(a + 1.6), 0, Math.sin(a + 1.6)]),
+      H * 0.18, 0.035, R.pick(o.stock), { bend: R.range(-0.4, 0.4), order: c.ord(0.1) });
+  }
+  if (R() < 0.6) {
+    const s0 = [x + R.range(-0.14, 0.14), b, z + R.range(-0.14, 0.14)];
+    c.line(s0, add3(s0, [R.range(-0.06, 0.06), H + R.range(0.2, 0.45), R.range(-0.06, 0.06)]), norm3([R() - 0.5, 0, R() - 0.5]), 0.022, o.stake, { seg: 0.45 });
+  }
+  const cy = b + H * 0.5, n = Math.round(r0 * r0 * 320);
+  for (let i = 0; i < n; i++) {
+    const u = R() * 1.15 - 0.15, a = R() * Math.PI * 2, s = Math.sqrt(Math.max(0, 1 - u * u));
+    const nrm = [Math.cos(a) * s, u, Math.sin(a) * s], k = R.range(0.8, 1);
+    const p = [x + nrm[0] * r0 * k, cy + nrm[1] * H * 0.55, z + nrm[2] * r0 * k];
+    const d = proj(add3([-nrm[2], R.range(-0.6, 0.6), nrm[0]], mul3([R() - 0.5, R() - 0.5, R() - 0.5], 0.8)), nrm);
+    const col = jitter(R.pick(u > 0.6 && R() < 0.35 ? o.top : u < 0.05 && R() < 0.5 ? o.low : o.cols), R, 0.12);
+    c.add(p, d, nrm, R.range(0.07, 0.13), R.range(0.04, 0.065), col,
+      { col2: R() < 0.3 ? R.pick(o.top) : col, bend: R.range(-0.4, 0.4), sway: 0.5, phase: x * 0.4 + z * 0.3, base: b, order: c.ord(0.3 + 0.55 * (u + 0.15)) });
+  }
+}
+
 function cafe(c, x, z, yaw) {
   const R = c.R;
   house(c, { x, z, yaw, w: 11, d: 7, h: 8.5, roofH: 1.2, wall: ['#2a3a5a', '#34466a', '#22304a', '#3a4a70'], roof: ['#1a2030', '#222a3a'], density: 11,
@@ -485,7 +512,7 @@ class Crows {
   constructor(U) {
     const R = rng(777);
     this.birds = [];
-    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 6: 2, 7: 2, 8: 16, 9: 9 };   // birds by place on the road, from 0
+    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 7: 2, 8: 2, 9: 16, 10: 9 };   // birds by place on the road, from 0; none over the vineyard
     for (const [si, n] of Object.entries(plan)) {
       const z0 = J.stationZ(+si), x0 = J.roadX(z0);
       for (let k = 0; k < n; k++)
@@ -612,6 +639,49 @@ const BUILDERS = [
     }
     village(c, c.rx(z0) - 82, z0 - 12, 20, 26);
     easelsAt(c, [[0, 1, 10, 3.6], [1, 1, -2, 3.6], [2, -1, -9, 3.4]]);
+  },
+  c => {                                             // 7 Arles, November 1888: the red vineyard
+    const R = c.R, z0 = c.z0;
+    const leaf = {
+      cols: P(['#b02a22', '#c23a26', '#962226', '#cc4a2a', '#7e1c24', '#b8362c', '#d45a2e', '#8a2a3a']),
+      top: P(['#f0a040', '#f4c050', '#e88a34', '#f8d070']),
+      low: P(['#6a1a26', '#5a2a3a', '#4a2a5a', '#3f452b']),
+      stake: P(['#2a1a16', '#3a2418', '#1e1a24']), stock: P(['#3a2a20', '#4a3226', '#2a2024']) };
+    // rows of vines either side of the road, stopping short of the canal on the right.
+    // The easel stands among them turned back up the road, so that from in front of it
+    // the sun is just past its right edge and the canal is behind it.
+    const ez = z0 + 6, ex = c.rx(ez) + 3.4, cz = z0 - 34, cx = c.rx(cz) + 8.5;
+    for (let z = z0 + 38; z > z0 - 40; z -= 1.45)
+      for (const [u0, du, k] of [[-3.4, -1.9, 8], [3.4, 1.9, 6]])
+        for (let j = 0; j < k; j++) {
+          const zz = z + R.range(-0.22, 0.22), x = c.rx(zz) + u0 + du * j + R.range(-0.2, 0.2);
+          if (Math.hypot(x - ex, zz - ez) < 2.4 || Math.hypot(x - cx, zz - cz) < 2.8) continue;
+          vine(c, x, zz, leaf);
+        }
+    cart(c, cx, cz, 0.35);
+    // the farm on his horizon, left of the sun: far enough out that the road to Saint-Rémy passes it at a distance
+    house(c, { x: c.rx(z0 - 58) + 34, z: z0 - 58, yaw: -Math.PI / 2 + 0.35, w: 8, d: 5.5, h: 4.2, roofH: 1.8,
+      wall: ['#f0dcc4', '#e8ccb0', '#f4e4d0', '#dcbca0'], roof: ['#d0643a', '#c0502e', '#e07848'] });
+    tree(c, c.rx(z0 - 62) + 41, z0 - 62, { H: 6, crown: 2.4, leaves: ['#3a6a50', '#4a7a58', '#2a5a4a'], top: '#9ab870' });
+    // the wind-bent trees at the top left of his canvas
+    for (let i = 0; i < 5; i++) {
+      const z = z0 - 6 - i * 9 + R.range(-2, 2);
+      tree(c, c.rx(z) - R.range(32, 48), z, { H: R.range(7, 9.5), crown: R.range(2.4, 2.8), trunkR: 0.26,
+        leaves: ['#2a5a50', '#3a6a60', '#4a7a6a', '#2a4a58', '#5a8a78', '#1f4a4a'], top: '#9ab89a', bark: ['#2a2a30', '#3a3030', '#24242c'] });
+    }
+    // after the rain: the road violet, and yellow where the setting sun is in the puddles
+    const wet = P(['#f8d860', '#f0b040', '#fff0b8', '#e8963a', '#f4e08a']);
+    for (let k = 0; k < 30; k++) {
+      const z = z0 + R.range(-40, 44), x = c.rx(z) + R.range(-1.4, 1.4), r = R.range(0.25, 0.7);
+      c.at(x, z);
+      const b = c.gy(x, z) + 0.05;
+      for (let i = 0, m = Math.round(r * 24); i < m; i++) {
+        const a = R() * 6.28, rr = Math.sqrt(R()) * r;
+        c.add([x + Math.cos(a) * rr, b, z + Math.sin(a) * rr * 1.6], norm3([R.range(-0.25, 0.25), 0, 1]), UP, R.range(0.1, 0.24), R.range(0.04, 0.07),
+          jitter(R.pick(wet), R, 0.08), { emit: R.range(0.3, 0.8), order: c.ord(0.2) });
+      }
+    }
+    easelsAt(c, [[0, 1, 6, 3.4, -0.17]]);
   },
   c => {                                             // 8 Saint-Rémy, 1889: the cypress under the Starry Night
     const R = c.R, z0 = c.z0;

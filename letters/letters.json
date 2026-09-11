@@ -206,6 +206,33 @@
    }
   },
   {
+   "station": 7,
+   "title": "The red vineyard",
+   "letter": 717,
+   "to": "Theo van Gogh",
+   "place": "Arles",
+   "date": "on or about 3 November 1888",
+   "concordance": {
+    "Br. 1990": "722",
+    "CL": "559"
+   },
+   "paragraph": 21,
+   "from": "the translation",
+   "text": "We saw a red vineyard, completely red like red wine.",
+   "words": 10,
+   "original": "Mais Dimanche si tu avais été avec nous!– nous avons vu une vigne rouge, toute rouge comme du vin rouge. Dans le lointain elle devenait jaune et puis un ciel vert avec un soleil, des terrains après la pluie violets et scintillant jaune par ci par là où se refletait le soleil couchant.–",
+   "canvas": {
+    "blob": "strokes/s07/redvineyard-canvas.bin",
+    "title": "The Red Vineyard"
+   },
+   "identified": null,
+   "why": "What he saw on the Sunday walk, not yet the canvas: the edition ties the canvas to paragraph 4 of this letter and to letter 718, and none of the notes around this paragraph names it. The land at this station is painted from these words, and the canvas stands in it.",
+   "links": {
+    "translation": "https://vangoghletters.org/en/let717",
+    "original": "https://vangoghletters.org/orig/let717"
+   }
+  },
+  {
    "station": 8,
    "title": "Saint-Remy",
    "letter": 782,

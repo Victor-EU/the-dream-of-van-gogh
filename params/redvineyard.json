@@ -1,0 +1,26 @@
+{
+ "slug": "redvineyard",
+ "source": "ref/originals/s07-the-red-vineyard_PUSHKIN_Zh-3372_11406x9092.jpg",
+ "canvas_cm": [
+  93.0,
+  75.0
+ ],
+ "tiles": {
+  "paint": [
+   2034,
+   5084,
+   3072,
+   3072
+  ],
+  "thin": [
+   7626,
+   5592,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye, as at M6: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. paint carries 2.1x thin's energy here.",
+ "_source": "The Pushkin Museum's own photograph as Wikimedia Commons carries it (File:Vincent van Gogh - Red Vineyard at Arles (1888).jpg, uploaded 2018): 11406 x 9092, about 123 px/cm, no embedded profile, and no margin by tools/canvas_edge.py. Its shape is 1.2% from the edition's 93 x 75 and 0.6% from the 91 x 73 on the same Commons record, inside the band CREDITS measures for canvases whose sizes are confirmed. It replaces the file the author first gave, File:Red_vineyards.jpg at 2001 x 1560: a sixth of this resolution and 3.4% off the canvas's shape, cropped by the look of it, and set aside before a build of it finished.",
+ "_canvas_cm": "93 x 75 cm is the edition's figure for F 495 in its notes to letters 717 and 718. Commons' record of the Pushkin's own photograph gives 91 x 73, and the Pushkin's page on the canvas gives none. Entered as the edition's, and NOT verified against the holder."
+}

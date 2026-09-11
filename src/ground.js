@@ -189,6 +189,20 @@ const FLAT_VERT = /* glsl */`
         emit += k2 * 1.6;
         dir = mix(dir, vec2(u.y, -u.x), clamp(k2, 0.0, 1.0));
       }
+      // by day the sun lies on the water as a path of broken light: the view,
+      // reflected in the surface, falling near the sun's own direction. GLINT is
+      // black wherever a station has no sun on its water, which is everywhere
+      // but the red vineyard
+      vec3 gl = GLINT(s);
+      if (gl.r + gl.g + gl.b > 0.004) {
+        vec3 rf = normalize(vec3(p.x, -0.35, p.y) - uCam); rf.y = -rf.y;
+        float daz = atan(rf.x, -rf.z) - atan(uSunDir.x, -uSunDir.z);
+        daz = atan(sin(daz), cos(daz));
+        float del = asin(clamp(rf.y, -1.0, 1.0)) - asin(clamp(uSunDir.y, -1.0, 1.0));
+        float g = exp(-daz * daz / 0.005 - del * del / 0.02) * (0.75 + 0.35 * sin(uTime * 1.7 + h.w * 40.0));
+        c += gl * g * 1.3;
+        emit += g * 1.1;
+      }
       dir = length(dir) > 1e-3 ? normalize(dir) : vec2(1.0, 0.0);
     } else if (d < rw) {
       dir = normalize(vec2(roadSlope(p.y), -1.0) + (h.zx - 0.5) * 0.35);

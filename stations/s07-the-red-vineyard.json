@@ -1,0 +1,79 @@
+{
+ "_schema": "One station, in the shape M3 fixed. Added after M9 on the author's word, where station 7 stood before it was taken out. The land is painted after what he wrote he saw that Sunday; the canvas he made of it stands in it on an easel.",
+ "id": 7,
+ "slug": "the-red-vineyard",
+ "title": "The red vineyard",
+ "where": "A vineyard outside Arles, after the rain",
+ "when": "November 1888",
+ "_span": "From the Sunday he saw it to the day he says the canvas is finished. Letter 717, of about 3 November, puts the red vineyard on the Sunday before, which is 28 October; letter 718, of 10 November, says it is done. The Pushkin Museum dates the canvas early November 1888. Gauguin had been in Arles since 23 October.",
+ "span": [
+  "1888-10-28",
+  "1888-11-10"
+ ],
+ "eye": 1.65,
+ "_canvases": "One canvas, the one the station is for. The edition's notes to letters 717 and 718 identify it as F 495, The red vineyard, 75 x 93 cm, at the Pushkin State Museum of Fine Arts. The museum's own page says it was painted in early November 1888, in the field and fast, with some details perhaps taken up later in the studio. Its figures -- the pickers bent in the rows, a woman under a parasol -- are on the canvas and nowhere in the land: the world keeps no people in it here, as it keeps none anywhere else on the road.",
+ "canvases": [
+  {
+   "blob": "strokes/s07/redvineyard-canvas.bin",
+   "strokes": 11249,
+   "title": "The Red Vineyard",
+   "date": "early November 1888",
+   "when": "1888-11-05",
+   "place": "Arles",
+   "collection": "Pushkin State Museum of Fine Arts, Moscow",
+   "accession": "Ж-3372",
+   "yaw": 0.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "The date is the museum's own words; the day is the middle of the week the letters bracket, from 'now working on' on 3 November to 'finished' on 10 November. The accession number is the one both Commons records of the museum's photographs give; the museum's page on the canvas gives none, and neither does it give a size. The strokes are traced from the museum's own photograph, 11406 x 9092, by way of Wikimedia Commons; params/redvineyard.json records it."
+  }
+ ],
+ "_ground": "Low and open: a vineyard on the flat land by a canal, and nothing on the horizon but a line of distant trees and one farm.",
+ "ground": {
+  "dome": 220.0,
+  "swell": {
+   "amp": 0.3,
+   "wave": [
+    17.0,
+    23.0
+   ],
+   "dir": 12.0
+  }
+ },
+ "volume": {
+  "shape": "slab",
+  "half": [
+   26.0,
+   16.0
+  ],
+  "ease": 1.5
+ },
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "pacing": {
+  "burst": 2000,
+  "hold": 2.4
+ },
+ "_letter": "Letter 717, to Theo, about 3 November 1888, paragraph 21: the vineyard as he saw it, before it was a canvas. The edition ties the canvas itself to paragraph 4 of the same letter, where he is working on it (note 5), and to letter 718, where it is finished (note 9). The line here is the place, and the land at this station is painted from the rest of that paragraph -- the distance going yellow, the green sky with a sun, the violet ground sparkling yellow after the rain where the setting sun was in it.",
+ "letter": {
+  "n": 717,
+  "to": "Theo van Gogh",
+  "place": "Arles",
+  "date": "on or about 3 November 1888",
+  "para": 21,
+  "text": "We saw a red vineyard, completely red like red wine.",
+  "canvas": "redvineyard",
+  "note": null,
+  "why": "What he saw on the Sunday walk, not yet the canvas: the edition ties the canvas to paragraph 4 of this letter and to letter 718, and none of the notes around this paragraph names it. The land at this station is painted from these words, and the canvas stands in it."
+ },
+ "caption": {
+  "title": "The red vineyard",
+  "sub": "Arles, November 1888. A vineyard he saw on a Sunday walk with Gauguin, painted within the fortnight. It was shown in Brussels in 1890 and bought there by Anna Boch: the one canvas of his whose sale in his lifetime is documented."
+ }
+}
