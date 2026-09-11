@@ -92,6 +92,10 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_crows": "Two, in the unpainted sky past the Sower and past the Reaper, a long way out.",
+ "crows": {
+  "n": 2
+ },
  "_letter": "M3 cited 628 as a letter to Theo of 12 June; the edition's 628 is to Emile Bernard, on or about the 19th. It holds the line DESIGN 7 wanted here -- he painted out in the mistral with the easel's feet pegged into the ground -- but the edition's note puts that painting as the Winterthur Wheatfield with Setting Sun (F 465), which the piece does not have. So the line is his own English to Russell, the same week, about the harvest and nothing else.",
  "letter": {
   "n": 627,

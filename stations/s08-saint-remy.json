@@ -235,6 +235,10 @@
   "gain": 0.55,
   "rate": 0.42
  },
+ "_crows": "Two, low, below the Starry Night and clear of the olive grove. The Irises take nothing out of the sky: they are at your feet.",
+ "crows": {
+  "n": 2
+ },
  "_letter": "To Theo, the week he painted it, and the edition's note on the sentence is F 612, 73 x 92 cm, at MoMA -- the canvas overhead. M3 had the right letter and a day the edition does not give: on or about 18 June.",
  "letter": {
   "n": 782,

@@ -1,0 +1,25 @@
+{
+ "slug": "berceuse",
+ "source": "ref/originals/s07-la-berceuse-f507-painted-area_STEDELIJK_A965_3320x4230.jpg",
+ "_source": "A stand-in, and a weak one, named as such. The canvas station 7 wants is Augustine Roulin ('La berceuse'), F 504 / JH 1655, Kroller-Muller Museum, Otterlo: the edition's notes to letters 741 and 743 identify it as the one he was working on when his illness interrupted him, and the museum serves a 4800 x 6077 scan of it through Micrio that this repository has not fetched. This is F 507 / JH 1672, the fifth of the five versions, in the Stedelijk Museum: a gallery photograph from Commons, in its gilt frame, cropped here by hand to the painted area at (510, 510, 3830, 4740) of the 4344 x 5258 file -- 3320 x 4230 px, an aspect of 0.785 against the edition's 91 x 71.5 cm at 0.786, so the photograph is square on. 46 px/cm, the lowest in the piece, and two glare streaks near the top edge are inside the painted area and will be traced as paint. tools/canvas_edge.py found no margin in the uncropped file, because a frame is not a quiet border; that is why this crop is a person's.",
+ "canvas_cm": [
+  71.5,
+  91.0
+ ],
+ "tiles": {
+  "paint": [
+   1011,
+   0,
+   3072,
+   3072
+  ],
+  "thin": [
+   1516,
+   4042,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "chosen by tools/tiles.py rather than by eye: paint is the 3072 px window carrying the most band-pass energy at stroke scale, thin the least. Nineteen canvases arrived at M6 and nineteen rectangles picked by eye are nineteen chances to pick a flattering one.  paint carries 4.7x thin's energy here."
+}

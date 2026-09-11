@@ -231,6 +231,7 @@ month chosen inside that year and the canvas's note says so.
 | *Wheatfield under Thunderclouds* | 9 | 4000 × 1962, ~39 px/cm | The weakest scan in the set; the museum has published nothing better. |
 | *The Potato Eaters* | 1 | 7698 × 5428, ~68 px/cm | At Micrio's native size. A 114 cm canvas at 42 MP; the station opens on it. |
 | *Sunflowers* (both) | 5 | ~84 px/cm (VGM), ~65 px/cm (London) | Below target, and station 5 wants them enormous and close. |
+| *La Berceuse (Augustine Roulin)* | 7 | 3320 × 4230, ~46 px/cm, cropped by hand from the Commons photograph above | **The wrong canvas, from the weakest kind of source, standing in.** Station 7 stops the canvas he was painting when his illness interrupted him, which the edition's notes to letters 741 and 743 identify as F 504 at the Kröller-Müller (KM 109.725). The museum serves it through Micrio at 4800 × 6077, about 66 px/cm, and it has not been fetched. What is here is F 507, the Stedelijk's, the last of the five versions: a gallery photograph of the picture in its gilt frame, cropped to the painted area at (510, 510, 3830, 4740) — its aspect agrees with the edition's 91 × 71.5 cm to a tenth of a percent, so it was taken square on — with two glare streaks near the top edge that are traced as paint. `params/berceuse.json` records all of it. |
 
 The C2RMF scan of the third *Bedroom* (176 MP, from the French national museum research centre rather than from Orsay
 itself) shows the route worth trying for the two Orsay gaps: the laboratory, not the museum.

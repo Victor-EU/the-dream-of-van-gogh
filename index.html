@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Van Gogh's Universe — M7</title>
+<title>Van Gogh's Universe — M8</title>
 <style>
   :root { color-scheme: dark; }
   html, body { margin: 0; height: 100%; background: #0b0b0d; overflow: hidden; }
@@ -73,6 +73,13 @@
               background: #fff; transform: translateY(-50%);
               transition: height .22s ease; }
   #band.open #bandknob { height: 14px; }
+  /* M8: the one thing the band does besides tell the date. At station 7 the
+     scrub refuses to go on for a beat, and a push against it moves the knob a
+     hair and lets it back, so a hand on the scrub meets a refusal rather than
+     a page that has stopped. */
+  #band.refused #bandknob { animation: refuse .45s ease-out; }
+  @keyframes refuse { 0% { transform: translate(0, -50%); } 35% { transform: translate(4px, -50%); }
+                      100% { transform: translate(0, -50%); } }
   #when { position: absolute; right: 24px; bottom: 34px; font-size: 11px;
           letter-spacing: .06em; opacity: .45;
           text-shadow: 0 1px 10px rgba(0,0,0,.9); }
@@ -92,7 +99,7 @@
   <div id="when"></div>
   <div id="debug"></div>
   <div id="band"><div id="bandfill"></div><div id="bandknob"></div></div>
-  <input id="scrubinput" type="range" min="0" max="1" step="0.002" value="1"
+  <input id="scrubinput" type="range" min="0" max="1" step="0.002" value="0"
          aria-label="the making of the station, from bare canvas to finished">
   <div id="fail"><div>
     <h1 id="failh">Nothing to show.</h1>
@@ -923,12 +930,21 @@ const CLOTH_VERT = /* glsl */`precision highp float;
     // and no offset can win, so the floor is simply put underneath. 0.05 of a
     // quarter of a degree of grade, which is nothing, against the metre of depth
     // precision out there, which is not.
-    if (uDisplace > 0.5) w.y += terrain(w.xz) - 0.006 * length(w.xz - uEye.xz);
+    float dh = uDisplace > 0.5 ? terrain(w.xz) - 0.006 * length(w.xz - uEye.xz) : 0.0;
+    w.y += dh;
     vW = w.xyz;
-    gl_Position = projectionMatrix * viewMatrix * w; }`;
+    // M8: and placed relative to the camera, as the strokes always were. Going
+    // through the world position puts a coordinate of kilometres into a 32-bit
+    // float, and station 7 stands 3.6 km out, where a wall's cloth -- hung a
+    // quarter of a millimetre behind its paint -- came out in front of it: the
+    // canvas vanished behind its own underlayer. modelViewMatrix's translation
+    // is formed in double precision by three.js, and the lift goes in as a
+    // direction, which has no translation to lose.
+    gl_Position = projectionMatrix * (modelViewMatrix * vec4(position, 1.0)
+                                      + viewMatrix * vec4(0.0, dh, 0.0, 0.0)); }`;
 const CLOTH_FRAG = /* glsl */`
   precision highp float; varying vec2 vUv; varying vec3 vW;
-  uniform float uWeaveM, uWeaveRough, uHasUnder, uPrimed, uFloor, uWeaveFlat, uDim;
+  uniform float uWeaveM, uWeaveRough, uHasUnder, uPrimed, uFloor, uWeaveFlat, uDim, uLine;
   // M5. A built room's cloth runs past the edge of the painting, because he
   // cropped the ceiling and the near floor out of the Bedroom and a room with
   // no ceiling is not a room. Past that edge there is no underlayer to show and
@@ -1006,7 +1022,7 @@ const CLOTH_FRAG = /* glsl */`
 
     if (uFloor > 0.5) {                    // station 0: one charcoal line forward
       float line = 1.0 - smoothstep(0.010, 0.030, abs(vW.x));   // DESIGN 7's charcoal
-      line *= (1.0 - uPrimed) * (1.0 - smoothstep(0.0, 26.0, -vW.z));
+      line *= (1.0 - uPrimed) * (1.0 - smoothstep(0.0, 26.0, -vW.z)) * uLine;
       c = mix(c, vec3(0.030, 0.028, 0.030), line * 0.88);
       c *= 1.0 - 0.55 * smoothstep(4.0, 34.0, d);        // the void takes it back
     }
@@ -1042,14 +1058,17 @@ const STATIONS = {
   8: 'stations/s08-saint-remy.json',
   9: 'stations/s09-auvers.json',
   10: 'stations/s10-the-wheatfield.json',
+  11: 'stations/s11-after.json',
 };
 // DESIGN 3.3: the map is the chronology. All ten, laid out in the order he
 // painted them, and tau runs along that order rather than along France. The
-// arc is dark, flood, yellow, night, stop, stars, green, end -- and the two
-// ends of it, station 0's primed canvas and station 11's nothing, are not
-// entries here: station 0 is the loading screen and what is left when no paint
-// has arrived, and station 11 is what is left when it has all gone by.
-const ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// arc is dark, flood, yellow, night, stop, stars, green, end. Station 0's
+// primed canvas is not an entry here: it is the loading screen, and it is what
+// is there wherever no paint has arrived. Station 11 is, from M8, because the
+// end of the scrub has to be somewhere: it has no paint and no date, it stands
+// six hundred metres out of the back of the last field, and only a hand on the
+// scrub gets there.
+const ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 // One blob with no station around it: what ?blob and ?flat still mean, and what
 // M0b through M2 were. It is a real station of one canvas standing as a wall
@@ -1113,7 +1132,7 @@ async function main() {
   } else if (want !== null && !STATIONS[want]) {
     // A hook that quietly does nothing is worse than one that is missing.
     fail(`There is no station ${want} yet.`,
-         'M6 builds all ten. 0 is the primed canvas you are standing on and 11 is what comes after; neither is a station file.',
+         'There are eleven. 0 is the primed canvas you are standing on and is not a station file; 11 is what comes after.',
          `stations: ${Object.keys(STATIONS).join(', ')}`);
     return;
   } else {
@@ -1126,6 +1145,12 @@ async function main() {
     }
   }
   let st = STS[0];                       // the one tau is inside; the loop moves it
+  // the crows, which are his strokes off the last canvas and are needed from
+  // station 3 on: a small file tools/crows.py writes, so they are here long
+  // before the canvas they came off has streamed in. A missing file is not
+  // fatal -- it is a piece with no crows in it, which is what it was until M8.
+  const CROWS = single || flatMode ? null
+    : await fetch('stations/crows.json').then(r => r.ok ? r.json() : null).catch(() => null);
 
   // How far apart two stations stand, and how long the crossing takes. The
   // distance is not a measurement: DESIGN 3.3 is explicit that the map is the
@@ -1224,7 +1249,7 @@ async function main() {
     uSwellC: { value: new THREE.Vector2(0, 0) },
     uYaw: { value: 0 },
     uHasUnder: { value: 0 }, uUnder: { value: null },
-    uPrimed: { value: 0 }, uFloor: { value: 1 },
+    uPrimed: { value: 0 }, uFloor: { value: 1 }, uLine: { value: 1 },
     uTileUV: { value: new THREE.Vector4(0, 0, 1, 1) },
   };
   // The floor and a lifted canvas's own cloth are the same surface, tessellated
@@ -1291,8 +1316,14 @@ async function main() {
       const cv = fetched[i];
       const lo = specs[i]._lo, hi = specs[i]._hi;
       if (!cv) { actList.push({ name: '...', hi, count: counts[i], canvas: i, pending: true }); continue; }
-      for (const a of cv.actList)
-        actList.push({ name: a.name, hi: lo + a.hi * (hi - lo), count: a.count, canvas: i });
+      // a stopped canvas's acts end where it stops, and the one the stop falls
+      // in ends there too: the stop is in the middle of an act, not between two
+      const s = cv.stop ?? 1;
+      for (const a of cv.actList) {
+        if (a.lo >= s - 1e-9) break;
+        actList.push({ name: a.name, hi: lo + Math.min(1, a.hi / s) * (hi - lo),
+                       count: a.count, canvas: i });
+      }
       if (!cv.actList.length) actList.push({ name: 'all', hi, count: cv.blob.count, canvas: i });
     }
     let base = 0;
@@ -1308,7 +1339,15 @@ async function main() {
   // The scrub is declared here rather than with its controls below because the
   // streaming reads it: which canvas is fetched next is which one the viewer is
   // nearest to needing, and that question is asked before the first blob lands.
-  let scrub = num('tau', 1);
+  // The whole piece starts at 0 from M8, on primed canvas, because the other
+  // end of it is now the ending and nobody should arrive there by opening the
+  // page. One canvas, the flat view and one station alone still start
+  // finished, which is what every harness URL from M0 to M7 meant by leaving
+  // tau out.
+  let scrub = num('tau', single || flatMode || want !== null ? 1 : 0);
+  // the refusal's gates, filled once the axis exists; declared here because
+  // the date readout asks about them on every move
+  const GATES = [];
 
   // One clock, shared by every material, so that every stroke in the world is
   // at the same moment of the same motion and ?still can stop all of them by
@@ -1799,8 +1838,12 @@ async function main() {
   const AXIS = [];
   // how many seconds of the making a station is: its own strokes over its own
   // burst rate, or -- with no strokes -- the beat it declares.
+  // M8: a canvas may stop. `stop` is the fraction of its own strokes the piece
+  // lays, and what is past it is never laid at all, so a stopped canvas's share
+  // of tau is the part of it that is painted. One canvas in the piece has one.
+  const laid = c => (c.strokes || 1) * clamp01(c.stop ?? 1);
   const stationS = sn => {
-    const n = sn.canvases.reduce((a, c) => a + (c.strokes || 1), 0);
+    const n = sn.canvases.reduce((a, c) => a + laid(c), 0);
     return n ? n / (sn.pacing?.burst ?? 2000) : (sn.pacing?.beat ?? 6);
   };
   {
@@ -1823,14 +1866,28 @@ async function main() {
     for (const a of AXIS) {
       if (a.kind !== 'station') continue;
       const cs = STS[a.i].canvases;
-      const n = cs.reduce((x, c) => x + (c.strokes || 1), 0);
+      const n = cs.reduce((x, c) => x + laid(c), 0);
       let acc = 0;
       for (const c of cs) {
         c._lo = a.lo + (a.hi - a.lo) * acc / n;
-        acc += c.strokes || 1;
+        acc += laid(c);
         c._hi = a.lo + (a.hi - a.lo) * acc / n;
       }
     }
+  }
+  // the gates of the refusal below: one at the end of the making of every
+  // station whose pacing says `refuse`, which is station 7's and nobody else's
+  for (const a of AXIS)
+    if (a.kind === 'station' && STS[a.i].pacing?.refuse > 0)
+      GATES.push({ i: a.i, lo: a.lo, at: a.hi + 2e-7,
+                   refuse: num('refuse', STS[a.i].pacing.refuse),
+                   state: 'armed', since: 0, log: [] });
+  // ?begin=N: stand at the start of station N inside the whole arc, which is
+  // what a person testing station 7 needs -- ?station=N loads that station
+  // alone, and a station alone has no road into it and nothing before it.
+  if (Q.has('begin')) {
+    const a = AXIS.find(x => x.kind === 'station' && STS[x.i].id === +Q.get('begin'));
+    if (a) scrub = a.lo + 1e-6;
   }
   // where tau is: inside a station's making, or on the road between two.
   const axisAt = t => {
@@ -1876,7 +1933,7 @@ async function main() {
     cv.fetchMs = +(t1 - t0).toFixed(1);
     cv.buildMs = +(performance.now() - t1).toFixed(1);
     cv.readyAt = +(performance.now() / 1000).toFixed(2);
-    cv.lo = specs[i]._lo; cv.hi = specs[i]._hi;
+    cv.lo = specs[i]._lo; cv.hi = specs[i]._hi; cv.stop = clamp01(specs[i].stop ?? 1);
     canvases[i] = cv;
     fetched[i] = cv;
     arrived++;
@@ -1961,7 +2018,7 @@ async function main() {
     for (const cv of canvases) {
       if (!cv) continue;
       const local = (scrub - cv.lo) / Math.max(cv.hi - cv.lo, 1e-9);
-      const sc = Math.max(0, Math.min(1, local));
+      const sc = (cv.stop ?? 1) * Math.max(0, Math.min(1, local));
       cv.uni.uScrub.value = sc;
       cv.clothUni.uPrimed.value = Math.min(1, Math.max(0, (sc - 0.004) / 0.09));
       // and not drawn at all once its own station is dark. Dimming to black is
@@ -2055,7 +2112,7 @@ async function main() {
     if (e.code === 'KeyC') showCaption();
   });
   addEventListener('keyup', e => keys.delete(e.code));
-  addEventListener('wheel', e => setScrub(scrub - e.deltaY * 0.0006), { passive: true });
+  addEventListener('wheel', e => pushScrub(scrub - e.deltaY * 0.0006, 'wheel'), { passive: true });
 
   // ---------------------------------------------------- the viewing volume --
   // DESIGN 4.4's rule, and the thing DESIGN 15 is most afraid of. Inside it you
@@ -2138,7 +2195,7 @@ async function main() {
   const whenEl = document.getElementById('when');
   const setScrub = t => {
     scrub = Math.max(0, Math.min(1, t));
-    for (const cv of canvases) if (cv) cv.uni.uScrub.value =
+    for (const cv of canvases) if (cv) cv.uni.uScrub.value = (cv.stop ?? 1) *
       Math.max(0, Math.min(1, (scrub - cv.lo) / Math.max(cv.hi - cv.lo, 1e-9)));
     // which station this is, and everything that is a fact about a station
     // rather than about the piece: how big the volume is, how fast it paints,
@@ -2161,9 +2218,15 @@ async function main() {
     // primed cloth, because that is what the next station is standing on until
     // it is painted. Smoothly, and in the dark, so there is nothing to see.
     const local = a.kind === 'station' ? u : 1 - smooth(u);
-    const primed = Math.min(1, Math.max(0, (local - 0.004) / 0.30));
+    // and a station that is bare stays bare: nothing is painted at 11, so the
+    // cloth there is the primed canvas of station 0 however far tau has gone
+    const bare = a.kind === 'station' && STS[a.i].ground?.bare;
+    const primed = bare ? 0 : Math.min(1, Math.max(0, (local - 0.004) / 0.30));
     floorUni.uPrimed.value = primed;
     domeUni.uPrimed.value = primed;
+    // station 0's charcoal line is station 0's. The end is primed canvas with
+    // nothing on it, and a line under the standpoint there would be a road.
+    floorUni.uLine.value = st.ground?.bare ? 0 : 1;
     // DESIGN 4.5: the cloth under the world roughens in 1889, because he ran
     // out of canvas at Saint-Remy and painted on jute. It changes on the road
     // between the two, which is the year it changed in.
@@ -2195,13 +2258,93 @@ async function main() {
   // what it was laying down.
   let BURST = st.pacing?.burst ?? 2000, HOLD = st.pacing?.hold ?? 2.4;
   let playing = has('play'), held = 0;
+  // M8: the last thing that plays itself is the rush. Past the last stroke of
+  // the last canvas there is nothing left to paint, so "let it paint itself"
+  // has nothing to do, and the road off the end of the field and what is at
+  // the end of it are reached with a hand on the scrub or not at all. BUILD M8
+  // asks that the ending be something the viewer did; this is the line that
+  // makes that true rather than likely.
+  const PLAY_END = specs.length ? Math.max(...specs.map(c => c._hi)) : 1;
   const actAt = t => {
     let i = 0;
     while (i < actList.length - 1 && t > actList[i].hi) i++;
     return i;
   };
+
+  // ------------------------------------------------------- the refusal ---
+  // DESIGN 7, station 7: the painting stops mid-canvas, the brush cuts, and
+  // the scrub refuses to advance for a beat. M6 built the last clause for the
+  // one hand that did not need it -- space, the scrub playing itself -- and
+  // left every other way of moving tau sailing straight through December 1888,
+  // and a refusal the viewer's own hand never meets is not a refusal. So every
+  // way forward comes through here: the arrows, the wheel, the band, the
+  // slider and the playing. The first move across a gate lands on it and
+  // stays there for `refuse` seconds of the viewer's own time, however hard
+  // they push, and then the gate is open and the scrub goes on. Going back
+  // before the station began arms it again, because it is a fact about the
+  // date and not an event that gets used up. Backwards is never refused.
+  //
+  // It keeps a log, because M8's exit criterion is a stranger at this gate
+  // and this is what they did there: how they arrived, how many times they
+  // pushed and for how long they held the arrow, whether they left before it
+  // opened, and how long after it opened they moved on. vg.beats() reads it.
+  const nowS = () => performance.now() / 1000;
+  const bandEl = document.getElementById('band');
+  let refusedTimer = 0;
+  const refusedUI = () => {
+    if (!bandEl) return;
+    bandEl.classList.remove('refused');
+    void bandEl.offsetWidth;                       // restart the nudge
+    bandEl.classList.add('refused', 'open');
+    clearTimeout(refusedTimer);
+    refusedTimer = setTimeout(() => bandEl.classList.remove('refused', 'open'), 1400);
+  };
+  const pushScrub = (t, how) => {
+    t = Math.max(0, Math.min(1, t));
+    const now = nowS();
+    if (t > scrub) for (const g of GATES) {
+      const e = g.log[g.log.length - 1];
+      if (g.state === 'open') {
+        // the first move on after it opened, by a hand, and how long it took
+        if (e && e.next === null && how !== 'play' && scrub <= g.at + 1e-9)
+          e.next = +(now - g.since - g.refuse).toFixed(2);
+        continue;
+      }
+      if (scrub > g.at + 1e-9 || t <= g.at) continue;
+      if (g.state === 'armed') {
+        g.state = 'refusing'; g.since = now;
+        g.log.push({ at: +now.toFixed(2), how, pushes: 0, keySeconds: 0,
+                     opened: null, left: null, next: null });
+        brush.cut();
+      } else if (e && how !== 'play' && how !== 'key') e.pushes++;
+      if (how !== 'play') refusedUI();
+      t = g.at;
+      break;
+    }
+    setScrub(t);
+  };
+  const tickGates = dt => {
+    const now = nowS();
+    for (const g of GATES) {
+      const e = g.log[g.log.length - 1];
+      if (g.state === 'refusing') {
+        if (e && keys.has('ArrowRight')) e.keySeconds += dt;
+        if (now - g.since >= g.refuse) {
+          g.state = 'open';
+          if (e) e.opened = +(now - g.since).toFixed(2);
+          brush.uncut();
+        }
+      }
+      if (g.state !== 'armed' && scrub < g.lo - 1e-9) {
+        if (g.state === 'refusing' && e) { e.left = +(now - g.since).toFixed(2); brush.uncut(); }
+        g.state = 'armed';
+      }
+    }
+  };
+
   const advance = dt => {
     if (!total) return;
+    if (scrub >= PLAY_END - 1e-9) { playing = false; return; }
     if (held > 0) { held = Math.max(0, held - dt); return; }
     // Inside a station tau advances at that station's burst rate over that
     // station's own strokes; on the road it advances at the transit's own
@@ -2213,28 +2356,21 @@ async function main() {
     if (a.kind === 'transit') step = dt / Math.max(a.secs, 1e-6) * span;
     else step = dt / Math.max(stationS(STS[a.i]), 1e-6) * span;
     const next = scrub + step;
-    // and it stops on the way into a station that has no paint in it, once.
-    // DESIGN 7: the brush cuts and the scrub refuses to advance for a beat.
-    // What that costs to build is this, and M8 owns making it land.
-    const into = axisAt(next).a;
-    if (into !== a && into.kind === 'station' && !STS[into.i].canvases.length) {
-      setScrub(into.lo + 1e-6);
-      held = STS[into.i].pacing?.hold ?? HOLD;
-      return;
-    }
+    if (next >= PLAY_END) { pushScrub(PLAY_END, 'play'); playing = false; return; }
     const k = actAt(scrub);
     if (k < actList.length - 1 && next > actList[k].hi) {
-      setScrub(actList[k].hi + 1e-6);
+      pushScrub(actList[k].hi + 1e-6, 'play');
       held = HOLD;
       return;
     }
-    setScrub(next);
-    if (scrub >= 1) playing = false;
+    pushScrub(next, 'play');
   };
   addEventListener('keydown', e => {
     if (e.code !== 'Space') return;
     e.preventDefault();
     if (scrub >= 1) { setScrub(0); held = 0; }
+    // past the last stroke there is nothing left to paint, so nothing to play
+    else if (scrub >= PLAY_END - 1e-9) return;
     playing = !playing;
   });
 
@@ -2308,12 +2444,12 @@ async function main() {
         const mid = 0.5 * (lo + hi);
         if (dateAt(mid) < want) lo = mid; else hi = mid;
       }
-      setScrub(0.5 * (lo + hi));
+      pushScrub(0.5 * (lo + hi), 'band');
       playing = false;
     });
   }
   if (slider) {
-    slider.addEventListener('input', () => { setScrub(parseFloat(slider.value)); playing = false; });
+    slider.addEventListener('input', () => { pushScrub(parseFloat(slider.value), 'slider'); playing = false; });
     slider.addEventListener('focus', () => band?.classList.add('open'));
     slider.addEventListener('blur', () => band?.classList.remove('open'));
   }
@@ -2329,8 +2465,16 @@ async function main() {
     for (const [n, el] of markEls) el.className = n === (st.id ?? -1) ? 'now' : '';
     if (whenEl) {
       const { a, u } = axisAt(scrub);
-      if (a.kind === 'transit') {
+      // M8: two stations say their own date and nothing else. At the gate the
+      // readout gains a day, for the only time in the piece, because the
+      // station's date is a day; and at the end there is no date at all.
+      const gate = GATES.find(g => Math.abs(scrub - g.at) < 1e-6);
+      if (gate) {
+        whenEl.textContent = STS[gate.i].when || '';
+      } else if (a.kind === 'transit') {
         whenEl.textContent = dateText(dateAt(scrub)) + '  ·  on the road';
+      } else if (!STS[a.i].canvases.length) {
+        whenEl.textContent = STS[a.i].when || '';
       } else {
         const i = canvasAt(scrub), act = actList[actAt(scrub)];
         whenEl.textContent = (specs[i].date || st.when || '') +
@@ -2450,6 +2594,8 @@ async function main() {
     let seed = 1888;
     const rng = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
     let ctx = null, on = false, master, ceil, bedGain, bedBand, bedBody, bedPan, rec = null;
+    let cutG = null, cutOn = false;
+    const cuts = [];
     let quiet = 0, rate = 0, az = null;
     const pans = [], grains = [], log = [], top = [];
     const dir = new THREE.Vector3(), eye = new THREE.Vector3(), w = new THREE.Vector3();
@@ -2470,7 +2616,7 @@ async function main() {
       const p = ctx.createPanner();
       p.panningModel = 'HRTF'; p.distanceModel = 'linear';
       p.refDistance = 1; p.maxDistance = 1e4; p.rolloffFactor = 0;   // distance is ours, below
-      p.connect(master);
+      p.connect(cutG);
       return p;
     };
 
@@ -2478,6 +2624,9 @@ async function main() {
       ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
       const sr = ctx.sampleRate;
       master = ctx.createGain(); master.gain.value = 0;
+      // everything the brush makes goes through this before the master, so
+      // that station 7 can take all of it at once -- see cut()
+      cutG = ctx.createGain(); cutG.gain.value = 1; cutG.connect(master);
       // A soft ceiling rather than a limiter: a roar may be loud and may not
       // clip. The curve is odd and has a point at the origin, so zero in is zero
       // out and a silence stays exactly one.
@@ -2665,6 +2814,35 @@ async function main() {
                          r > 0 ? +dbOf(r).toFixed(1) : null]);
     }
 
+    // DESIGN 10: at station 7 the silence is the event, so it is not left to the
+    // ordinary end of a burst -- a thirtieth of a second to fall, and the
+    // strokes already scheduled a frame ahead still sounding into it -- but
+    // cut: all of it to nothing in eight milliseconds. Eight, not zero, so
+    // that the cut is a cut and not a click.
+    function cut() {
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      cutG.gain.cancelScheduledValues(t);
+      cutG.gain.setValueAtTime(cutG.gain.value, t);
+      cutG.gain.linearRampToValueAtTime(0, t + 0.008);
+      bedGain.gain.cancelScheduledValues(t);
+      bedGain.gain.setValueAtTime(0, t + 0.008);
+      cutOn = true;
+      quiet = t;
+      cuts.push(+t.toFixed(4));
+    }
+    // and it stays cut until the gate says otherwise. The first version let the
+    // next stroke to arrive lift it, and the next stroke to arrive was the last
+    // one before the stop, in the same frame: tools/beat.py heard the ordinary
+    // 279 ms fall where the cut should have been.
+    function uncut() {
+      if (!ctx || !cutOn) return;
+      cutOn = false;
+      const t = ctx.currentTime;
+      cutG.gain.cancelScheduledValues(t);
+      cutG.gain.setValueAtTime(1, t);
+    }
+
     function set(v) {
       if (v && !ctx) build();
       on = !!v;
@@ -2686,12 +2864,12 @@ async function main() {
     }
 
     return {
-      set, update, wav,
+      set, update, wav, cut, uncut,
       get on() { return on; },
       wake: () => { if (on && ctx && ctx.state !== 'running') ctx.resume(); },
       state: () => ({ on, running: ctx ? ctx.state : null, sr: ctx ? ctx.sampleRate : null,
                       rate: Math.round(rate), az: az === null ? null : +az.toFixed(1),
-                      t0: rec ? rec.t0 : null, recorded: rec ? rec.n : 0,
+                      t0: rec ? rec.t0 : null, recorded: rec ? rec.n : 0, cuts: cuts.slice(),
                       log: rec ? log : undefined }),
     };
   })();
@@ -2702,6 +2880,187 @@ async function main() {
   addEventListener('pointerdown', () => brush.wake());
   addEventListener('keydown', () => brush.wake());
   if (has('sound')) brush.set(true);
+
+  // ------------------------------------------------------------ the crows --
+  // DESIGN 7: crows, the only living creatures in the universe, and if the
+  // viewer looks back they have been in the corner of the eye since Arles.
+  // Rule 2 says what they are made of: his marks, not a modelled bird. So every
+  // one of them is a bird off Wheatfield with Crows -- the two or three
+  // strokes of black that tools/crows.py found in that canvas's own record --
+  // standing in the world at the angle it has in the painting, which at the
+  // fifty degrees every canvas is hung at is one to three degrees of sky.
+  //
+  // Where they fly is the one thing here that is chosen, and it has a rule:
+  // never across his paint. A station's crows are in the air outside every one
+  // of its canvases, in the unpainted sky to either side and behind, each on a
+  // slow circle a long way out and a little above the horizon -- so a viewer
+  // looking at a painting has them at the edge of the frame, and one who turns
+  // round finds them. Station 3 is the first to have any and station 10 has
+  // the most; 5 and 6 are a room and a night, and 7 has none because nothing
+  // moves there.
+  //
+  // What they are not is the projection show's crows, which fly out of the
+  // canvas at you. The crows painted into the last field are paint and stay
+  // where he put them; these have been somewhere else the whole time. And at
+  // the end, after the nothing, they are the ones that come: DESIGN 7's "then
+  // the crows again", in from behind and over the bare canvas.
+  const crows = (() => {
+    // the larger birds: at the angle the painting gives them, the thirteen of the
+    // thirty-two that are three centimetres or more across read as birds, and
+    // the rest are specks at the edge of the frame. They stay in the painting.
+    const kind = (CROWS?.birds || []).filter(b => b.strokes.length >= 2 && b.cm[0] >= 3);
+    const list = [];
+    const AFTER = STS.find(s => s.crows?.after);
+    const afterAxis = AFTER ? AXIS.find(a => a.kind === 'station' && a.i === AFTER._i) : null;
+    const NOTHING = AFTER ? num('nothing', AFTER.pacing?.nothing ?? 24) : 0;
+    let afterT = num('afterat', 0), flying = 0;
+    if (!kind.length || flatMode) return { update() {}, state: () => ({ birds: 0 }) };
+    const D2R = Math.PI / 180;
+    // the painting's own scale for them: a canvas is hung fifty degrees across,
+    // so a centimetre of a 103 cm canvas is 50/103 of a degree, and a bird at
+    // the edge of a station is the angle it has in the painting. At the end it
+    // is nearly twice that, because there it is the only thing to look at.
+    const DEG_PER_CM = 50 / 103;
+    const lin = c => Math.pow(c / 255, 2.2);
+    const geometry = b => {
+      const pos = [], col = [], idx = [];
+      for (const s of b.strokes) {
+        const p = s.p, w = Math.max(s.w, 0.3), N = 12;
+        const c = [lin(s.rgb[0]), lin(s.rgb[1]), lin(s.rgb[2])];
+        const base = pos.length / 3;
+        for (let k = 0; k <= N; k++) {
+          const t = k / N, m = 1 - t;
+          const x = m * m * p[0][0] + 2 * m * t * p[1][0] + t * t * p[2][0];
+          const y = m * m * p[0][1] + 2 * m * t * p[1][1] + t * t * p[2][1];
+          const dx = 2 * m * (p[1][0] - p[0][0]) + 2 * t * (p[2][0] - p[1][0]);
+          const dy = 2 * m * (p[1][1] - p[0][1]) + 2 * t * (p[2][1] - p[1][1]);
+          const l = Math.hypot(dx, dy) || 1, hw = 0.5 * w * (0.4 + 0.6 * Math.sin(Math.PI * t));
+          pos.push(x - dy / l * hw, y + dx / l * hw, 0, x + dy / l * hw, y - dx / l * hw, 0);
+          col.push(...c, ...c);
+          if (k < N) { const a = base + 2 * k; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('aCol', new THREE.Float32BufferAttribute(col, 3));
+      g.setIndex(idx);
+      return g;
+    };
+    // black paint with the little light a black oil catches, and dark with its
+    // station like everything else there
+    const material = sn => new THREE.ShaderMaterial({
+      uniforms: { uDim: sn._dim },
+      vertexShader: `attribute vec3 aCol; varying vec3 vC;
+        void main() { vC = aCol; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: COMMON + `uniform float uDim; varying vec3 vC;
+        void main() { gl_FragColor = vec4(linearToSrgb((vC + vec3(0.010, 0.011, 0.014)) * uDim), 1.0); }`,
+      side: THREE.DoubleSide });
+    // the unpainted sky of a station, as yaw intervals in degrees: every canvas
+    // that stands in the air takes its own width out of it and twelve degrees
+    // more, so a circling bird cannot drift onto one. A canvas laid on the
+    // ground is at your feet and takes nothing out of the sky.
+    const freeSky = sn => {
+      const iv = sn.canvases.filter(c => c.treatment !== 'ground').map(c => {
+        const h = (c.hfov ?? 50) / 2 + 12, y = c.yaw || 0;
+        return [y - h, y + h];
+      }).sort((p, q) => p[0] - q[0]);
+      const m = [];
+      for (const [a, b] of iv) {
+        if (m.length && a <= m[m.length - 1][1]) m[m.length - 1][1] = Math.max(m[m.length - 1][1], b);
+        else m.push([a, b]);
+      }
+      if (!m.length) return [[-180, 180]];
+      const out = [];
+      for (let k = 0; k < m.length; k++) {
+        const a = m[k][1], b = k + 1 < m.length ? m[k + 1][0] : m[0][0] + 360;
+        if (b - a > 20) out.push([a, b]);
+      }
+      return out;
+    };
+    const dirOf = yaw => [-Math.sin(yaw * D2R), -Math.cos(yaw * D2R)];   // a canvas's own convention
+    let seed = 1890;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (const sn of STS) {
+      const n = sn.crows?.n || 0;
+      if (!n) continue;
+      const mat = material(sn), after = !!sn.crows.after, gaps = freeSky(sn);
+      for (let k = 0; k < n; k++) {
+        const b = kind[(sn.id * 7 + k * 11) % kind.length];
+        const mesh = new THREE.Mesh(geometry(b), mat);
+        mesh.frustumCulled = false;
+        mesh.visible = false;
+        scene.add(mesh);
+        let yaw, D, R, elev;
+        if (after) {
+          // in front, in plain view, which is the first time
+          yaw = -36 + 72 * (k + 0.5) / n + (rnd() - 0.5) * 8;
+          D = 55 + 40 * rnd(); R = 14 + 16 * rnd(); elev = 7 + 9 * rnd();
+        } else {
+          // at the edges of the paint first, one gap after another, then the
+          // middle of the widest, which is behind
+          const g = gaps[k % gaps.length], wide = g[1] - g[0];
+          D = 140 + 40 * rnd();
+          // small circles, so that a bird keeps to the edge of the paint: the
+          // twelve degrees of margin are already out of the gap, and a viewer
+          // looking at the outermost canvas has that edge at the side of the frame
+          R = Math.min(20, Math.max(8, D * Math.sin(Math.max(2, wide / 2 - 4) * D2R)));
+          const swing = Math.asin(Math.min(0.9, R / D)) / D2R;
+          const pick = Math.floor(k / gaps.length) % 3;
+          yaw = wide < 2 * swing + 6 ? (g[0] + g[1]) / 2
+              : pick === 0 ? g[0] + swing + 2 : pick === 1 ? g[1] - swing - 2 : (g[0] + g[1]) / 2;
+          elev = 4 + 7 * rnd();
+        }
+        const [dx, dz] = dirOf(yaw);
+        mesh.scale.setScalar(D * Math.tan(DEG_PER_CM * (after ? 1.8 : 1) * D2R));   // metres per centimetre
+        list.push({ mesh, sn, after, yaw, cx: sn._origin.x + dx * D, cz: sn._origin.y + dz * D, R,
+                    A: (sn.eye ?? 1.65) + D * Math.tan(elev * D2R),
+                    w: (6 + 3 * rnd()) / R * (rnd() < 0.5 ? -1 : 1), phase: 6.283 * rnd(),
+                    delay: after ? 1.4 * k : 0, tin: 9 + 3 * rnd(), bank: (rnd() - 0.5) * 0.3 });
+      }
+    }
+    const P = new THREE.Vector3(), E = new THREE.Vector3();
+    const at = (c, a) => P.set(c.cx + c.R * Math.cos(a), c.A, c.cz + c.R * Math.sin(a));
+    return {
+      update(dt, still) {
+        // the end: how long the viewer has stood in the nothing, in their own
+        // seconds, and it starts again if they leave it
+        if (afterAxis && scrub >= afterAxis.lo - 1e-9) { if (!still) afterT += dt; }
+        else afterT = 0;
+        const T = TIME.value;
+        flying = 0;
+        for (const c of list) {
+          let show = c.sn._dim.value > 0.004;
+          if (c.after) {
+            const tt = afterT - NOTHING - c.delay;
+            show = show && tt >= 0;
+            if (show) {
+              if (tt < c.tin) {
+                // in from behind and above, over the viewer's head
+                const s = tt / c.tin, k = s * s * (3 - 2 * s);
+                E.copy(at(c, c.phase));
+                P.set(c.sn._origin.x + (c.cx - c.sn._origin.x) * 0.2, c.A + 60,
+                      c.sn._origin.y + 240).lerp(E, k);
+              } else at(c, c.phase + c.w * (tt - c.tin));
+            }
+          } else if (show) {
+            at(c, c.phase + c.w * T);
+            P.y += 1.2 * Math.sin(0.31 * T + c.phase);
+          }
+          c.mesh.visible = show;
+          if (!show) continue;
+          flying++;
+          c.mesh.position.copy(P);
+          // his mark, facing whoever is looking at it, tipped a little
+          c.mesh.quaternion.copy(cam.quaternion);
+          c.mesh.rotateZ(c.bank * Math.sin(0.23 * T + c.phase));
+        }
+      },
+      state: () => ({ birds: list.length, flying, kinds: kind.length,
+                      after: afterAxis ? +afterT.toFixed(2) : null, nothing: NOTHING,
+                      arrived: list.filter(c => c.after && c.mesh.visible).length,
+                      at: list.filter(c => !c.after).map(c => ({ station: c.sn.id, yaw: +c.yaw.toFixed(1) })) }),
+    };
+  })();
 
   // ------------------------------------------------------------ the loop --
   const still = has('still');
@@ -2743,12 +3102,17 @@ async function main() {
     }
   };
   const lie = { v: body.lying };
+  // ?trace: tau against the clock, every frame, for tools/beat.py -- the
+  // refusal is a length of time and a probe at the end of a run cannot see one
+  const TRACE = has('trace') ? [] : null;
 
   function frame(now) {
     // clamped delta, so a loop stalled by a hidden tab never teleports the body
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
     if (playing && !still) advance(dt);
+    if (!still) tickGates(dt);
+    if (TRACE && TRACE.length < 30000) TRACE.push([+(now / 1000).toFixed(3), +scrub.toFixed(6)]);
     // the one clock. ?still does not advance it, which is what makes a still a
     // still rather than a frame of an animation that happens to be repeatable.
     if (!still) TIME.value += dt;
@@ -2757,7 +3121,7 @@ async function main() {
       const fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
       const str = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
       if (keys.has('ArrowLeft')) { setScrub(scrub - dt * 0.18); playing = false; }
-      if (keys.has('ArrowRight')) { setScrub(scrub + dt * 0.18); playing = false; }
+      if (keys.has('ArrowRight')) { pushScrub(scrub + dt * 0.18, 'key'); playing = false; }
       const sp = 1.45 * (keys.has('ShiftLeft') ? 3.2 : 1);
       const sy = Math.sin(body.yaw), cy = Math.cos(body.yaw);
       const moving = !still && (fwd || str);
@@ -2873,6 +3237,7 @@ async function main() {
     scene.updateMatrixWorld();
     updateChunks();
     brush.update(dt);
+    crows.update(dt, still);
     const at = canvasAt(scrub);
     if (at !== capShown && !STS[0].lone && fetched[at]) showCaption(at);
     if (at !== letAt && !STS[0].lone && fetched[at]) letterAt(at);
@@ -2972,10 +3337,15 @@ async function main() {
                letters: LETTERS.map(e => ({ station: e.sn.id, n: e.L.n, canvas: specs[e.k].title,
                                             text: e.L.text })),
                audio: brush.state(),
+               // M8: the refusal, the end of what plays itself, and the crows
+               gates: window.vg.beats(), playEnd: +PLAY_END.toFixed(6),
+               crows: crows.state(),
+               trace: TRACE || undefined,
                // DESIGN 11: every quotation in the DOM as text, whatever tau is
                letterDom: [...document.querySelectorAll('#letterlist li')].map(li => li.textContent),
                station: st.lone ? null : st.id, stationTitle: st.title,
                where: axisAt(scrub).a.kind, when: dateText(dateAt(scrub)),
+               readout: whenEl ? whenEl.textContent : null,
                base: [carry.x, carry.y],
                streaming: state.streaming || 'loading',
                missing: (state.missing || []).slice(),
@@ -3010,6 +3380,30 @@ async function main() {
                })) };
     },
     scrub: setScrub,
+    // and the way a hand moves it, which is the way that can be refused
+    push: (t, how = 'harness') => { pushScrub(+t, how); return scrub; },
+    // what happened at station 7's gate, arrival by arrival -- BUILD M8's
+    // exit criterion is a stranger there, and this is what they did
+    beats: () => GATES.map(g => ({
+      station: STS[g.i].id, tau: +g.at.toFixed(6), refuse: g.refuse, state: g.state,
+      arrivals: g.log.map(e => ({ ...e, keySeconds: +e.keySeconds.toFixed(2) })) })),
+    // a hand on the scrub, so the refusal can be met without a person: 'hold'
+    // keeps the right arrow down, 'wheel' turns it forward four times a second,
+    // 'jump' clicks the band once, at ?jumpto
+    hand: (kind = 'hold', seconds = 10) => new Promise(res => {
+      const t0 = performance.now();
+      let last = 0;
+      const step = now => {
+        const el = (now - t0) / 1000;
+        if (kind === 'hold') keys.add('ArrowRight');
+        else if (kind === 'wheel' && el - last > 0.25) { last = el; pushScrub(scrub + 0.004, 'wheel'); }
+        else if (kind === 'jump' && !last) { last = 1; pushScrub(num('jumpto', 0.9), 'band'); }
+        if (el < seconds) requestAnimationFrame(step);
+        else { keys.delete('ArrowRight'); res(window.vg.beats()); }
+      };
+      requestAnimationFrame(step);
+    }),
+    crows: () => crows.state(),
     // Going to a station means putting tau at the start of its making, because
     // tau is the transport: there is no other way to be somewhere in this piece.
     station: n => {
@@ -3148,6 +3542,11 @@ async function main() {
   // one; see vg.wander.
   if (Q.has('walk'))
     setTimeout(() => window.vg.wander(Q.get('walk') || 'wander', num('walksec', 40)), 200);
+
+  // ?hand=hold|wheel for ?handsec seconds from ?handat ms: the refusal met by
+  // a scripted hand, read back from vg.beats() in a headless frame.
+  if (Q.has('hand'))
+    setTimeout(() => window.vg.hand(Q.get('hand') || 'hold', num('handsec', 10)), num('handat', 200));
 
   // ?at=x,z[,yaw]: stand somewhere, in the station's own metres. M5 needs it
   // because at station 5 the walk is what changes the painting, so a

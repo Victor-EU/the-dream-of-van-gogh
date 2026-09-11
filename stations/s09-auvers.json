@@ -115,6 +115,10 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_crows": "Two, and both behind you: five canvases leave only the sky at your back unpainted, so that is where they are, and a viewer who turns round finds them.",
+ "crows": {
+  "n": 2
+ },
  "_letter": "To Wil, 5 June 1890, describing the Church at Auvers the week he painted it; the edition's note is F 789, 94 x 74 cm, the Orsay's -- this canvas. The line is lifted out of the middle of a longer sentence and says so at both ends. M3 cited 898, a July letter about the wheatfields, which is station 10's.",
  "letter": {
   "n": 879,

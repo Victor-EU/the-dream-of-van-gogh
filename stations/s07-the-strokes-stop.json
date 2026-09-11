@@ -1,25 +1,80 @@
 {
- "_schema": "A station with no canvases in it at all, which is the only one. Everything the shape requires is here and `canvases` is empty; the runtime gives such a station a share of tau measured in seconds -- pacing.beat -- because there is no paint for a burst rate to be a rate of, and refuses to advance through it for pacing.hold on the way in.",
+ "_schema": "A station with one canvas that does not get finished, which is the only one. M6 gave it the shape of an empty station -- no canvases, a share of tau declared as a beat -- because DESIGN 7 says nothing is painted here; M8 reads the sentence again and it says the painting stops mid-canvas, which needs a canvas. So `canvases` has one, with `stop`: the fraction of its own strokes the piece lays, and the rest are never laid. And `pacing.refuse` puts a gate at the end of the station's making, where the scrub refuses to advance for that many seconds of the viewer's own time, whichever way it is being moved.",
  "id": 7,
  "slug": "the-strokes-stop",
  "title": "The strokes stop",
  "where": "Arles",
  "when": "23 December 1888",
- "span": ["1888-12-23", "1888-12-24"],
+ "span": [
+  "1888-12-23",
+  "1888-12-24"
+ ],
  "eye": 1.65,
- "_canvases": "Empty, and that is the station. DESIGN 7: no ear, no blood, no razor -- the painting simply stops mid-canvas, the brush cuts, and the scrub refuses to advance for a beat. The restraint is the entire effect and it will be tempting to ruin. M8 owns making it land and expects to get it wrong twice; what M6 owes it is that the arc runs through here without leaving the piece, and that the date on the band is the right one when it does.",
- "canvases": [],
- "_ground": "The primed cloth of station 0 and nothing on it. There is no swell because there is no plain: the two stations either side are six hundred metres away in both directions and this is the middle of the road.",
- "ground": { "dome": 240.0, "swell": { "amp": 0.0, "wave": [1.0, 1.0], "dir": 0.0 } },
- "volume": { "shape": "slab", "half": [6.0, 6.0], "ease": 1.5 },
- "weave": { "mm": 0.9, "rough": 0.0 },
- "curl": { "gain": 0.0, "rate": 0.42 },
- "_pacing": "beat is how many seconds of tau this station is, and it is the only station whose share of the axis is a duration rather than a stroke count. hold is how long the scrub refuses to move on the way in. Both are guesses and both are meant to be argued with at M8; they are here so that there is something to argue with.",
- "pacing": { "burst": 2000, "hold": 4.0, "beat": 9.0 },
+ "_canvases": "M8 gives the station a canvas, because DESIGN 7's own sentence needs one: the painting simply stops mid-canvas. M6 read that as a station with nothing in it, and a station with nothing in it cannot stop anything. So it is the canvas that did stop. In letters to Theo of 22 and 28 January 1889 he says the portrait of Augustine Roulin was the canvas he had been working on when his illness interrupted him, and the edition's notes to both passages identify it as La berceuse, F 504, now at the Kröller-Müller. It is painted here to half its strokes and no further; the brush is cut in the middle of a burst; and the scrub refuses to advance for a beat. No ear, no blood, no razor: a date, and a painting that does not get finished. The canvas in this file is a stand-in for F 504 until F 504 is fetched -- its note says what it is.",
+ "canvases": [
+  {
+   "blob": "strokes/s07/berceuse-canvas.bin",
+   "strokes": 6809,
+   "title": "Augustine Roulin (La Berceuse)",
+   "date": "1889",
+   "when": "1889-01-01",
+   "place": "Arles",
+   "collection": "Stedelijk Museum, Amsterdam",
+   "accession": "A965",
+   "yaw": 0.0,
+   "hfov": 50.0,
+   "dist": 4.2,
+   "_dist": "4.2 m, not the 3.0 m the rule for a wall would give, so that the whole of the canvas is in the frame from where you stand: a hung canvas is 3.6 m tall here as everywhere, and the stop is a state of the whole painting, which has to be seen as one.",
+   "treatment": null,
+   "stop": 0.5,
+   "_stop": "Half its strokes, and the number claims nothing: nobody knows how far he had got on 23 December, and the record says in what order the canvas was painted, not where he was in it. Half is mid-canvas in DESIGN 7's words and falls in the middle of the one long act the order found here, with the face arriving -- tools/flat.py at 0.35 is a face not yet begun and at 0.7 one nearly done. What is past the stop is never laid, and the strokes in the last hundredth before it are left part-way along their own length, because that is how an arriving stroke is drawn.",
+   "note": "A stand-in, and named as one. The canvas this station wants is F 504, the Kröller-Müller's: the edition's notes to letters 741 and 743 identify it as the one he was working on when his illness came and interrupted him, and he finished it in January 1889 and painted four more. This is F 507, the fifth, at the Stedelijk, which the edition dates 1889 and no more closely -- the first of January is only this file's way of writing a year -- and it comes from a gallery photograph in its frame; params/berceuse.json says what was done to it. That the canvas was finished, and repeated, belongs to the road from here to Saint-Rémy, which is January to May 1889 and has nothing on it."
+  }
+ ],
+ "_ground": "The primed cloth of station 0, and it goes dark as the canvas arrives, as the cloth does everywhere. There is no swell because there is no plain: the stations either side are six hundred metres away in both directions.",
+ "ground": {
+  "dome": 240.0,
+  "swell": {
+   "amp": 0.0,
+   "wave": [
+    1.0,
+    1.0
+   ],
+   "dir": 0.0
+  }
+ },
+ "_volume": "Small, and short of the canvas: it is a wall 4.2 m off, and a volume that let the walk through it would be the walk going through a painting.",
+ "volume": {
+  "shape": "slab",
+  "half": [
+   3.0,
+   3.0
+  ],
+  "ease": 0.8
+ },
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "_pacing": "refuse is the beat: how many seconds of the viewer's own time the scrub refuses to go past the stop, whichever way it is being moved -- playing, the arrows, the wheel, the band or the slider -- after which it goes on, by itself if it was playing. Six is a guess at two and a half of the piece's ordinary holds, and it is the number M8's testers exist to argue with. burst is the piece's own: nothing here is faster or slower than anywhere else until it stops. The station's share of tau is the half of the canvas that gets painted, 1.7 seconds of making; M6's nine seconds of nothing, and its four-second hold that only the playing ever met, are gone.",
+ "pacing": {
+  "burst": 2000,
+  "refuse": 6.0
+ },
  "_letter": "There is no letter for this and there should not be one.",
- "letter": { "n": null, "to": null, "date": null, "text": null },
+ "letter": {
+  "n": null,
+  "to": null,
+  "date": null,
+  "text": null
+ },
+ "_caption": "M8: the plaque and nothing else. At M6 this caption said what the station does -- that nothing is painted here and the scrub stops for a beat -- which is the piece explaining its one silence while it happens. The plaque says what the canvas is, as every plaque does, and the day is on the readout.",
  "caption": {
-  "title": "23 December 1888",
-  "sub": "Nothing is painted here. The scrub stops for a beat and then goes on, and the next canvas is on rougher cloth in another town."
+  "title": "Augustine Roulin (La Berceuse)",
+  "sub": "Arles, 1889 · Stedelijk Museum, Amsterdam"
  }
 }

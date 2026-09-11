@@ -456,6 +456,12 @@ failure mode that ate `monets-universe`'s schedule.
   a composition out of that habit rather than a different local statistic. The rate is not in the paint at all —
   there is no time in a painting — and it is one declared number per station.*
 
+*M8 found the substrate hiding the paint. The cloth under every canvas was placed through its world position, a
+32-bit coordinate of kilometres, and a wall's cloth hangs a quarter of a millimetre behind its strokes; at the
+stations six hundred metres apart it had been coming out in front of paint that lies close to it since M4 put them
+there — a quarter of the Bedroom frame, a third of Auvers, and at station 7 the whole canvas. It is placed relative
+to the camera now, as the strokes always were.*
+
 ---
 
 ## 5. The scrub: time as the primary control
@@ -690,6 +696,26 @@ three. And the brightness does not peak before there is nothing: it peaks in the
 darkest thing since Nuenen. What peaks at the end is the **colour**, which climbs again through Auvers to the
 wheatfield. The shape is right and it is a shape in chroma rather than in light.*
 
+*M8 builds the two beats a first time, and station 7 stops being empty. The sentence above is that **the painting
+simply stops mid-canvas**, and M6 had read the station as the absence of a painting, which cannot stop. So it has
+the canvas that did: in letters to Theo of 22 and 28 January 1889 he says the portrait of Augustine Roulin was the
+canvas he had been working on when his illness interrupted him, and the edition's notes to both identify it as* La
+berceuse*, F 504, at the Kröller-Müller. It is painted to half its strokes and no further; the brush is cut in the
+middle of a burst, to exact zero in 8 ms; and the scrub refuses to advance for six seconds of the viewer's own time,
+**whichever way it is being moved** — M6 had built the refusal for the scrub playing itself and let every hand
+through. The readout gains a day, 23 December 1888, for the only time in the piece, and the plaque says what the
+canvas is and nothing else. No ear, no blood, no razor. What stands there today is a stand-in, F 507, the last of the
+five versions, until F 504 is fetched.*
+
+*The end is station 11, a station file from M8: the last stretch of τ, six hundred metres out of the back of the
+last field, bare primed canvas with no charcoal line on it, and no date on the readout at all. **The scrub playing
+itself stops at the last stroke of the field**, so what is past it is reached with a hand or not at all, which is how
+"the ending is something they did" is made true rather than likely. There the nothing is held for twenty-four
+seconds and then the crows come, nine of them, in from behind and circling over the bare canvas. Every crow is his:
+the birds are the black strokes of* Wheatfield with Crows*, found in its own record, and they have been in the corner
+of the eye since Arles — one at station 3, two at 4, 8 and 9, three at 10 — each on a slow circle in the unpainted sky
+outside every canvas, by a rule that keeps them off his paint rather than by hand.*
+
 ---
 
 ## 8. The paintings
@@ -831,6 +857,11 @@ green of the Night Café, and the colour doing the work in the Bedroom — and t
 from sunrise are the August 1888 canvases and the piece stands the January 1889 repetition, and the mistral that
 pegged his easel to the ground is, by the edition's note, on a painting the piece does not have.*
 
+*M8 keeps station 10's line, which M7 left to it. It is about the work — the canvases he was making that week, and
+what they were of — and it arrives after the rush, in the silence over the finished field, as the last words in the
+piece. It stops before the half of the sentence that says what he meant them to express, for the reason station 7 has
+no letter at all.*
+
 ---
 
 ## 10. Sound
@@ -855,6 +886,11 @@ twenty-one holds at three stations. **The louder ear is the side the paint is ar
 frames where it arrived twenty degrees or more off centre, on the left at the corridor and the Harvest and on the
 right at the night. What it has not had is a person listening to it, which is the half of this section a number
 cannot do. The mistral, the cicadas and the rooks stay deferred until the brush has been lived with.*
+
+*M8: at station 7 the silence is not left to the ordinary end of a burst. The brush is **cut** — everything it is
+making, the strokes already scheduled a frame ahead included — to exact zero in 8 ms, where an act's end takes 280,
+and it stays cut until the refusal is over. The first version let the stop's own last strokes lift the cut in the
+same frame, and `tools/beat.py` heard the ordinary fall where the cut should have been.*
 
 ---
 
@@ -1129,8 +1165,14 @@ Van Gogh universe/
   of it.
 - **Station 7.** Too coy and it is a bug; too literal and the piece becomes a biopic. One beat of silence and a
   refusal to advance is the current answer and it needs testing on strangers, not on us.
+  *M8 builds the first attempt — §7 says what it is — and cannot supply the stranger. What a person has to settle is
+  written into BUILD M8 as a protocol: who, what to tell them, what to watch, what to ask, and the three ways to read
+  it. Six seconds and half the canvas are the numbers they will be arguing with.*
 - **The coda.** Nothing, or the canvases as they are now, in their museums, with labels? Current position: nothing,
   held uncomfortably long, then the crows. The museum coda is the safer choice and the worse one.
+  *M8 builds the first of the two — nothing, held twenty-four seconds, then the crows — because it is this document's
+  position, and leaves the museum coda unbuilt. BUILD M8 says the decision is made there; it is the author's, and it
+  is asked for rather than assumed.*
 - **Where the room came from, and whether authoring it is enough.** *Opened at M5. `tools/room.py` cannot recover a
   vanishing point from either the stroke record or the scan's own line segments, and says precisely what that would
   have taken — a fifth of the paint on the room's lines, drawn to within six degrees. So a built room's six numbers

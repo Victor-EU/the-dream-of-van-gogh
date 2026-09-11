@@ -1,0 +1,61 @@
+{
+ "_schema": "The end of the scrub, and the one station that is not a place he painted. It has the shape station 7 had at M6 -- no canvases, a share of tau declared in seconds -- and M8 adds the fields it needs: `ground.bare`, which keeps the cloth under it the primed canvas of station 0 however far tau has gone, `pacing.nothing`, which is how long it holds before the crows come, and `crows.after`, which says that its crows are the ones that come rather than the ones that have been at the edge of the frame since Arles.",
+ "id": 11,
+ "slug": "after",
+ "title": "After",
+ "where": "",
+ "when": "",
+ "span": [
+  "1890-07-27",
+  "1890-07-29"
+ ],
+ "eye": 1.65,
+ "_canvases": "None. DESIGN 7: nothing, held far too long, then the crows again, and the end. The coda is BUILD M8's decision -- nothing, or the canvases in their museums -- and this file is the first of the two, which is DESIGN 15's current position.",
+ "canvases": [],
+ "_ground": "Bare primed canvas, lit, with nothing on it and no charcoal line across it: the loading screen with its one mark taken away. It stands six hundred metres out of the back of the last field, so the field is behind you and in the dark.",
+ "ground": {
+  "dome": 240.0,
+  "swell": {
+   "amp": 0.0,
+   "wave": [
+    1.0,
+    1.0
+   ],
+   "dir": 0.0
+  },
+  "bare": true
+ },
+ "volume": {
+  "shape": "slab",
+  "half": [
+   6.0,
+   6.0
+  ],
+  "ease": 1.5
+ },
+ "weave": {
+  "mm": 0.9,
+  "rough": 0.0
+ },
+ "curl": {
+  "gain": 0.0,
+  "rate": 0.42
+ },
+ "_pacing": "beat is how many seconds of tau this station is, and it is half a second because there is nothing here to scrub through: the end of the scrub is a place, not a stretch. nothing is how long it holds before the crows come, in the viewer's own seconds rather than tau's, because tau has run out. Twenty-four is DESIGN 7's 'far too long' made into a number to be argued with, and M8's testers are what argue with it. Autoplay never arrives here -- it stops at the last stroke of the field -- so the only way in is a hand.",
+ "pacing": {
+  "beat": 0.5,
+  "nothing": 24.0
+ },
+ "_crows": "Nine, off Wheatfield with Crows, and the first time any of them is in plain view: they come in from behind, over the viewer's head, and circle in front over the bare canvas, which is where they stay. DESIGN 7's diagram puts 'bare primed canvas, and the crows' at the top of the piece, and this is it.",
+ "crows": {
+  "n": 9,
+  "after": true
+ },
+ "_letter": "None.",
+ "letter": {
+  "n": null,
+  "to": null,
+  "date": null,
+  "text": null
+ }
+}

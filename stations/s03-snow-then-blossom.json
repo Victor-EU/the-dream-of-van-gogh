@@ -103,6 +103,10 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_crows": "The first crow in the piece, and there is one: in the unpainted sky past the edge of the orchards. DESIGN 7 wants the crows in the corner of the eye since Arles, and this is Arles. Every crow in the piece is one of the birds off Wheatfield with Crows -- his own strokes, found in that canvas's record by tools/crows.py -- flying a slow circle a long way out, and never across a canvas: index.html says where, by a rule rather than by hand.",
+ "crows": {
+  "n": 1
+ },
  "_letter": "M3 cited 590, which the edition has as a letter to Wil and not to Theo. This one is to Theo on 9 April 1888, in the middle of the orchards, and it is about the pace -- the fastest scrub in the piece. The sentence further on in it about the pink peach trees is, by the edition's own note, the Kroller-Muller's Souvenir de Mauve and not this station's peach tree, so it is not the one used.",
  "letter": {
   "n": 594,

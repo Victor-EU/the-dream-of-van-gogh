@@ -323,7 +323,7 @@ def main():
     home = get(SITE + "/vg/", a.refresh)
     version = (re.search(r"Version:\s*([A-Z][a-z]+ \d{4})", clean(home)) or [None, "unknown"])[1]
     lines, nbad, tied = [], 0, 0
-    for path in sorted(glob.glob(os.path.join(ROOT, "stations", "*.json"))):
+    for path in sorted(glob.glob(os.path.join(ROOT, "stations", "s[0-9][0-9]-*.json"))):
         sn = json.load(open(path))
         L = sn.get("letter") or {}
         print(f"\nstation {sn['id']}  {sn['title']}")

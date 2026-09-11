@@ -57,12 +57,16 @@
   "gain": 0.0,
   "rate": 0.42
  },
- "_pacing": "The rush with no holds. burst is twice every other station's and hold is zero, and both are the design's words made into numbers rather than a measurement -- M2's constant says how fast the record thinks he painted and this says how fast the piece plays it back. It is the only station that overrides the burst, and BUILD.md M6 says what it costs.",
+ "_pacing": "The rush with no holds. burst is twice every other station's and hold is zero, and both are the design's words made into numbers rather than a measurement -- M2's constant says how fast the record thinks he painted and this says how fast the piece plays it back. It is the only station that overrides the burst, and BUILD.md M6 says what it costs. M8: and it is the last thing that plays itself. Autoplay stops at this canvas's last stroke, because past it there is nothing left to paint; the road out of the back of the field, and station 11 at the end of it, are reached with a hand on the scrub or not at all.",
  "pacing": {
   "burst": 4000,
   "hold": 0.0
  },
- "_letter": "The edition's note on this sentence names the two likeliest canvases, and this is one of them: Wheatfield under Troubled Skies (F 778) at station 9 and Wheatfield with Crows (F 779) here, both at the Van Gogh Museum. The line stops before the rest of the sentence, which says what he was trying to express: DESIGN 9 asks for the working painter and not the biography, and what the ending means is M8's to get right. M3 cited 902, his last letter to Theo, which names no canvas here.",
+ "_crows": "Three in the air, to either side of the canvas and behind. The crows in it are paint and stay where he put them; these have been at the edge of the frame since Arles.",
+ "crows": {
+  "n": 3
+ },
+ "_letter": "The edition's note on this sentence names the two likeliest canvases, and this is one of them: Wheatfield under Troubled Skies (F 778) at station 9 and Wheatfield with Crows (F 779) here, both at the Van Gogh Museum. The line stops before the rest of the sentence, which says what he was trying to express: DESIGN 9 asks for the working painter and not the biography, and what the ending means is M8's to get right. M3 cited 902, his last letter to Theo, which names no canvas here. M8 keeps it. It is about the work -- the canvases he was making that week and what they were of -- which is what DESIGN 9 asks a line to be, and it arrives after the rush has ended, in the silence over the finished field, as the last words in the piece. The half of the sentence it stops before is about what he meant the canvases to express, and it stays out for the reason station 7 has no letter at all: the shape of the piece says that, and his words here are the working painter's.",
  "letter": {
   "n": 898,
   "to": "Theo van Gogh and Jo van Gogh-Bonger",
@@ -73,8 +77,9 @@
   "canvas": "crows",
   "note": "n-4"
  },
+ "_caption": "M8 takes the commentary out of this caption and leaves the plaque, and does the same at station 7. Everywhere else the caption carries what is measured and what is not, because that is worth re-reading; at the two beats it would be the piece explaining itself at the one moment it must not. What it said is still true and is here: the canvas is a double square, twice as wide as it is tall, and it is the last station with paint in it; its strokes arrive at twice the rate of anywhere else and nothing punctuates them, which is the one number at this station that is a decision rather than a measurement.",
  "caption": {
   "title": "Wheatfield with Crows",
-  "sub": "Auvers, July 1890. A double square, twice as wide as it is tall, and the last station that has paint in it. The strokes arrive at twice the rate of anywhere else in the piece and nothing punctuates them, which is the one number here that is a decision rather than a measurement."
+  "sub": "Auvers-sur-Oise, July 1890 · Van Gogh Museum, Amsterdam"
  }
 }

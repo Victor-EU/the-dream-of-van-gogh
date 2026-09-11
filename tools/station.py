@@ -52,7 +52,7 @@ def months(a, b):
 
 def stations():
     out = []
-    for path in sorted(glob.glob(os.path.join(ROOT, "stations", "*.json"))):
+    for path in sorted(glob.glob(os.path.join(ROOT, "stations", "s[0-9][0-9]-*.json"))):
         out.append((path, json.load(open(path))))
     return out
 
@@ -128,10 +128,13 @@ def main():
     # that a station that is long because it has a lot of canvas in it can be
     # told from one that is long because its burst rate is slow.
     print("\n\nhow long each station is, and what pays for it\n")
-    print(f"  {'station':28s} {'strokes':>8s} {'burst':>6s} {'seconds':>8s}  share")
+    print(f"  {'station':28s} {'laid':>8s} {'burst':>6s} {'seconds':>8s}  share")
     secs, tot, sns = [], 0, [sn for _, sn in stations()]
     for sn in sns:
-        n = sum(c.get("strokes", 0) for c in sn["canvases"])
+        # what is laid, which is what takes the time: M8's stopped canvas at
+        # station 7 costs the half of it that gets painted, as index.html has it
+        n = round(sum(c.get("strokes", 0) * min(1.0, max(0.0, c.get("stop", 1.0)))
+                      for c in sn["canvases"]))
         burst = sn.get("pacing", {}).get("burst", 2000)
         t = n / burst if n else sn.get("pacing", {}).get("beat", 0)
         secs.append((sn["id"], sn["title"], n, burst, t))

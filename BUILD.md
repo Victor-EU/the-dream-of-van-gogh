@@ -596,6 +596,15 @@ nothing, held far too long.
 - The coda decision (§15) is made here: nothing, or the canvases in their museums. Current position is nothing, and
   the museum coda is the safer choice and the worse one.
 
+*First attempt: built, and not yet met by a person — which is the first exit criterion, so M8 is open. The Progress
+entry below has the numbers. Station 7 has the canvas that did stop, the portrait of Augustine Roulin he was working on
+when his illness came, by his own account a month later: painted to half its strokes, the brush cut to exact zero in
+8 ms, and the scrub refusing every way forward for six seconds, where M6's refusal met only the scrub playing itself.
+The ending is something the viewer did by construction: the scrub playing itself stops at the last stroke of the last
+field, and station 11 — bare canvas, no date, the nothing held twenty-four seconds, then the crows — is reached with a
+hand or not at all. The crows are his, out of* Wheatfield with Crows*, and have been at the edge of the frame since
+Arles. What is not here is the stranger, F 504 itself — a stand-in is — and the coda decision, which is the author's.*
+
 ---
 
 ## M9 — Polish, mobile, ship  *(1.5 weeks)*
@@ -2521,3 +2530,174 @@ attack. It now stops 60 ms short of the next act, and the WAV and a picture of i
 **Not started, per scope.** The mistral, the cicadas and the rooks, deferred until the brush has been lived with.
 Station 7's beat, which the brush now cuts with and M8 has to make land, and stations 10 and 11. Photo mode, the
 accessibility pass and the performance pass, M9's.
+
+### M8 — The two beats, first attempt
+
+**Asked.** Station 7 and stations 10–11, DESIGN 7: the painting stops mid-canvas, the brush cuts, the scrub refuses
+to advance for a beat, and no ear, no blood, no razor; then the rush with no holds, the crows that have been in the
+corner of the eye since Arles, and nothing, held far too long. Exit: station 7 tested on people who do not know the
+design; the ending something the viewer did, because the scrub is in their hand; the coda decided — nothing, or the
+canvases in their museums.
+
+**Built.** A canvas that stops: `stop` in a station file is the fraction of a canvas's own strokes the piece lays, its
+share of τ is that part, and what is past it is never laid. The refusal: a gate at the end of any station whose
+pacing says `refuse`, which every way forward goes through — the arrows, the wheel, the band, the slider and the
+playing — and which holds for that many seconds of the viewer's own time, arms again when they go back before the
+station began, and keeps a log of what they did there, `vg.beats()`. The brush learns to be cut rather than to fall.
+The readout gains a day at the gate and loses its date at the end. The scrub playing itself stops at the last stroke of
+the last field. Station 11, a station file: bare primed canvas, no charcoal line, `pacing.nothing` seconds of nothing,
+then its crows. The crows: `tools/crows.py`, which finds them in *Wheatfield with Crows*' own record and writes
+`stations/crows.json`, and the runtime that stands them in the world. `tools/beat.py`, which meets the gate and the end
+with scripted hands in headless Chrome, and for it the page learns `?begin`, `?trace` and `?hand` and opens at τ 0.
+`tools/station.py` and `tools/letters.py` read only station files, now that `stations/` holds the crows as well, and
+`station.py` counts what is laid. And the cloth under every canvas is placed relative to the camera, as the strokes
+always were — which is a fix to every station but the first, below.
+
+**The painting that stops is the one that did.** M6 read DESIGN 7 as a station with nothing in it, and a station with
+nothing in it cannot stop anything. The edition says what was on the easel. Searching its letters from November 1888 to
+April 1889 for the Berceuse finds letter 743, to Theo, 28 January 1889, and that passage's own note leads back to
+741, 22 January, which calls it the portrait of Roulin's wife: in both he says it was the canvas he had been working on
+when his illness interrupted him, and the notes to both name it: **F 504 / JH 1655, Kröller-Müller Museum, Otterlo.** The notes name the other four
+versions too, and that settled which one this repository already had. The *La Berceuse* in `ref/originals/` since the
+sources were gathered is **F 507**, the Stedelijk's, the fifth — and it is not a scan but a gallery photograph of the
+picture in its gilt frame, which `tools/canvas_edge.py` cannot find the painting inside, because a frame is not a
+quiet border. The Kröller-Müller serves F 504 through Micrio at 4800 × 6077, 66 px/cm. Fetching it is a download this
+milestone has not been given, so station 7 stands a stand-in, cropped by hand to its painted area — at an aspect
+within a tenth of a percent of the edition's size, so the photograph was taken square on — and says so in the station
+file, in `params/berceuse.json` and in CREDITS. Two glare streaks near its top edge are traced as paint. He finished
+F 504 in January and painted four more; the piece shows it stopping, and leaves the rest to the road to Saint-Rémy,
+which is January to May 1889 and has nothing on it.
+
+**M6's refusal met only the hand that did not need one.** It held the scrub on the way into station 7 when the scrub
+was playing itself; the arrows, the wheel, the band and the slider went through December 1888 like any other month. A
+refusal the viewer's own hand never meets is not a refusal, so every way forward now goes through one function, and the
+first move across the gate, by any of them, lands on it and stays. A click on the band at Auvers lands on the gate
+instead of Auvers. A push against it nudges the knob four pixels and lets it back, so that a hand meets a refusal
+rather than a page that has stopped. After the beat it opens: if the scrub was playing it plays on, and a hand's next
+push goes through. Going back before the station began arms it again, because it is a fact about the date and not an
+event that gets used up.
+
+**Where it stops.** Half its strokes, and the number claims nothing: nobody knows how far he had got, and the record
+says in what order the canvas was painted, not where he was in it. The order found one long act for almost all of
+this canvas, so any stop is in the middle of one. `tools/flat.py` at 0.35 is a face not yet begun, at 0.5 a face
+arriving, at 0.7 one nearly done; 0.5 is where the canvas is plainly a portrait and plainly not finished. The strokes
+in the last hundredth before the stop are left part-way along their own length, because that is how an arriving
+stroke is drawn, so the brush has stopped in the middle of marks as well as in the middle of the canvas.
+
+**The cut was not a cut, the first time.** The brush fell after the stop exactly as it falls after every act, to zero
+279 ms after the last stroke, because the gate cut it and then, in the same frame, the stop's own last strokes arrived
+and lifted the cut. It now stays cut until the gate opens or the viewer goes back: **8.0 ms to exact zero**, taking
+everything the brush is making, the strokes already scheduled a frame ahead included.
+
+**Station 7's canvas vanished behind its own underlayer, and every station but the first had been losing paint the
+same way since M4.** The first frame of station 7 at its stop showed the Berceuse as a blur: 3,404 strokes counted as
+drawn at the near tier and not one of them on the screen. Loaded alone with `?station=7` the canvas painted perfectly,
+and so it did with the stations sixty metres apart, and six thousand; it was only at the piece's own spacing that it
+went. What cared where it stood was the cloth's vertex shader, which took every vertex through its world position — a
+32-bit coordinate of kilometres — while a wall's cloth hangs a quarter of a millimetre behind its paint. The strokes
+were always placed relative to the camera, and the cloth never was. With the cloth placed the same way, station 7
+paints; and rendered finished from its standpoint, before the fix and after it, every station but the first moves:
+
+| station | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| metres from the origin | 0 | 600 | 1,200 | 1,800 | 2,400 | 3,000 | 3,600 | 4,200 | 4,800 | 5,400 |
+| pixels of the frame that change | 0 | 1.0% | 5.6% | 4.0% | **24.2%** | 5.1% | 12.5% | 4.8% | **33.3%** | 16.7% |
+
+What changes is paint arriving where the cloth had been in front of it — most where the paint lies closest to its
+cloth, a room or a wall or a canvas seen close, and never at station 1, which stands at the origin. So every frame of
+the whole piece taken since M4 put two stations six hundred metres apart has been missing some of its paint, and no
+single-station frame ever was, because `?station=N` puts its one station at the origin. M6's reference frame at the
+Bedroom is one of the frames that was missing paint: it came back byte-identical with all the rest of M8, and the fix
+moves it by RMS 0.049, all of it strokes the old frame did not have.
+
+**The ending is something the viewer did, by construction.** While space could play the piece to its last frame, the
+ending was something the viewer let happen. So the scrub playing itself stops at the last stroke of the field — past
+it there is nothing to paint, so nothing for "let it paint itself" to do, and space there does nothing — and what is
+past it is station 11, the last stretch of τ: the road out of the back of the field, which goes dark behind you, and
+then bare primed canvas, lit, with no charcoal line on it and no date on the readout. Twenty-four seconds of nothing,
+in the viewer's own time and starting again if they leave, and then the crows. The page opens at τ 0 now, on primed
+canvas, because the other end is the ending and nobody should arrive there by opening it.
+
+**The crows are his.** `tools/crows.py` finds them in the Crows canvas's own stroke record by three tests with every
+number written down: *black* — under 0.20 in every channel, within 0.08 of grey, and neither the sky's blue-black nor
+the field's green-brown; *standing out* — at least 4× darker than the median of the paint within 1.5 cm that is not
+itself black, which drops the top of the sky, black on black at 0.7 to 2; and *in the air* — above 0.6 of the canvas's
+height, a test chosen after looking, because the shadowed edge of the near field passes the other two. **32 birds of
+108 strokes**, and drawn over the scan every one of them is a crow. The rule misses the smallest birds against the
+darkest sky in the top right, about a third of the flock, and says so. In the world a bird is its own strokes as flat
+ribbons, facing whoever looks at it, at the angle it has in the painting — a degree and a half to three and a quarter —
+and nearly twice that at the end, flying a slow circle a long way out and a little above the horizon, in the unpainted sky of its station: every
+canvas takes its own width and twelve degrees more out of that sky, and the birds keep to what is left, at the edges of
+the paint first and then behind. One at station 3, two at 4, 8 and 9 — at Auvers only behind you, because five
+canvases leave nothing else — three at 10, and nine at the end. The painted crows in the last field are paint and stay
+where he put them; none of these ever comes out of a canvas, which is the one thing the projection shows do with them.
+
+**What the stills show.** Station 7 stopped: the contours laid, half the face and the dress, the ground he painted
+on showing between, and the readout on 23 December 1888. The end: bare primed canvas and nothing on it, then black
+marks circling over it which, at the distance they fly, are exactly what they are in the painting: a few strokes of black
+and not birds anybody modelled. At the stations since Arles a crow faced directly is a small dark mark over dark
+cloth, and at the edge of the frame a smaller one. The smallest of the thirty-two were specks there at the angle the
+painting gives them, so the ones that fly are the thirteen that are three centimetres or more across; the rest stay
+in `stations/crows.json`, and in the painting. Whether anybody sees one at the edge of the frame is the protocol's
+question and not the stills'.
+
+**Verified.**
+
+| | measured | |
+|---|---|---|
+| the gate, playing | arrives in the middle of a burst, 1,807 strokes a second; held **6.016 s** against 6; goes on by itself | `beat.py play` |
+| the cut | **8.0 ms** to exact zero, and zero for the 5.99 s of the beat recorded | `beat.py play` |
+| the gate, the right arrow held | held **5.983 s**, the arrow down for 6 s of it; the same hand then reaches τ 1 | `beat.py hold` |
+| the gate, the wheel | held **6.050 s**; 22 turns refused of about 23; the first turn after it opened went on, 0.07 s later | `beat.py wheel` |
+| the gate, the band | a click on Auvers lands on the gate, τ 0.650980 | `beat.py jump` |
+| the playing | stops at the field's last stroke, τ 0.981757, and not at 1 | `beat.py end` |
+| the end | a hand reaches station 11; no crows at 17 s; all nine by 41 s | `beat.py after` |
+| M6's reference frame | found at τ 0.4551039 — the same moment of station 5, by where it is in the station rather than by τ, because station 11 and a stopped canvas moved every τ in the piece: **byte-identical to M6's and M7's `01337c1d`** with everything in M8 but the cloth fix, and with it re-baselined at `6df366ea`, RMS 0.049, every pixel of which is paint the old frame did not have | `?still` |
+| the station audit | eleven stations; station 7 is 1.7 s of making, the whole arc 246.9 s | `tools/station.py` exits 0 |
+| the letters | nine lines, nothing wrong | `tools/letters.py --check` exits 0 |
+
+**How to test station 7 on a person, which is the exit criterion and the one thing no script here can do.**
+
+- **Who.** Three to five people who have not read DESIGN or this file and have not been told what station 7 is. Some
+  who know his life and some who do not; the two groups can fail it in opposite directions.
+- **Where.** The dev Mac, the page served as always (`python3 -m http.server 8710`), full screen,
+  `index.html?begin=5` — the Yellow House, about a minute and a half before 23 December 1888 — or `index.html` for the
+  whole piece if there is time. Headphones on the table; say the corner button is the sound and leave it to them.
+- **What to say.** Only this: *this is a piece about Van Gogh's paintings; the arrow keys or the scroll wheel move
+  through time, and W A S D walks; take as long as you like.* Nothing about a stop, a date, or what happens.
+- **What to watch.** At the portrait of the woman in the chair: whether they push against the refusal and how, whether
+  they stop pushing and wait, whether they go back, whether they reach for reload or say it has frozen, what they say
+  unprompted. Afterwards `vg.beats()` in the console has each arrival: how it came, how many pushes, how long the
+  arrow was held, whether they left before it opened, and how long after it opened they moved on.
+- **What to ask, after, in this order.** *What happened at the portrait of the woman?* — *Did anything seem broken?* —
+  *Was anything too much, or too little?* — and only then, to those who know his life: *did the date mean anything?*
+- **How to read it.** Too coy is a bug: they reload, or say it froze, or never connect the stop to anything. Too
+  literal is a biopic: they name the event before anything on the screen has, or say the piece became about it.
+  Landing is in between: something stopped, they noticed, they waited, and they went on differently.
+- **What attempt two can move,** each a number in `stations/s07-the-strokes-stop.json` or one line in `index.html`:
+  the beat (`refuse`, 6 s), where the canvas stops (`stop`, 0.5), the day on the readout, the nudge of the knob, the
+  plaque, and the cut.
+- **The same people, at the end.** Whether they push past the finished field at all, how long they stand in the
+  nothing before the crows or before they leave, and whether they saw the crows before — "in the corner of the eye
+  since Arles" is true only if somebody says so afterwards without being asked about crows first.
+
+**Still open, and named rather than fixed.**
+
+- **Nobody has met station 7.** Everything above is a mechanism doing what DESIGN 7 says; whether it reads as a bug, a
+  biopic or a stop is the first exit criterion, and the protocol above is how to find out. M8 stays open until it has
+  been done, and the design expects the answer to be *not yet* twice.
+- **F 504 is not fetched.** Station 7 stands the wrong version from the weakest kind of source in the piece — 46 px/cm,
+  glare traced as paint — and its plaque and its readout say 1889, which is the stand-in's date and not the one on the
+  easel. Fetching the Kröller-Müller's scan is one row in `tools/sources.tsv` and one run of `tools/micrio_stitch.py`,
+  about 10 MB into `ref/originals/`, and it waits on the author's word.
+- **The coda is the author's.** Nothing is built, as DESIGN 15 has it; the museum coda is not.
+- **Nobody has listened** — to the brush, since M7, and now to the cut.
+- **Six seconds, half the canvas and twenty-four seconds are guesses**, each one number in a station file.
+- **The crows since Arles are judged by stills.** Whether anybody sees them at the edge of the frame, and remembers
+  them at the end, is the second half of the protocol, and the design's sentence about them is true only if somebody
+  says so unprompted.
+- **The Berceuse's goldens are a stand-in's**, committed as every canvas's are, and they go when it does.
+- **The hint line still offers space** where space at the end does nothing. The hint is M9's.
+
+**Not started, per scope.** M9: measured quality, touch, photo mode, the accessibility pass, the performance pass,
+the disclosure paragraph, `LICENSE`. The mistral, the cicadas and the rooks, and with them any voice for the crows.
