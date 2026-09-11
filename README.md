@@ -53,15 +53,16 @@ gets a smaller budget and two-thumb controls, but no real phone has been measure
 | Walk | ↑ ↓ or W S, or the scroll wheel; Shift runs | the left thumb, up and down |
 | Turn | ← →; A D step sideways | the left thumb, sideways |
 | Look around | drag | the right thumb |
-| Walk on its own | Space; any arrow key takes over | |
+| Walk on its own | Space; ← → steer it off the road, ↑ ↓ take over | |
 | Lie down and look up | Z | |
 | Go to a place | 1 to 9, and 0 for the tenth; or click the line along the bottom, which reaches all eleven | tap the line |
 | Sound | M, or the speaker button | the speaker button |
 | The keys | H or ? | the keyboard button |
 | Full screen | F | the full-screen button |
 
-The walk on its own slows at every place and stops where the road ends. The last eighty metres, up to the portrait,
-are for a hand.
+The walk on its own keeps to the road: drag to look around and it walks on regardless. ← → steer it off the
+road, and once let go it finds the road again. It slows at every place and stops where the road ends. The last
+eighty metres, up to the portrait, are for a hand.
 
 ## The walk
 

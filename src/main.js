@@ -77,6 +77,8 @@ async function boot() {
   // -------------------------------------------------------------- the body --
   const body = { x: 0, z: J.ZSTART, yaw: 0, pitch: 0.02, pitchT: null, v: 0, vs: 0, wheelV: 0,
                  lie: 0, lieT: 0, auto: false };
+  // seconds since a hand last dragged to look: the walk on its own turns the eye back to the road only after a pause
+  let lookAgo = 9;
   const startIdx = has('at') ? clamp(parseInt(Q.get('at'), 10) || 1, 1, J.NST) - 1 : -1;
   if (startIdx >= 0) body.z = J.stationZ(startIdx) + 18;
   body.x = J.roadX(body.z);
@@ -148,27 +150,43 @@ async function boot() {
     if (begun && !(jump && !jump.done)) {
       body.yaw += inp.dx * LOOK;
       if (inp.dy) { body.pitch = clamp(body.pitch - inp.dy * LOOK, -1.25, 1.45); body.pitchT = null; }
+      lookAgo = inp.dx || inp.dy ? 0 : lookAgo + dt;
       body.wheelV = clamp(body.wheelV - inp.wheel * 0.027, -RUN, RUN);
       const f = clamp(controls.forward, -1, 1), st = clamp(controls.strafe, -1, 1), tr = controls.turn;
-      if (f || st || tr) { if (body.auto) { body.auto = false; ui.setAuto(false); } }
+      // walking forward or back takes over from the walk on its own; turning and stepping sideways steer it
+      if (Math.abs(f) > 0.3 && body.auto) { body.auto = false; ui.setAuto(false); }
       if ((f || st) && body.lieT) { body.lieT = 0; body.pitchT = 0.02; }
-      body.yaw += tr * TURN * dt;
+      if (!body.auto) body.yaw += tr * TURN * dt;
       let target = f * (controls.run ? RUN : WALK), side = st * WALK * 0.8;
       if (body.auto && body.z < J.ZEND + 4.3) { body.auto = false; ui.setAuto(false); }
       if (body.auto) {
         target = autoSpeed() * clamp((body.z - J.ZEND - 4) / 10, 0.15, 1);
-        const want = roadYaw(body.z - 6) + clamp((J.roadX(body.z - 9) - body.x) * 0.09, -0.35, 0.35);
-        body.yaw += angDiff(want, body.yaw) * (1 - Math.exp(-dt * 1.1));
-        if (body.pitchT === null) body.pitch += (0.03 - body.pitch) * (1 - Math.exp(-dt * 0.6));
+        side = clamp(tr + st, -1, 1) * WALK * 0.8;
       }
       target += body.wheelV;
       body.wheelV *= Math.exp(-dt * 2.2);
       if (body.lieT) { target = 0; side = 0; }
       body.v += (target - body.v) * (1 - Math.exp(-dt * 5));
       body.vs += (side - body.vs) * (1 - Math.exp(-dt * 5));
-      const sy = Math.sin(body.yaw), cy = Math.cos(body.yaw);
-      let nx = body.x + (sy * body.v + cy * body.vs) * dt;
-      let nz = body.z + (-cy * body.v + sy * body.vs) * dt;
+      let nx, nz;
+      if (body.auto) {
+        // the walk on its own keeps to the road whatever the eye does: it goes along the road's own line, a hand
+        // steering it slides it across, and once let go it finds its way back to the crown over a quarter minute
+        const yr = roadYaw(body.z);
+        nz = body.z - Math.cos(yr) * body.v * dt;
+        const lane = (body.x - J.roadX(body.z) + body.vs * dt) * Math.exp(-dt / 12);
+        nx = J.roadX(nz) + lane;
+        // the eye, left alone a moment, comes round to the road ahead, leaning a little into a steer
+        if (lookAgo > 1.5) {
+          const lean = clamp(Math.atan2(body.vs, Math.max(body.v, 1)), -0.4, 0.4);
+          body.yaw += angDiff(roadYaw(body.z - 6) + lean, body.yaw) * (1 - Math.exp(-dt * 0.9));
+          if (body.pitchT === null) body.pitch += (0.03 - body.pitch) * (1 - Math.exp(-dt * 0.6));
+        }
+      } else {
+        const sy = Math.sin(body.yaw), cy = Math.cos(body.yaw);
+        nx = body.x + (sy * body.v + cy * body.vs) * dt;
+        nz = body.z + (-cy * body.v + sy * body.vs) * dt;
+      }
       const lat = nx - J.roadX(nz), LIM = 42;
       if (Math.abs(lat) > LIM) nx = J.roadX(nz) + Math.sign(lat) * LIM;
       nz = clamp(nz, zLast, J.ZSTART + 8);
