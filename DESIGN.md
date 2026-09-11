@@ -3,6 +3,13 @@
 > **Status.** Written before the build, September 2026. This is the record of intent; `BUILD.md` will record what
 > actually happened, milestone by milestone. Nothing here has been prototyped yet. §14 names the one experiment that
 > decides whether the project is possible at all, and it comes before everything else.
+>
+> **M9, on the author's word.** As built through M8 the piece opened on grey, scrubbed time with the arrow keys and hung
+> most of its canvases in a void. After seeing it the author asked for a refactor, and three things in this document
+> no longer hold. The scrub is not the control: the walk is, and time is distance along the road. The world between
+> the canvases is painted rather than left as primed cloth. The opening is the world painting itself, not a wait.
+> `BUILD.md` M9 records what changed and why. The thesis, the act of painting, survives where the paintings are: on
+> their easels, stroke by stroke.
 
 A single web page. You begin on bare primed canvas — white, woven, nothing on it but a charcoal line going forward.
 You drag one control, and the world starts being painted around you: strokes arriving in order, in his direction, at

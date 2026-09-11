@@ -2792,3 +2792,100 @@ the author and live in the session's scratchpad; none of them is committed.
 
 **Not started, per scope.** M9: measured quality, touch, photo mode, the accessibility pass, the performance pass,
 the disclosure paragraph, `LICENSE`. The mistral, the cicadas and the rooks, and with them any voice for the crows.
+
+### M9 — The refactor: a world, not a gallery
+
+**What was asked.** After M8 the author opened the piece and said it plainly: you land on a grey zone; the controls
+are not intuitive — walking forward is the arrow keys, not WASD, and ← → moved time; the visuals have no moment of
+*this is incredible*; the app needs a significant refactoring. The M8 walk's own frames agree. Nine stations of ten
+are canvases hung as flat rectangles in a dark grey void, the opening is primed canvas that stays grey until space
+is held, and the arrow keys scrub τ.
+
+**What was decided, on the author's word.** Three of this plan's founding decisions are reversed, and they are
+named here so nobody mistakes the new runtime for the old one improved:
+
+1. **The walk is the control.** Time is distance along one road, 90 m a station. ↑ ↓ walk, ← → turn, drag looks, the
+   wheel walks, space walks on its own, Z lies down, 1–0 jump, and the line along the bottom is a map you can click.
+   The scrub, burst-and-hold and the refusal at station 7 are gone as controls; station 7 is now a place where the
+   paint thins back to bare cloth and charcoal.
+2. **The world is painted everywhere, not only where a canvas was.** Rule 2 — nothing in the world that is not a
+   stroke — no longer holds. There is a painted terrain under the marks and plain cores inside the houses and trees
+   so the sky does not show through the gaps; `?noStrokes` would show a scene. The marks between the canvases are
+   procedural, in each station's palette (sampled from the golden flats and pushed), and his paintings stand on
+   easels by the road.
+3. **The opening is the world painting itself, not a wait.** It starts on bare primed canvas, as §0 of the design
+   did, and the sky, the ground and the first station are laid outward from where you stand in about five seconds,
+   under the title.
+
+**What was kept.** The stroke records. Every painting on an easel is his strokes from `strokes/sXX/*.bin`, laid in
+the solved order as you walk up to it (13 s a canvas) over the extractor's underlayer. Also kept: the station files,
+their dates and letters, the calendar, the crows from station 3 on, and the ending on bare canvas.
+
+**What was built.** A new runtime in `src/`: ES modules, no build step, three r180 from the CDN as before.
+
+- `main.js`: boot, the body, each station's light, the loop, and `window.vgu` for the harness.
+- `journey.js`: the road and the ground table. The table is an 11 × 17 float texture the shaders read, interpolated
+  between stations. Terrain height is written in GLSL and JS line for line. The calendar is here too.
+- `config.js`: each station's art direction. Sky palettes and eddies (The Starry Night's placed from the canvas),
+  ground crops, light, fog and sound.
+- `brush.js`: one procedural brush atlas and the shared lighting. The atlas has eight prints, each with bristles, a
+  loaded start, a dry end and a height field.
+- `sky.js`: a painted dome, plus 11–24k marks a station.
+  - The marks lie along a flow field, curled round eddies that turn.
+  - It has stars with ringed halos, a moon and a sun.
+  - One station's sky repaints into the next mark by mark.
+- `ground.js`: the terrain, plus four camera-following fields of about 191k marks, worked out on the GPU from the
+  ground table.
+  - Standing wheat and grass bend in the wind.
+  - Flat marks lie along the furrows, the road and the water.
+- `scenes.js` with `strokes.js`: everything that stands in the land, as surface marks that paint themselves in
+  nearest-first when you arrive.
+  - Poplars at Nuenen, windmills over Paris, orchards, haystacks and the blue cart.
+  - The Yellow House, the café terrace and the gaslit Rhône.
+  - The cypress and the village under the Starry Night, olive trees and irises.
+  - The church and cottages at Auvers, crows, and the easels.
+- `canvases.js`: the stroke records on the easels.
+- `post.js`: HDR, bloom, a tone curve, vignette and grain.
+- `audio.js`: sound generated on the spot.
+  - Wind, and the mistral at La Crau.
+  - Birds by day, crickets and the river at night, crows over the wheat.
+  - Footsteps, and the brush while a canvas paints.
+  - A quiet chord that changes key from station to station.
+- `ui.js` and `index.html`: the interface.
+  - The title, one card of keys, and the name of each place as you arrive.
+  - His letters, and a plaque by each painting.
+  - The road as a timeline you can click, and sound, controls and full-screen buttons.
+
+The M8 runtime is removed, and so are `tools/shot.py`, `beat.py` and `listen.py`, which could only drive it. All of
+them are in the history at `768ca51`. `tools/station.py` stays: it audits the station files, which the new runtime
+still reads.
+
+**How it was verified.** The runtime was driven in headless Chrome over the DevTools protocol, with real key events.
+
+- **Keys:**
+  - ↑ held 3 s walked 9.1 m, and → held 0.7 s turned 76°.
+  - Space walked 13.9 m on its own in 6 s, and an arrow key took over.
+  - 8 jumped to Saint-Rémy, Z lay down (pitch 64°) and stood back up.
+  - No exceptions and no console errors.
+- **Frame rate:**
+  - 60 fps at 1440 × 900 at every station.
+  - At 1728 × 1117 and device pixel ratio 2: 51–59 fps. The resolution started at 1.29 from the pixel budget
+    (about 3.2 Mpx), and the adaptive rule did not have to go lower; it steps 0.15 down below 47 fps.
+- **The road tour:** 44 frames, one every 22.5 m of the road. It found five things, now fixed:
+  - A NaN in the river's lamp reflections: an exponential of a negative denominator behind each lamp. The bloom
+    spread it into a black rectangle; it is now guarded in the shader and in both post passes.
+  - The café's awning, pitched so nearly through the eye that from the road it read as a laser line.
+  - The Yellow House's railway bridge, standing in the Arles night.
+  - Stars, moon and sun blowing out to white.
+  - Letters outstaying their station.
+- **An audit of every prop mark:** it found iris petals whose direction was their own normal.
+
+**Still visible.**
+
+- **The marks between the canvases are invention.** The paintings on the easels are his and nothing else in the land
+  is. The design's test for close calls, the hand or a nice picture, was answered the other way here, deliberately.
+- **The frame-rate numbers are headless, on this machine.** Integrated GPUs are unmeasured. Quality is adaptive, and
+  `?q=low` exists.
+- **The touch controls are written but untested on a phone.** The left thumb walks and the right looks.
+- **Nothing yet measures the new world the way M3 to M8 measured theirs.** The old runtime's harness went with it;
+  the new one's checks live in `window.vgu` and were driven from a scratch script, not a tool in this repo.
