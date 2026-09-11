@@ -49,7 +49,7 @@
    "dir": 0.0
   }
  },
- "_volume": "A room, on M5's terms rather than a landscape's: the volume is not a compromise between what the paint supports and what a body wants, it *is* the room -- 4.63 m wide, 3.80 m deep and 2.59 m to the beams, off-centre because the easel stood 2.23 m from the left wall and 2.39 m from the right. The half-extents are a little inside the walls so that a viewer stops short of the plaster rather than in it.",
+ "_volume": "A room, on M5's terms rather than a landscape's: the volume is not a compromise between what the paint supports and what a body wants, it *is* the room -- 4.63 m wide, 3.80 m deep and 2.59 m to the beams, off-centre because the easel stood 2.23 m from the left wall and 2.39 m from the right. The half-extents are a little inside the walls so that a viewer stops short of the plaster rather than in it. M8: the walk found the plaster anyway. Against the return a walker settles 0.81 of the ease past the edge and a runner never settled at all, so at 0.8 a viewer pushing forward stood 0.2 m inside the back wall and one holding Shift left the room. The step now gives out past the edge, a runner settles 0.72 of the ease out and a walker 0.45, and with the walls 0.3 m past the edge the ease is 0.3: a runner stops 8 cm short.",
  "volume": {
   "shape": "box",
   "half": [
@@ -60,7 +60,7 @@
    0.08,
    -1.9
   ],
-  "ease": 0.8
+  "ease": 0.3
  },
  "weave": {
   "mm": 1.1,

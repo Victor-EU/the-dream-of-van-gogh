@@ -83,9 +83,10 @@
   #when { position: absolute; right: 24px; bottom: 34px; font-size: 11px;
           letter-spacing: .06em; opacity: .45;
           text-shadow: 0 1px 10px rgba(0,0,0,.9); }
-  /* the same control, reachable by keyboard, per DESIGN 11 */
+  /* the same control, reachable by keyboard, per DESIGN 11 -- and by the keyboard
+     only: laid over the band it took every click and read it as tau, not a date */
   #scrubinput { position: absolute; left: 0; bottom: 0; width: 100%; height: 22px;
-                opacity: 0; pointer-events: auto; margin: 0; }
+                opacity: 0; pointer-events: none; margin: 0; }
   #scrubinput:focus-visible { outline: 1px solid rgba(255,240,210,.6); opacity: .01; }
 </style>
 </head>
@@ -515,7 +516,8 @@ const STROKE_VERT = /* glsl */`
   // second. uTime is frozen at ?still, which is what makes the stills stills.
   uniform float uCurlK, uCurlGain, uCurlRate, uTime;
 
-  varying vec3 vColor, vWorld, vNrm, vUp;
+  varying vec3 vColor, vWorld, vNrm, vUp, vLight;
+  uniform vec3 uLight;
   varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
 
   ${COMMON}
@@ -705,6 +707,21 @@ const STROKE_VERT = /* glsl */`
     return normalize(vec3(h0 - terrain(p.xz + vec2(1.0, 0.0)), 1.0,
                           h0 - terrain(p.xz + vec2(0.0, 1.0))));
   }
+  // M8: and the light turns with it. Facing the painter down its own ray is
+  // M5's cure for a room relit by its walls, and it holds only if the light
+  // turns too. Under one light fixed in the world a stroke facing back up a ray
+  // on the left took almost none of it and one on the lower right took all of
+  // it and the sheen: from where he stood, the Potato Eaters' left and top
+  // thirds came out at 0.6 of the painting and its right and bottom at 1.07.
+  // So a stroke that faces the painter is lit as the flat canvas is -- the same
+  // light, in the frame that canvas would have if it hung square across this
+  // ray: his up, as far as it is square to the ray, and across.
+  vec3 lightAcross(vec3 n0) {
+    vec3 y = vec3(0.0, 1.0, 0.0) - n0 * n0.y;
+    float ly = length(y);
+    y = ly > 1e-4 ? y / ly : normalize(vec3(0.0, 0.0, -1.0) - n0 * n0.z);
+    return uLight.x * cross(y, n0) + uLight.y * y + uLight.z * n0;
+  }
 
   void main() {
     // The scrub is one uniform. Strokes past it collapse to degenerate
@@ -747,7 +764,7 @@ const STROKE_VERT = /* glsl */`
     float t = aRow * max(arrive, ghost);
     float mt = 1.0 - t;
 
-    vec3 base, across3, up3;
+    vec3 base, across3, up3, light3 = uLight;
     // The magnification: metres of world per unit of canvas short edge. On a
     // hung canvas it is one number for the whole wall; lifted, it is how far
     // along the ray the stroke sits, so a mark on the far side of the plain is
@@ -766,6 +783,8 @@ const STROKE_VERT = /* glsl */`
       vec3 ahead = liftAt(kc + normalize(dk) * 0.002, ts);
       vec3 tan3 = normalize(ahead - base + vec3(1e-9, 0.0, 0.0));
       up3 = liftNormal(base, step(km.y, uHorizon));
+      if (uBuilt > 0.5 || uSkyOnly > 0.5 || uShell > 0.5 || step(km.y, uHorizon) > 0.5)
+        light3 = lightAcross(up3);
       across3 = normalize(cross(up3, tan3));
     } else {
       vec2 c0 = canvasToWorld(k0), c1 = canvasToWorld(k1), c2 = canvasToWorld(k2);
@@ -811,6 +830,7 @@ const STROKE_VERT = /* glsl */`
     vGhostF = ghost;
     vNrm = across3;
     vUp = up3;
+    vLight = light3;
     // the bow's slope constant; the fragment builds the normal from it, so the
     // paint has a rounded top rather than three flat facets
     vSlope = (w > 1e-6) ? (4.0 * h * taper / w) : 0.0;
@@ -826,7 +846,7 @@ const STROKE_VERT = /* glsl */`
 
 const STROKE_FRAG = /* glsl */`
   precision highp float;
-  varying vec3 vColor, vWorld, vNrm, vUp;
+  varying vec3 vColor, vWorld, vNrm, vUp, vLight;
   varying float vAcross, vHeight, vArrive, vSlope, vGhostF, vWidth, vPhase;
   uniform vec3 uLight, uEye;
   uniform float uFlat, uHeights, uAmbient, uFurrow, uFurrowMm, uXray;
@@ -881,7 +901,7 @@ const STROKE_FRAG = /* glsl */`
       return;
     }
 
-    vec3 l = normalize(uLight);
+    vec3 l = normalize(vLight);
     vec3 v = normalize(uEye - vWorld);
     vec3 hv = normalize(l + v);
     float ndl = max(dot(n, l), 0.0);
@@ -2098,21 +2118,33 @@ async function main() {
     body.pitch = Math.max(-1.45, Math.min(1.45, body.pitch - dy * 0.0022));
   };
   let dragging = false;
-  renderer.domElement.addEventListener('pointerdown', e => { dragging = true; e.target.setPointerCapture(e.pointerId); });
+  // DESIGN 6: drag to look, click for pointer lock. A held lock already sends
+  // every pointer event here, and capture under a lock throws InvalidStateError,
+  // which from M0a to M8 stopped the page on the second click. Capture only keeps
+  // a drag alive past the window's edge, so nothing about it may be fatal.
+  renderer.domElement.addEventListener('pointerdown', e => {
+    dragging = true;
+    if (!document.pointerLockElement) try { e.target.setPointerCapture(e.pointerId); } catch {}
+  });
   renderer.domElement.addEventListener('pointerup', () => { dragging = false; });
   renderer.domElement.addEventListener('pointermove', e => {
     if (document.pointerLockElement || dragging) look(e.movementX, e.movementY);
   });
   renderer.domElement.addEventListener('click', () => {
-    if (!document.pointerLockElement) renderer.domElement.requestPointerLock?.();
+    // Current Chrome answers with a promise, and a refused lock (the in-app
+    // pane refuses it outright) rejects it. Drag still looks; not an error.
+    if (!document.pointerLockElement) renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
   });
   addEventListener('keydown', e => {
     keys.add(e.code);
-    if (e.code === 'KeyZ') body.lying = body.lying > 0.5 ? 0 : 1;
+    // a held key repeats, and a toggle read from every repeat flickers
+    if (e.code === 'KeyZ' && !e.repeat) body.lying = body.lying > 0.5 ? 0 : 1;
     if (e.code === 'KeyC') showCaption();
   });
   addEventListener('keyup', e => keys.delete(e.code));
-  addEventListener('wheel', e => pushScrub(scrub - e.deltaY * 0.0006, 'wheel'), { passive: true });
+  // a hand on the scrub takes it from the playing, the wheel as much as the arrows
+  addEventListener('wheel', e => { pushScrub(scrub - e.deltaY * 0.0006, 'wheel'); playing = false; },
+                   { passive: true });
 
   // ---------------------------------------------------- the viewing volume --
   // DESIGN 4.4's rule, and the thing DESIGN 15 is most afraid of. Inside it you
@@ -2290,11 +2322,18 @@ async function main() {
   // opened, and how long after it opened they moved on. vg.beats() reads it.
   const nowS = () => performance.now() / 1000;
   const bandEl = document.getElementById('band');
-  let refusedTimer = 0;
+  let refusedTimer = 0, nudgeAt = -1;
   const refusedUI = () => {
     if (!bandEl) return;
-    bandEl.classList.remove('refused');
-    void bandEl.offsetWidth;                       // restart the nudge
+    // a held arrow pushes on every frame, and restarting the nudge on each one
+    // held it on its first frame, so the knob never moved: a push lands a new
+    // nudge only once the last has run its .45 s
+    const now = performance.now();
+    if (now - nudgeAt > 450) {
+      nudgeAt = now;
+      bandEl.classList.remove('refused');
+      void bandEl.offsetWidth;                     // restart the nudge
+    }
     bandEl.classList.add('refused', 'open');
     clearTimeout(refusedTimer);
     refusedTimer = setTimeout(() => bandEl.classList.remove('refused', 'open'), 1400);
@@ -2316,7 +2355,7 @@ async function main() {
         g.log.push({ at: +now.toFixed(2), how, pushes: 0, keySeconds: 0,
                      opened: null, left: null, next: null });
         brush.cut();
-      } else if (e && how !== 'play' && how !== 'key') e.pushes++;
+      } else if (e && how !== 'play' && how !== 'key' && how !== 'drag') e.pushes++;
       if (how !== 'play') refusedUI();
       t = g.at;
       break;
@@ -2368,6 +2407,9 @@ async function main() {
   addEventListener('keydown', e => {
     if (e.code !== 'Space') return;
     e.preventDefault();
+    // held, a key repeats: a toggle that read the repeats flickered play on
+    // and off for as long as space was down and left it wherever they ended
+    if (e.repeat) return;
     if (scrub >= 1) { setScrub(0); held = 0; }
     // past the last stroke there is nothing left to paint, so nothing to play
     else if (scrub >= PLAY_END - 1e-9) return;
@@ -2436,7 +2478,7 @@ async function main() {
     // and dragging it is the inverse: the band is dated, so a click somewhere in
     // the ten years has to come back as the tau that stands there. dateAt is
     // monotone, so twenty bisections put it inside a day.
-    band.addEventListener('pointerdown', e => {
+    const bandAt = e => {
       const r = band.getBoundingClientRect();
       const want = (e.clientX - r.left) / r.width;
       let lo = 0, hi = 1;
@@ -2444,9 +2486,21 @@ async function main() {
         const mid = 0.5 * (lo + hi);
         if (dateAt(mid) < want) lo = mid; else hi = mid;
       }
-      pushScrub(0.5 * (lo + hi), 'band');
+      return 0.5 * (lo + hi);
+    };
+    // M8: the drag this comment promised, now that the keyboard's slider no
+    // longer lies over the band and drags it by tau instead of by the date. A
+    // drag is one push at station 7's gate, however many moves it is made of.
+    let bandDrag = false;
+    band.addEventListener('pointerdown', e => {
+      bandDrag = true;
+      try { band.setPointerCapture(e.pointerId); } catch {}
+      pushScrub(bandAt(e), 'band');
       playing = false;
     });
+    band.addEventListener('pointermove', e => { if (bandDrag) pushScrub(bandAt(e), 'drag'); });
+    band.addEventListener('pointerup', () => { bandDrag = false; });
+    band.addEventListener('pointercancel', () => { bandDrag = false; });
   }
   if (slider) {
     slider.addEventListener('input', () => { pushScrub(parseFloat(slider.value), 'slider'); playing = false; });
@@ -3127,8 +3181,17 @@ async function main() {
       const moving = !still && (fwd || str);
       if (moving) {
         const m = 1 / Math.hypot(fwd || 0, str || 0);
-        body.x += (-sy * fwd + cy * str) * sp * dt * m;
-        body.z += (-cy * fwd - sy * str) * sp * dt * m;
+        // Past the edge the step outward gives out, and at `ease` metres it is
+        // gone. The return below pushes at 1.8 m/s and Shift walks at 4.64, so
+        // until M8 a runner simply outran it -- through a room's walls, out of
+        // any station, as far as they cared to hold the key. Now nothing gets
+        // further out than `ease`, and walking settles less than half of it out.
+        const give = (v, c, half, d) => {
+          const o = Math.abs(v - c) + Math.abs(d) - half;   // where this step would end
+          return o > 0 && d * (v - c) > 0 ? d * Math.max(0, 1 - o / EASE) : d;
+        };
+        body.x += give(body.x, CX, HX, (-sy * fwd + cy * str) * sp * dt * m);
+        body.z += give(body.z, CZ, HZ, (-cy * fwd - sy * str) * sp * dt * m);
         body.phase += dt * sp * 2.6;
       }
       // the eased return. It builds over `ease` metres and then holds at a
@@ -3373,6 +3436,7 @@ async function main() {
                rooms: canvases.filter(c => c && c.room).map(c => ({
                  title: c.spec.title,
                  wide: +(c.room.left + c.room.right).toFixed(3),
+                 left: +c.room.left.toFixed(3), right: +c.room.right.toFixed(3),
                  high: +c.room.ceil.toFixed(3), deep: +c.room.depth.toFixed(3),
                  vpMeasured: [+c.blob.vpU.toFixed(4), +c.blob.vpV.toFixed(4)],
                  vpAuthored: c.spec.axis ?? null,
@@ -3534,7 +3598,9 @@ async function main() {
       return b.count;
     },
   };
-  addEventListener('keydown', e => { if (e.code === 'KeyR') window.vg.reload(specs[0].blob); });
+  // a developer's key since M0a, and one key from W and D: behind ?debug
+  if (has('debug'))
+    addEventListener('keydown', e => { if (e.code === 'KeyR') window.vg.reload(specs[0].blob); });
 
   // ?walk=forward|wander|look runs the walker for ?walksec seconds and leaves
   // the numbers in vg.state.volume, so the instrument DESIGN 15 asks for can be

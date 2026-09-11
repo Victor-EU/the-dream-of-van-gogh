@@ -2681,6 +2681,87 @@ question and not the stills'.
   nothing before the crows or before they leave, and whether they saw the crows before — "in the corner of the eye
   since Arles" is true only if somebody says so afterwards without being asked about crows first.
 
+**A bug from M0a, found by the author at the first look.** The second click on the canvas put up *The page
+stopped.* over a piece that was still running. DESIGN 6 asks for drag to look and click for pointer lock, and M0a's
+`pointerdown` asked for pointer capture on every press; capture under a held lock throws `InvalidStateError`, and the
+page's catch-all showed it as the failure screen. Capture is now skipped under a lock and can no longer throw, and the
+lock's promise, which a refusing browser rejects (the in-app pane refuses it outright), is caught. It lived this long
+because nothing here has ever sent real input: `tools/shot.py` has no protocol client by design, and the pane refuses
+the lock. Checked with real input in headless Chrome over the DevTools protocol, from a throwaway driver on Node's own
+WebSocket: before the fix the second click stopped the page with the author's exact message; after it the lock held
+through a second and a third click with no exception, a 100 px drag turned the view by 0.22 rad and 100 px back under
+the lock returned it to 0, the pane's clicks leave the console clean, and M6's reference frame is still `6df366ea`.
+
+**A walk with a pair of hands, and what it met.** After the second click the author asked for a real walk and for
+the glitches it found to be fixed: the whole piece from bare canvas to the crows, with real input in real Chrome —
+keys held the way a person holds them, with the repeat a keyboard sends, the mouse, the wheel, the band — and a
+screenshot and the page's own numbers at every step. The in-app pane can neither hold a key nor take the lock, so it
+ran in headless Chrome over the DevTools protocol at 1440 × 813 CSS px and twice the pixels, 60 fps throughout. Past
+the second click it met seven things, and all seven are fixed:
+
+1. **Space and Z read every repeat.** A held key repeats, and both toggles took each repeat as a new press. Held for
+   1.25 s, space turned play on and off eleven times and left it paused; Z bobbed the eye between lying and standing
+   and left it standing. Both now ignore the repeat: the same holds change play once and leave it playing, and lay
+   the viewer down, 1.69 m to 0.24 m, and leave them there. M had the guard already.
+2. **R reloaded the first canvas.** A developer's key since M0a, one key from W and D and open to every viewer, that
+   refetched station 1's blob and rebuilt a chunk of it. It is behind `?debug`.
+3. **The refusal's nudge froze under the arrow.** A held arrow pushes on every frame and every push restarted the
+   knob's nudge, so it sat on its first frame: in 54 samples of a held arrow at the gate the knob moved 0 px, where one
+   push of the wheel moves it 4. A push now lands a new nudge only once the last has run, and a held arrow nudges the
+   full 3.98 px, again and again.
+4. **The light did not turn with the strokes that face the painter.** M5's fourth lesson turned a room's strokes — and
+   a sky's, and a shell's — to face back down their own rays, so that a room would not relight the painting. The light
+   stayed one direction fixed in the world, so a stroke facing up a ray on the left took almost none of it and one on
+   the lower right took all of it and the sheen: from where he stood, the Potato Eaters' left and top thirds came out
+   at 0.62 and 0.59 of the flat painting and its right and bottom at 1.07 and 1.09, the lower right in grey-white
+   sheen; the Night Café spread 1.67×; the wheatfield's sky kept 86% of the painting's contrast with its ground. A
+   stroke that faces the painter is now lit as the flat canvas is — the same light, in the frame that canvas would have
+   hung square across its ray — and the spreads are 1.20× and 1.18×, which is the crop rather than the light, the
+   sheen is gone, and the sky keeps 91%. Ground strokes and hung canvases are lit as they were. M6's reference frame
+   moves by the Bedroom's few early strokes, mean 1.3/255 over 4.4% of its pixels, and is re-baselined at `0d7c416f`.
+5. **Every room's walls could be walked through.** The eased return pushes back at 1.8 m/s against a walk of 1.45, so
+   a viewer pushing a wall settles 0.81 of `ease` past the volume's edge, and every room put its walls nearer than
+   that. Three seconds of pushing stood the viewer 0.42 m inside the Bedroom's plaster on either side, 0.22 m through
+   the Potato Eaters' back wall, 0.29 m through its right one and 0.19 m through the corridor's near canvases.
+6. **Running left every station for good.** Shift walks at 4.64 m/s, which the return never catches: three seconds of
+   it carried the viewer 8 to 10 m out of any room, and three seconds after letting go they were still 2 to 4 m out.
+   DESIGN 15's fear, never measured because nothing had ever held Shift.
+
+   For both: the step outward now gives out past the edge and is gone at `ease` metres, judged by where the step would
+   end, so a runner settles at most 0.72 of `ease` out and a walker 0.45; and the three rooms' `ease` is set by their
+   own walls rather than by feel — 0.3 at the Potato Eaters, 0.65 in the corridor, 0.18 in the Bedroom, each written
+   into its station file with the reason. Walking or running, the viewer now stops 0.12–0.19 m short of every wall.
+   `vg.state.rooms` reports each room's walls, which is how those margins were read rather than guessed.
+7. **The band's clicks went to the keyboard's slider.** DESIGN 11's control for the keyboard is a range input laid,
+   invisible, over the band, and it took every click and every drag and read them as tau rather than as a date: a
+   click on June 1888 asked for tau 0.79, which is past station 7, and landed on its gate in December. The band's own
+   handler, dated by bisection, had never been reached by a mouse. The slider is the keyboard's alone now, and the
+   band takes the click and, as its comment always said, the drag: a click on 20 June 1888 lands in the Harvest at
+   tau 0.3734, a drag keeps the knob within 0.01% of the pointer, and a drag across station 7's gate is one arrival and
+   no pushes in `vg.beats()`, however many moves it is made of. The wheel now takes the scrub from the playing as the
+   arrows, the band and the slider do: pushed against the refusal with it, the final walk went on up the road the
+   moment the gate opened, and its four views of the stopped canvas were of the dark.
+
+The harness's lessons, because headless Chrome is not a pair of hands everywhere. Under the pointer lock, which it
+grants only after `Page.bringToFront`, any key held with its repeat stalls the renderer for tens of seconds — the same
+for Q, which the page ignores, and not at all without the repeat — so the walk looks by dragging, which DESIGN 6 gives
+the viewer anyway, and the lock was verified on its own. And a key the page does not consume goes back to the browser
+to look for a menu shortcut, which in headless Chrome on macOS segfaults in AppKit's menu validation
+(`-[NSMenu _enableItems]`): twice, on Shift+S and on a held arrow. So the final walk scrubs with the wheel and walks
+without the repeat, held arrows and Shift were measured with DOM key events, and a walk that loses its browser resumes
+at the station it was in.
+
+
+**Verified, with the fixes in.** The final walk went through the whole piece in one browser, 97 frames, and the
+page threw nothing: no exception, no console error, no failed request, never the failure screen, 60 fps at the
+median and 56.3 at the worst. Space held for 1.25 s changed the playing not once; every station paused on its own
+last stroke; at station 7 six turns of the wheel nudged the knob its 3.98 px and the gate opened at 6.00 s; at the field
+the last stroke stopped the playing and space did nothing there; the wheel reached the end, where there were 0 crows at
+20 s, 9 at 37 s and 9 at 44 s; and space at the very end began again. Station 7 was walked again after the wheel was
+fixed, and its four views of the stopped canvas are of the canvas. `tools/beat.py` holds 24 of 24, `tools/station.py` and
+`tools/letters.py --check` exit 0, and M6's reference frame is `0d7c416f`. The frames and the before-and-after sheets went to
+the author and live in the session's scratchpad; none of them is committed.
+
 **Still open, and named rather than fixed.**
 
 - **Nobody has met station 7.** Everything above is a mechanism doing what DESIGN 7 says; whether it reads as a bug, a
@@ -2698,6 +2779,16 @@ question and not the stills'.
   says so unprompted.
 - **The Berceuse's goldens are a stand-in's**, committed as every canvas's are, and they go when it does.
 - **The hint line still offers space** where space at the end does nothing. The hint is M9's.
+- **The walk's driver is throwaway.** It lives in the session's scratchpad and not in `tools/`; M9's touch and
+  accessibility passes will want one that stays, and the two ways headless Chrome fails a pair of hands, above,
+  are why that is not a small job.
+- **The date goes back six weeks on one road.** From the Yellow House to the night of Arles the band's date runs from
+  October back to September 1888, 42 days, because station 6's September lies inside station 5's span: the knob steps
+  backwards while tau goes forwards, and a click in those weeks has two answers, of which the bisection takes one.
+  `vg.arc` says the arc holds if the date never goes backwards; here it does.
+- **The Night Café can be walked out of.** It is a room inside an open station: station 6's volume is the two
+  landscapes' 26 by 16 m, so the café's walls are not the volume's and nothing keeps a viewer inside them. A
+  volume of its own, or a room you may leave, is a design question rather than a margin.
 
 **Not started, per scope.** M9: measured quality, touch, photo mode, the accessibility pass, the performance pass,
 the disclosure paragraph, `LICENSE`. The mistral, the cicadas and the rooks, and with them any voice for the crows.

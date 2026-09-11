@@ -114,7 +114,7 @@
    "dir": 0.0
   }
  },
- "_volume": "A corridor rather than a slab: two and a half metres to each side, which keeps the viewer between the near canvases rather than through them, and sixteen forward, which is the length of the hang. Every canvas is 3.6 m tall, which is the rule the whole piece hangs a wall by and not a decision taken here -- so the little cardboard self-portrait, 19 cm in the world, is the same height on this wall as the metre-wide Montmartre. A gallery hangs to a common centre line too. What it costs is that the corridor does not tell you he was painting on scraps, and BUILD.md M6 says so. Like M5's room, this volume is the thing itself rather than a compromise between what the paint supports and what a body wants.",
+ "_volume": "A corridor rather than a slab: two and a half metres to each side, which keeps the viewer between the near canvases rather than through them, and sixteen forward, which is the length of the hang. Every canvas is 3.6 m tall, which is the rule the whole piece hangs a wall by and not a decision taken here -- so the little cardboard self-portrait, 19 cm in the world, is the same height on this wall as the metre-wide Montmartre. A gallery hangs to a common centre line too. What it costs is that the corridor does not tell you he was painting on scraps, and BUILD.md M6 says so. Like M5's room, this volume is the thing itself rather than a compromise between what the paint supports and what a body wants. M8: at an ease of 1.2 a walker pushing sideways settled a metre past the edge, through the near canvases, and a runner went through everything. The step now gives out past the edge, a runner settles 0.72 of the ease out and a walker 0.45, and at 0.65 a runner stops 0.13 m short of the near canvases.",
  "volume": {
   "shape": "slab",
   "half": [
@@ -125,7 +125,7 @@
    0.0,
    -15.0
   ],
-  "ease": 1.2
+  "ease": 0.65
  },
  "weave": {
   "mm": 0.9,

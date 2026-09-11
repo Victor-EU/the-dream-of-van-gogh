@@ -122,7 +122,7 @@
    "dir": 0.0
   }
  },
- "_volume": "The first viewing volume in the piece that is not a compromise, and the first that is not centred on the painter's standpoint -- because a room is not centred on where he put the easel. It is the room, less a margin: the walls stand at 2.39 m to the left, 0.80 m to the right and 4.37 m back, and you may walk from 0.3 m behind the standpoint to 3.5 m into the room. The three canvases hand over at 0, 1.2 and 2.4 m, which puts the last of them two metres short of the back wall rather than against it -- past that the room stays the third version and the last metre is for looking at it. Station 4's lifted plain thins to a quarter by 6 m and station 8's shell tears at 2.34; this one has an actual wall at the edge of it, which is why the ease is short. Nothing is being eased back from a measurement here: it is being stopped by a room.",
+ "_volume": "The first viewing volume in the piece that is not a compromise, and the first that is not centred on the painter's standpoint -- because a room is not centred on where he put the easel. It is the room, less a margin: the walls stand at 2.39 m to the left, 0.80 m to the right and 4.37 m back, and you may walk from 0.3 m behind the standpoint to 3.5 m into the room. The three canvases hand over at 0, 1.2 and 2.4 m, which puts the last of them two metres short of the back wall rather than against it -- past that the room stays the third version and the last metre is for looking at it. Station 4's lifted plain thins to a quarter by 6 m and station 8's shell tears at 2.34; this one has an actual wall at the edge of it, which is why the ease is short. Nothing is being eased back from a measurement here: it is being stopped by a room. M8: short, but not short enough. Against the return a walker settles 0.81 of the ease past the edge and a runner did not settle at all, so a viewer pushing the right wall stood 0.42 m inside the plaster and one holding Shift left the room. The step now gives out past the edge, a runner settles 0.72 of the ease out and a walker 0.45; with the walls 0.2 m past the edge the ease is 0.18, and a runner stops 7 cm from them.",
  "volume": {
   "shape": "box",
   "half": [
@@ -133,7 +133,7 @@
    -0.8,
    -1.6
   ],
-  "ease": 0.8
+  "ease": 0.18
  },
  "_weave": "Ordinary Tasset canvas, the same as station 4's -- the jute is a year away and belongs to Saint-Remy. Which is a quiet inconsistency worth naming: two of these four canvases were painted at Saint-Remy on whatever was to hand, and they are shown on Arles cloth because the room is Arles. The substrate is a property of the room here rather than of the canvas, and that is the price of putting three canvases in one space.",
  "weave": {
