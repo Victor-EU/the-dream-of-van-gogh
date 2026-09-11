@@ -2927,3 +2927,33 @@ because the ending is painted with them.
 - Saint-Rémy, Auvers and the wheatfield were photographed from the same standpoints as during M9. They have the same
   props, skies and easels.
 - `tools/station.py` passes over the ten station files that remain.
+
+### After M9 — A quicker walk, and a level eye
+
+**What was asked.** Two things about the walk. It should be 1.5 times as fast. And the eye should stop bobbing, which
+felt like riding a horse and which people did not understand.
+
+**What changed.** Only `main.js`.
+
+- Every way of walking is 1.5 times as fast:
+  - the arrows walk at 4.5 m/s, up from 3;
+  - Shift runs at 10.5 m/s, up from 7;
+  - space walks at 3.6 m/s between places, up from 2.4, and still slows to 40% of that at a station;
+  - a flick of the wheel carries half as far again;
+  - the side step and the thumb pad follow the walking speed, and turning is unchanged.
+- The bob is gone. The eye used to rise and fall 2.8 cm each way, 2.6 times a second at a walk and 6.4 when running,
+  which is a trot, not a step. It now stays level at eye height above the ground. The footsteps still sound, and they
+  quicken with the pace as before.
+
+**How it was verified.** In headless Chrome, before and after, with a probe that holds the keys and logs every frame.
+It uses DOM key events and a synthetic wheel event.
+
+| | before | after |
+|---|---|---|
+| ↑ held | 3.00 m/s | 4.50 m/s |
+| Shift + ↑ | 7.00 m/s | 10.50 m/s |
+| space, between places | 2.40 m/s | 3.60 m/s |
+| one flick of the wheel | 1.67 m | 2.49 m |
+| the eye off its height | ±2.8 cm, 2.6 times a second walking, 6.4 running | 0.000 cm on every frame, at every speed |
+
+No exceptions and no console errors, at 60 fps. The probe lives in the session's scratchpad, like M9's driver.

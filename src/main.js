@@ -25,7 +25,7 @@ function fail(title, err) {
 addEventListener('error', e => fail('Something stopped the paint.', e.error || e.message));
 addEventListener('unhandledrejection', e => fail('Something stopped the paint.', e.reason));
 
-const WALK = 3.0, RUN = 7.0, TURN = 1.9, LOOK = 0.0032, EYE = 1.65;
+const WALK = 4.5, RUN = 10.5, TURN = 1.9, LOOK = 0.0032, EYE = 1.65;
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const roadYaw = z => Math.atan2(-J.roadSlope(z), 1);
 
@@ -70,7 +70,7 @@ async function boot() {
 
   // -------------------------------------------------------------- the body --
   const body = { x: 0, z: J.ZSTART, yaw: 0, pitch: 0.02, pitchT: null, v: 0, vs: 0, wheelV: 0,
-                 lie: 0, lieT: 0, bob: 0, auto: false };
+                 lie: 0, lieT: 0, auto: false };
   const startIdx = has('at') ? clamp(parseInt(Q.get('at'), 10) || 1, 1, J.NST) - 1 : -1;
   if (startIdx >= 0) body.z = J.stationZ(startIdx) + 18;
   body.x = J.roadX(body.z);
@@ -117,7 +117,7 @@ async function boot() {
 
   const autoSpeed = () => {
     const d = Math.abs(body.z - J.stationZ(J.nearestStation(body.z)));
-    return 2.4 * (0.4 + 0.6 * smoothstep(6, 28, d));
+    return 3.6 * (0.4 + 0.6 * smoothstep(6, 28, d));
   };
 
   function step(dt) {
@@ -125,7 +125,7 @@ async function boot() {
     if (begun && !(jump && !jump.done)) {
       body.yaw += inp.dx * LOOK;
       if (inp.dy) { body.pitch = clamp(body.pitch - inp.dy * LOOK, -1.25, 1.45); body.pitchT = null; }
-      body.wheelV = clamp(body.wheelV - inp.wheel * 0.018, -RUN, RUN);
+      body.wheelV = clamp(body.wheelV - inp.wheel * 0.027, -RUN, RUN);
       const f = clamp(controls.forward, -1, 1), st = clamp(controls.strafe, -1, 1), tr = controls.turn;
       if (f || st || tr) { if (body.auto) { body.auto = false; ui.setAuto(false); } }
       if ((f || st) && body.lieT) { body.lieT = 0; body.pitchT = 0.02; }
@@ -152,7 +152,6 @@ async function boot() {
         const dx = nx - c.x, dz = nz - c.z, d = Math.hypot(dx, dz);
         if (d < c.r && d > 1e-4) { nx = c.x + dx / d * c.r; nz = c.z + dz / d * c.r; }
       }
-      body.bob += Math.hypot(body.v, body.vs) * dt * 1.8;
       body.x = nx; body.z = nz;
     }
     if (body.pitchT !== null) {
@@ -239,8 +238,8 @@ async function boot() {
     const title = begun ? 0 : 1;
     const sway = title * (0.16 * Math.sin(time * 0.06) + 0.05 * Math.sin(time * 0.17));
     const eye = lerp(EYE, 0.3, body.lie);
-    const bobY = Math.sin(body.bob * Math.PI) * 0.028 * Math.min(1, Math.abs(body.v) / WALK) * (1 - body.lie);
-    camera.position.set(body.x, J.terrainH(body.x, body.z) + eye + bobY, body.z);
+    // the eye stays level while you walk: a bob here read as riding, not walking
+    camera.position.set(body.x, J.terrainH(body.x, body.z) + eye, body.z);
     camera.rotation.y = -(body.yaw + sway);
     camera.rotation.x = body.pitch + title * (0.13 + 0.03 * Math.sin(time * 0.11));
     camera.updateMatrixWorld();
