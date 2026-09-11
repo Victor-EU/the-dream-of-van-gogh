@@ -25,6 +25,13 @@
 > Vineyard*, and it stands where station 7 stood: the road goes from the night of Arles through a red vineyard in
 > November 1888 to Saint-Rémy. The land is painted from what he wrote he saw there, and his canvas stands in it on an
 > easel. `BUILD.md` records it.
+>
+> **The coda, on the author's word.** Then the author asked for the walk to end on *Self-Portrait as a Painter*, as a
+> tribute to him: a giant portrait at the end of the last scene. §15 had left the coda open between nothing and the
+> canvases in their museums, and M8 built the nothing. The answer is neither: it is the painter. Past the end of the
+> road, beyond station 11's bare canvas, his portrait stands 36 m tall on the easel every station has, scaled to hold
+> it. It paints itself from its own stroke record once you are there, and the end card waits for it. `BUILD.md`
+> records it.
 
 A single web page. You begin on bare primed canvas — white, woven, nothing on it but a charcoal line going forward.
 You drag one control, and the world starts being painted around you: strokes arriving in order, in his direction, at
@@ -604,6 +611,7 @@ it is **does this have a stroke system worth standing inside.** That admits the 
 which are not places at all, and it lets us drop the geographic filler that a promenade would have needed.
 
 ```
+                     his portrait, as a painter, past the end of the road   (added after M9)
                                         bare primed canvas, and the crows
                                                     ▲
                             [10] THE WHEATFIELD — 27 July 1890
@@ -647,7 +655,7 @@ which are not places at all, and it lets us drop the geographic filler that a pr
 | 8 | **Saint-Rémy** | 1889 | The walled garden, *Irises* as the literal ground at your feet — he painted them in that garden. Then the window, and the night: **The Starry Night as a sky, overhead, each spiral turning along its own curl.** Cypresses. Olive groves where the ground itself writhes. The summit of the piece, and the reason to lie down. | lifted + shelled |
 | 9 | **Auvers** | May–Jul 1890 | Descend into cool green and grey-blue. Thatch, *Daubigny's Garden*, the church with its two paths splitting around it. The canvases go double-square here (50 × 100 cm) — so **the frame of the world itself widens**, which the viewer will feel and not notice. | lifted |
 | 10 | **The wheatfield** | 27 Jul 1890 | Three paths. Crows — the only living creatures in the universe, and if the viewer looks back they have been in the corner of the eye since Arles. The rush with no holds. Then the strokes stop arriving and you are standing on bare primed canvas with the field behind you. | lifted |
-| 11 | **After** | — | Nothing, held far too long. Then the crows again, and the end. | — |
+| 11 | **After** | — | Nothing, held far too long. Then the crows again, and the end. After M9, on the author's word, the road ends at his portrait: *Self-Portrait as a Painter*, 36 m tall on a giant easel past the bare canvas, painting itself. | — (the coda added after M9) |
 
 *M3 builds station 4 and the treatment column moves for it: **lifted**, not shelled. Shelled is per-stroke depth and
 that is M4's; what M3 establishes is that the lifted treatment is not a fallback but the thing the canvas can
@@ -1202,6 +1210,9 @@ Van Gogh universe/
   *M8 builds the first of the two — nothing, held twenty-four seconds, then the crows — because it is this document's
   position, and leaves the museum coda unbuilt. BUILD M8 says the decision is made there; it is the author's, and it
   is asked for rather than assumed.*
+  *After M9 the author decided it, and the answer is neither of the two: the walk ends on the painter. His*
+  Self-Portrait as a Painter *stands past the end of the road, giant, and paints itself; what is left of the nothing
+  is the blank canvas held before it. `BUILD.md`, after M9, records it.*
 - **Where the room came from, and whether authoring it is enough.** *Opened at M5. `tools/room.py` cannot recover a
   vanishing point from either the stroke record or the scan's own line segments, and says precisely what that would
   have taken — a fifth of the paint on the room's lines, drawn to within six degrees. So a built room's six numbers

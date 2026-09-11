@@ -2,7 +2,8 @@
 // in blossom, haystacks, the Yellow House, the café terrace and the gaslit
 // Rhône, the red vineyard, the cypress under the Starry Night, the church at
 // Auvers -- and at each station an easel, where his painting of the place will
-// paint itself.
+// paint itself. Past the end of the road there is one more easel, as tall as a
+// church tower, for his portrait.
 import * as THREE from 'three';
 import { StrokeBuilder, CoreBuilder } from './strokes.js';
 import * as J from './journey.js';
@@ -321,6 +322,65 @@ function easelsAt(c, list) {
   }
 }
 
+// ------------------------------------------------------------------ the coda --
+// His portrait at the end of the road. It stands past where the road runs out, beyond the bare canvas of the last
+// station, on the easel every station has, grown to hold a canvas as tall as a church tower. It is turned to face
+// the place where the walk on its own stops, and its timbers are the ochres of the easel in the portrait. It is a
+// mesh of its own, not the station's, because canvases.js says when it is there.
+const EASEL = P(['#b8904e', '#a8844e', '#c8a060', '#9c7c4a', '#b89660', '#d0b078', '#8a6a40']);
+const EASEL_LIT = P(['#e0c488', '#e8d4a0', '#d8bc7c']), EASEL_CORE = lin('#6a5032');
+
+// one timber of the big easel: a square core, painted in in segments from the ground up, and marks down all four
+// faces so that it reads from the side as well as from the front
+function timber(st, R, a, b, hw, facing, top) {
+  const v = sub3(b, a), L = Math.hypot(v[0], v[1], v[2]), d = norm3(v);
+  const s1 = norm3(cross3(d, facing)), s2 = norm3(cross3(s1, d));
+  const q = (p, i, j) => add3(p, add3(mul3(s1, i * hw), mul3(s2, j * hw)));
+  const ord = y => 0.04 + 0.86 * clamp((y - st.b) / top, 0, 1);
+  const segs = Math.max(1, Math.round(L / 5));
+  for (let k = 0; k < segs; k++) {
+    const p0 = add3(a, mul3(v, k / segs)), p1 = add3(a, mul3(v, (k + 1) / segs)), o = ord(Math.min(p0[1], p1[1])) + 0.03;
+    for (const [i0, j0, i1, j1] of [[-1, -1, 1, -1], [1, -1, 1, 1], [1, 1, -1, 1], [-1, 1, -1, -1]])
+      st.C.quad(q(p0, i0, j0), q(p0, i1, j1), q(p1, i1, j1), q(p1, i0, j0), EASEL_CORE, o);
+  }
+  for (const [n, s] of [[s2, s1], [mul3(s2, -1), s1], [s1, s2], [mul3(s1, -1), s2]])
+    for (const r of [-0.5, 0.5])
+      for (let t = R() * 1.2; t < L; t += R.range(0.85, 1.35)) {
+        const p = add3(add3(a, mul3(d, t)), add3(mul3(n, hw * 1.03), mul3(s, r * hw)));
+        const col = jitter(R.pick(n[1] > 0.35 && R() < 0.6 ? EASEL_LIT : EASEL), R, 0.07);
+        st.S.add(p, d, n, R.range(0.55, 0.85), hw * R.range(0.4, 0.55), col, { bend: R.range(-0.15, 0.15), order: ord(p[1]) + R() * 0.04 });
+      }
+}
+
+function coda(c, cv) {
+  const R = c.R, slug = cv.blob.split('/').pop().replace('-canvas.bin', '');
+  const [rw, rh] = SIZES[slug] || [0.4945, 0.651];
+  const H = cv.height, W = H * rw / rh, k = H / 2.3, ledge = 4, hw = 0.55;
+  // where the walk on its own stops, and which way it is looking there
+  const zv = J.ZEND + 4, xv = c.rx(zv), yv = Math.atan2(-J.roadSlope(zv), 1);
+  const z = zv - cv.beyond, x = xv + Math.tan(yv) * cv.beyond, yaw = Math.atan2(xv - x, zv - z);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), nrm = [sy, 0, cy], right = [cy, 0, -sy];
+  const b = c.gy(x, z), top = ledge + H + 0.3 * k;
+  // the station easel's timbers, scaled: the front legs lean back from their feet to behind the canvas's top,
+  // so the canvas stands clear in front of them where it is lowest
+  const vc = 0.12 * k - 0.22 * k * ledge / top + hw + 0.3;
+  const ox = x - nrm[0] * vc, oz = z - nrm[2] * vc;
+  const at = (u, y, v) => [ox + right[0] * u + nrm[0] * v, b + y, oz + right[2] * u + nrm[2] * v];
+  const st = { S: new StrokeBuilder(), C: new CoreBuilder(), b, u: { uProgress: { value: 0 }, uFogDen: { value: 0.01 } } };
+  for (const s of [-1, 1]) timber(st, R, at(s * W * 0.36, 0, 0.12 * k), at(s * 0.07 * k, top, -0.1 * k), hw, nrm, top);
+  timber(st, R, at(0, 0, -1.05 * k), at(0, top - 0.1 * k, -0.12 * k), hw, nrm, top);
+  timber(st, R, at(-W / 2 - 0.1 * k, ledge - 0.3, vc + 0.35), at(W / 2 + 0.1 * k, ledge - 0.3, vc + 0.35), 0.45, nrm, top);
+  timber(st, R, at(-0.2 * k, ledge + H + 0.2, vc + 0.3), at(0.2 * k, ledge + H + 0.2, vc + 0.3), 0.45, nrm, top);
+  for (const [u, v] of [[-W * 0.36, 0.12 * k], [W * 0.36, 0.12 * k], [0, -1.05 * k]]) {
+    const p = at(u, 0, v);
+    c.colliders.push({ x: p[0], z: p[2], r: hw + 0.5 });
+  }
+  c.stand = st;
+  c.easels.push({ slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'), title: cv.title, date: cv.date,
+    collection: cv.collection, key: `${c.i}-coda`, x, y: b + ledge + H / 2, z, yaw, w: W, h: H, station: c.i,
+    lift: 40, edge: k, grain: 0, gain: 1.1, stand: st, coda: { hold: cv.hold, paint: cv.paint, easel: 6, haze: 0.12, foot: 7 } });
+}
+
 function haystack(c, x, z, R0 = 2.2, H = 3.2, o = {}) {
   const R = c.R; c.at(x, z);
   const b = c.gy(x, z) - 0.1;
@@ -509,25 +569,41 @@ function cafe(c, x, z, yaw) {
 
 // ------------------------------------------------------------------ crows --
 class Crows {
-  constructor(U) {
+  constructor(U, coda) {
     const R = rng(777);
     this.birds = [];
     const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 7: 2, 8: 2, 9: 16, 10: 9 };   // birds by place on the road, from 0; none over the vineyard
     for (const [si, n] of Object.entries(plan)) {
       const z0 = J.stationZ(+si), x0 = J.roadX(z0);
-      for (let k = 0; k < n; k++)
-        this.birds.push({ cx: x0 + R.range(-26, 26), cy: R.range(9, 22), cz: z0 - R.range(-6, 42), R: R.range(6, 18),
-                          w: R.range(0.12, 0.3) * R.sign(), ph: R() * 6.28, fl: R.range(6, 9), s: R.range(1.0, 1.5) });
+      // past the last field they circle his portrait, if it is there, from the height of his hands to over its
+      // top: out on the bare canvas they are what says how big it is
+      const round = !!coda && +si === J.NST - 1;
+      for (let k = 0; k < n; k++) {
+        const b = { cx: x0 + R.range(-26, 26), cy: R.range(9, 22), cz: z0 - R.range(-6, 42), R: R.range(6, 18),
+                    w: R.range(0.12, 0.3) * R.sign(), ph: R() * 6.28, fl: R.range(6, 9), s: R.range(1.0, 1.5) };
+        if (round) Object.assign(b, { cx: coda.x + (b.cx - x0) * 0.75, cy: 14 + (b.cy - 9) * 2.4, cz: coda.z + 4 + (z0 - b.cz) * 0.6, round });
+        this.birds.push(b);
+      }
     }
-    const S = new StrokeBuilder(), ink = lin('#0b0c12');
-    for (let i = 0; i < this.birds.length * 3; i++) S.add([0, -99, 0], [1, 0, 0], [0, 1, 0], 0.3, 0.07, ink, { order: 0 });
-    this.mesh = S.build(U, { uProgress: { value: 1 } });
-    const at = this.mesh.geometry.attributes;
-    this.A = at;
+    // those keep the portrait's own haze, so that they are no paler than it is and are not there before it
+    const ink = lin('#0b0c12');
+    const flock = (birds, extra = {}) => {
+      const S = new StrokeBuilder();
+      for (let i = 0; i < birds.length * 3; i++) S.add([0, -99, 0], [1, 0, 0], [0, 1, 0], 0.3, 0.07, ink, { order: 0 });
+      const mesh = S.build(U, { uProgress: { value: 1 }, ...extra });
+      return { birds, mesh, A: mesh.geometry.attributes };
+    };
+    this.flocks = [flock(this.birds.filter(b => !b.round))];
+    if (coda) this.flocks.push(flock(this.birds.filter(b => b.round), { uFogDen: coda.stand.u.uFogDen }));
+    this.mesh = new THREE.Group();
+    for (const f of this.flocks) this.mesh.add(f.mesh);
   }
   update(t) {
-    const P2 = this.A.iPos.array, D = this.A.iDir.array, N = this.A.iNrm.array, S = this.A.iShape.array;
-    this.birds.forEach((b, i) => {
+    for (const f of this.flocks) this.fly(f, t);
+  }
+  fly({ birds, A }, t) {
+    const P2 = A.iPos.array, D = A.iDir.array, N = A.iNrm.array, S = A.iShape.array;
+    birds.forEach((b, i) => {
       const a = b.ph + b.w * t;
       const p = [b.cx + b.R * Math.cos(a), b.cy + 1.4 * Math.sin(a * 0.7 + b.ph), b.cz + b.R * 0.6 * Math.sin(a)];
       const hd = norm3([-b.R * Math.sin(a) * b.w, 0.98 * Math.cos(a * 0.7 + b.ph) * b.w, b.R * 0.6 * Math.cos(a) * b.w]);
@@ -539,7 +615,7 @@ class Crows {
       set(1, add3(p, mul3(wr, 0.36 * b.s)), wr, norm3(cross3(hd, wr)), 0.36 * b.s, 0.08 * b.s);
       set(2, p, hd, UP, 0.2 * b.s, 0.075 * b.s);
     });
-    this.A.iPos.needsUpdate = this.A.iDir.needsUpdate = this.A.iNrm.needsUpdate = this.A.iShape.needsUpdate = true;
+    A.iPos.needsUpdate = A.iDir.needsUpdate = A.iNrm.needsUpdate = A.iShape.needsUpdate = true;
   }
 }
 
@@ -717,7 +793,7 @@ const BUILDERS = [
   c => {                                             // 10 Auvers, July 1890: the wheatfield
     easelsAt(c, [[0, 1, 4, 3.6]]);
   },
-  () => {},                                          // 11 after
+  c => { if (c.st.json.coda) coda(c, c.st.json.coda); },   // 11 after; past it, his portrait
 ];
 
 export class World {
@@ -740,10 +816,18 @@ export class World {
       }
       g.visible = false;
       this.group.add(g);
+      // the coda's easel is not the station's to show: canvases.js says when it is there, and paints it in
+      if (c.stand) {
+        const sg = new THREE.Group();
+        sg.add(c.stand.C.build(U, c.stand.u), c.stand.S.build(U, c.stand.u));
+        sg.visible = false;
+        this.group.add(sg);
+        c.stand.g = sg;
+      }
       this.easels.push(...c.easels); this.lamps.push(...c.lamps); this.colliders.push(...c.colliders);
       this.st.push({ g, u, z0: c.z0, progress: 0, started: false, movers: c.movers, strokes: c.S.n });
     });
-    this.crows = new Crows(U);
+    this.crows = new Crows(U, this.easels.find(e => e.coda));
     this.group.add(this.crows.mesh);
     this._near = [];
   }

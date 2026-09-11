@@ -15,6 +15,8 @@ const CHORDS = [
   [146.8, 220.0, 261.6, 349.2],   // the wheatfield: D minor seventh
   null,                           // after
 ];
+// his portrait at the end of the road brings a chord back into the silence after: F, Paris's key, where he painted it
+const CODA = CHORDS[1];
 
 function noiseBuffer(ctx, sec, colour) {
   const n = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, n, ctx.sampleRate);
@@ -134,7 +136,7 @@ export class Sound {
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.06 * Math.min(1, speed / 3), t + 0.004); g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
     s.connect(f).connect(g).connect(this.master); s.start(t); s.stop(t + 0.15);
   }
-  update({ s, v, dt, time, stations, painting = 0 }) {
+  update({ s, v, dt, time, stations, painting = 0, coda = false }) {
     if (!this.ctx || !this.on) return;
     const t = this.ctx.currentTime;
     const a = Math.floor(s), b = Math.min(a + 1, stations.length - 1), f = s - a;
@@ -152,10 +154,10 @@ export class Sound {
     const speed = Math.abs(v);
     if (speed > 0.4) { this.phase += dt * (1.2 + speed * 0.27); if (this.phase > 1) { this.phase -= 1; this.step(speed); } }
     else this.phase = 0.6;
-    const k = Math.round(s);
+    const k = coda ? 'coda' : Math.round(s);
     if (k !== this.chord) {
       this.chord = k;
-      const ch = CHORDS[k];
+      const ch = coda ? CODA : CHORDS[k];
       this.padG.gain.setTargetAtTime(ch ? 0.03 : 0, t, ch ? 2.5 : 1.2);
       if (ch) this.voices.forEach((o, i) => o.frequency.setTargetAtTime(ch[i], t, 1.6));
     }

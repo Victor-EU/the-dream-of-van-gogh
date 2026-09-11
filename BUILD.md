@@ -3128,3 +3128,121 @@ screenshots taken during a run.
 - **A clone without the pipeline's output gets the bare veil**, because the stroke records are not in the repository.
 - **The lift's zoom enlarges the canvas's pixels**, 2.2 times at 16:9 and more in a wider window, while it dissolves.
 - **Measured headless on this machine only**, not on a phone or an integrated GPU.
+
+### After M9 — The coda: his portrait at the end of the road
+
+**What was asked.** To end the walk on *Self-Portrait as a Painter* (Van Gogh Museum, s0022V1962): a giant portrait
+at the end of the final scene, as a tribute to him. The walk ended at station 11, *After*: bare primed canvas, no
+date, nine crows, and a card with his name and dates. DESIGN §15 had left the coda open between nothing and the
+canvases in their museums. M8 built the nothing and called the decision the author's.
+
+**What was decided.**
+
+- **Past the road, not in a station.** The portrait stands 80 m past the end of the road, where the walk on its own
+  now stops (`ZEND + 4`). It is centred on the line of sight from there and turned to face it. It is not a station
+  and has no share of τ. The line along the bottom is full where the road ends, and what is past it is the tribute,
+  not more of the life.
+- **36 m tall and 27.35 m wide**, at the canvas's own aspect, with its bottom edge 4 m up. From where the walk stops,
+  all of it is in view with the eye level, from 1.7° to 26° above the horizon. The top of the frame is at 31°.
+- **On the easel every station has, scaled 15.7 times.** It has the station easel's three legs, tray and clamp.
+  - Each timber is a 1.1 m square core with marks down all four faces, so that it reads from the side as well.
+  - The marks are the ochres of the easel in the portrait.
+  - Its ledge is lower than the station easel's, so the canvas is set 0.3 m in front of the legs, where they would
+    otherwise pass through it.
+- **The same stroke record as the corridor at station 2**, `strokes/s02/selfpainter-canvas.bin`. That is 8,428
+  strokes in the solved order: the contours and the dark of the smock from the bottom up, then the figure, the pale
+  ground behind him, and the highlights last. Nothing was extracted again. At this size a stroke is about 0.4 m
+  wide. From 80 m that is the angle the same stroke makes on its easel in the corridor from four metres.
+- **None of it is there until you are.** From the last field the road ahead is as empty as it was. The coda begins
+  once you are on the bare canvas past it, at `stationAt` 9.85, about 55 m past station 10.
+  - The easel paints itself in from the ground up, over 6 s.
+  - The primed canvas comes up on it as the easel finishes.
+  - The blank canvas is held for 6 s, which is what is left of the nothing.
+  - Then he paints himself on it in 32 s, two and a half times as long as any canvas on the road takes.
+- **A haze of its own.**
+  - The station's fog is what makes station 11 a white void, and at full strength it left his colours pale at 80 m.
+    The portrait keeps 0.12 of it.
+  - The same uniform, raised, is what brings it up out of the haze when you walk back to it from the field.
+  - Its cloth has no weave: scaled with the canvas, the threads would be 0.3 m wide and would alias from 100 m.
+- **What says how big it is.** The bare canvas has nothing in it whose size you know, and from the road's end the
+  first film showed an ordinary easel twenty metres off.
+  - The nine crows of station 11 now circle the portrait, from the height of his hands to over its top, instead of
+    the empty plaza. They keep its haze, so that they are no paler than it is.
+  - An empty easel of the ordinary size at the road's end was tried and taken out. Without a canvas over it, the
+    station easel's marks read from 7 m as a letter A.
+- **The walk on its own stops where the road does.** It slows over the last 10 m, with the whole canvas in view.
+  A hand can go on: the walk's limit is now 7 m in front of the canvas, not the road's end. From there his palette
+  and brushes are over your head, and one stroke is wider than you are.
+- **The end card waits for him.** "Vincent van Gogh, 1853 – 1890" comes up when the portrait is finished and you
+  are at the road's end.
+  - It sits under the portrait rather than over it: it moved from the middle of the window to 12vh above the bottom.
+  - It gives way to the painting if you walk on to within 60 m of it.
+  - While he is painting, the painting's plaque is up instead, at any distance on the bare canvas.
+- **Sound.** The bristles on the cloth are heard while it paints, fading out over 170 m instead of 34. The chord
+  under everything, silent at station 11 since M8, comes back for it: F, the chord of Paris, where he painted it.
+
+**What changed.**
+
+- `stations/s11-after.json`:
+  - `coda`: the blob, title, date and collection, and `height`, `beyond`, `hold` and `paint`;
+  - `_coda`: the decision.
+- `src/scenes.js`:
+  - `coda()` and `timber()` build the big easel, as a mesh of its own;
+  - the crows of station 11 circle the portrait.
+- `src/canvases.js`:
+  - the coda's sequence and haze;
+  - `uLift`, which holds strokes further off a canvas seen from far away;
+  - a polygon offset on its cloth, and its stretcher set further back;
+  - its plaque at any distance.
+- `src/main.js`:
+  - the walk's far limit is the portrait's foot;
+  - the walk on its own stops at the road's end;
+  - `vgu.coda()` reports the sequence.
+- `src/ui.js` and `index.html`: the end card waits for the portrait and sits under it.
+- `src/audio.js`: the chord at the coda.
+- `tools/station.py` audits the coda's blob and its count.
+- The docs:
+  - DESIGN.md's header, §7's diagram and row 11, and §15 record the decision;
+  - `paintings/CREDITS.md` notes that the portrait hangs twice.
+
+**How it was verified.** Headless Chrome, driven over the DevTools protocol from a scratch script.
+
+- **The sequence, from the tick for station 11:** the easel is in at 6 s and the canvas up at 7.5 s. The first
+  stroke lands at 13.5 s, and he is finished at 45.5 s.
+- **The walk on its own, from station 10:**
+  - It came onto the bare canvas 33 s after the key, and slowed at station 11 as it slows at every station.
+  - It stopped by itself at the road's end, at z −959.8, and turned itself off.
+  - The portrait finished 45.5 s after the walk came onto the bare canvas.
+  - Then the end card was up, the plaque had gone and the walk stayed off.
+- **From the last field**, 24 m past station 10, none of it shows.
+- **At 50 m** the end card has given way to the painting. At its foot and from the side, the strokes and the timbers
+  hold together.
+- **Depth.**
+  - In the first films the blank canvas was the stretcher's darker face: all over from 128 m, and in blocks from
+    110 m. The two were 5.5 cm apart, and the polygon offset that keeps the cloth behind the strokes had pushed the
+    cloth back into it.
+  - The stretcher now stands 0.2 m further back, and from 128 m the blank canvas is clean.
+- **Frame rate**, at 1440 × 900 over 4 s of frames with no screenshots taken:
+
+  | | fps | slowest 5% of frames |
+  |---|---|---|
+  | the road's end, the portrait finished | 42.6, then 48.1 | 33 ms |
+  | at its foot | 51.6 | 33 ms |
+  | the wheatfield | 39.9 | 33 ms |
+  | the red vineyard | 33.7, then 37.2 | 50 ms, then 33 ms |
+
+  The bare canvas with the portrait on it is no slower than the stations before it.
+- **A phone**, 390 × 844 at 3×: the end card wraps to five lines under the portrait and clears the line along the
+  bottom. The plaque wraps to three.
+- No exceptions and no console errors in any run. `tools/station.py` exits 0.
+
+**Still visible.**
+
+- **The record is the corridor's.** 8,428 strokes cover 985 m² of canvas. Between them shows the extractor's
+  underlayer, which at 375 × 494 pixels is 7 cm a pixel on this canvas, and soft from its foot.
+- **From where the walk stops, it is a picture of a big easel.** Its size is read from the crows and from the walk
+  up to it, and it is felt only near it.
+- **The tick for station 11 lands on a bend 128 m from it.** From there the portrait is 10° right of the way you
+  face, so on a phone it starts at the window's edge.
+- **Walk it again does not repaint it**, as it does not repaint any canvas on the road.
+- **Measured headless on this machine only**, not on a phone or an integrated GPU.

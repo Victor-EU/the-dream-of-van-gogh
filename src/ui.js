@@ -70,12 +70,14 @@ export class UI {
     if (S.begun && here && S.station !== this.cur) { this.cur = S.station; this.arrive(S.station); }
     if (S.stationDist > 52 && this.cur === S.station) { clearTimeout(this.lT1); $('letter').classList.remove('on'); }
     if (S.stationDist > 52 && this.cur !== -1 && S.station !== this.cur) { clearTimeout(this.lT1); $('letter').classList.remove('on'); }
+    // at the end of the road the card waits for his portrait to be finished, and takes the plaque's place
+    const end = S.tau > 0.975 && S.done !== false;
     const p = S.near;
-    if (p && p.dist < 8) {
+    if (p && p.dist < 8 && !end) {
       if (this._pl !== p.key) { this._pl = p.key; $('pl-title').textContent = p.title; $('pl-sub').textContent = p.sub; }
       $('plaque').classList.add('on');
     } else $('plaque').classList.remove('on');
-    $('end').classList.toggle('on', S.tau > 0.975);
+    $('end').classList.toggle('on', end);
   }
   arrive(i) {
     const s = this.st[i], j = s.json;

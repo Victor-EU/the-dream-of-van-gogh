@@ -7,7 +7,8 @@ is deliberately outside the repository — 1.7 GB of scans does not belong in gi
 Gathered 10 September 2026 by `tools/vgm_resolve.py`, `tools/commons_resolve.py`, `tools/fetch.py`,
 `tools/fetch_commons.py` and `tools/micrio_stitch.py`. **40 scans, 4.41 gigapixels, 1.70 GB.** One more
 after M9, on the author's word: *The Red Vineyard*, 104 MP and 41 MB, fetched on 11 September 2026 from the Commons
-address in `tools/sources.tsv`.
+address in `tools/sources.tsv`. *Self-Portrait as a Painter* hangs twice, from the same scan and the same stroke
+record: in the corridor at station 2 and, after M9, giant at the end of the road.
 
 ## How resolution was judged
 

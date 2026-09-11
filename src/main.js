@@ -67,6 +67,10 @@ async function boot() {
   world.add(props.group);
   const paintings = new Paintings(U, stations, props.easels);
   world.add(paintings.group);
+  // the road ends 34 m past the last station, and the walk on its own stops there; his portrait stands beyond it,
+  // and a hand can take you up to it
+  const coda = props.easels.find(e => e.coda);
+  const zLast = coda ? coda.z + coda.coda.foot : J.ZEND + 4;
   const controls = new Controls(cv);
   const sound = new Sound(stations);
 
@@ -150,8 +154,9 @@ async function boot() {
       if ((f || st) && body.lieT) { body.lieT = 0; body.pitchT = 0.02; }
       body.yaw += tr * TURN * dt;
       let target = f * (controls.run ? RUN : WALK), side = st * WALK * 0.8;
+      if (body.auto && body.z < J.ZEND + 4.3) { body.auto = false; ui.setAuto(false); }
       if (body.auto) {
-        target = autoSpeed();
+        target = autoSpeed() * clamp((body.z - J.ZEND - 4) / 10, 0.15, 1);
         const want = roadYaw(body.z - 6) + clamp((J.roadX(body.z - 9) - body.x) * 0.09, -0.35, 0.35);
         body.yaw += angDiff(want, body.yaw) * (1 - Math.exp(-dt * 1.1));
         if (body.pitchT === null) body.pitch += (0.03 - body.pitch) * (1 - Math.exp(-dt * 0.6));
@@ -166,7 +171,7 @@ async function boot() {
       let nz = body.z + (-cy * body.v + sy * body.vs) * dt;
       const lat = nx - J.roadX(nz), LIM = 42;
       if (Math.abs(lat) > LIM) nx = J.roadX(nz) + Math.sign(lat) * LIM;
-      nz = clamp(nz, J.ZEND + 4, J.ZSTART + 8);
+      nz = clamp(nz, zLast, J.ZSTART + 8);
       for (const c of props.colliders) {
         const dx = nx - c.x, dz = nz - c.z, d = Math.hypot(dx, dz);
         if (d < c.r && d > 1e-4) { nx = c.x + dx / d * c.r; nz = c.z + dz / d * c.r; }
@@ -277,11 +282,11 @@ async function boot() {
       if (L) { U.uLampPos.value[i].set(L.x, L.y, L.z, L.r); U.uLampCol.value[i].set(L.c[0], L.c[1], L.c[2], L.k * night); }
       else U.uLampCol.value[i].set(0, 0, 0, 0);
     }
-    const near = paintings.update(camera, time, dt, begun);
+    const near = paintings.update(camera, time, dt, begun, sNow);
     const ns = J.nearestStation(body.z);
     ui.update({ tau: J.tauAt(body.z), date: calendar(body.z).text, station: ns,
-                stationDist: Math.abs(body.z - J.stationZ(ns)), begun, near });
-    sound.update({ s: sNow, v: body.v, cam: camera.position, dt, time, stations, painting: paintings.painting });
+                stationDist: Math.abs(body.z - J.stationZ(ns)), begun, near, done: paintings.done });
+    sound.update({ s: sNow, v: body.v, cam: camera.position, dt, time, stations, painting: paintings.painting, coda: paintings.codaOn });
 
     grade.time = time;
     grade.black = black;
@@ -319,6 +324,7 @@ async function boot() {
       paintings.items.forEach(it => { it.started = true; it.progress = 1.02; });
     },
     world: () => props,
+    coda: () => paintings.codaState(),
     layers: o => {
       if ('sky' in o) sky.scene.visible = o.sky;
       if ('props' in o) props.group.visible = o.props;

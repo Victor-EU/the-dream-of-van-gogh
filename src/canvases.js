@@ -1,10 +1,11 @@
 // His paintings, on their easels. Each is his own strokes -- read from the
 // stroke records the pipeline extracted from the museum scans -- laid on a
-// primed canvas in the order he laid them, as you walk up to it.
+// primed canvas in the order he laid them, as you walk up to it. Past the end
+// of the road there is one more, giant: his portrait, the coda.
 import * as THREE from 'three';
 import { NOISE, BRUSH, LIGHT } from './brush.js';
 import { ribbon } from './sky.js';
-import { lerp } from './util.js';
+import { lerp, clamp, smoothstep } from './util.js';
 
 function readBlob(buf) {
   const v = new DataView(buf);
@@ -22,7 +23,7 @@ const STROKE_VERT = /* glsl */`
   attribute vec2 aP0, aP1, aP2;
   attribute vec3 aColor;
   attribute float aWidth, aOrder;
-  uniform float uCoordLo, uCoordSpan, uWidthK, uShort, uProgress, uArrive;
+  uniform float uCoordLo, uCoordSpan, uWidthK, uShort, uProgress, uArrive, uLift;
   uniform vec2 uSize;
   varying vec2 vST; varying vec3 vCol, vP, vT, vB, vN; varying float vRow, vArr;
   void main() {
@@ -37,7 +38,7 @@ const STROKE_VERT = /* glsl */`
     float w = aWidth * uWidthK * uShort;
     float taper = sqrt(max(0.0, 1.0 - pow(abs(2.0 * aUV.x - 1.0), 6.0)));
     vec2 q = pos + nr * aUV.y * 0.62 * w * (0.3 + 0.7 * taper);
-    vec4 wp = modelMatrix * vec4(q, 0.002 + aOrder * 0.006, 1.0);
+    vec4 wp = modelMatrix * vec4(q, (0.002 + aOrder * 0.006) * uLift, 1.0);
     mat3 m3 = mat3(modelMatrix);
     vP = wp.xyz; vT = normalize(m3 * vec3(tan, 0.0)); vB = normalize(m3 * vec3(nr, 0.0)); vN = normalize(m3 * vec3(0.0, 0.0, 1.0));
     vST = aUV; vRow = floor(fract(aOrder * 97.31 + aWidth * 13.7) * 7.99);
@@ -95,9 +96,13 @@ export class Paintings {
   constructor(U, stations, easels) {
     this.U = U;
     this.group = new THREE.Group();
-    this.items = easels.map(e => ({ e, state: 'idle', progress: 0, started: false }));
+    this.items = easels.map(e => ({ e, state: 'idle', progress: 0, started: false, t: 0, fog: { value: 0.01 } }));
     this.tex = new THREE.TextureLoader();
     this.painting = 0;
+    this.last = stations.length - 1;
+    this.codaIt = this.items.find(it => it.e.coda) || null;
+    this.here = 0;
+    this.dist = Infinity;
   }
   async load(it) {
     it.state = 'loading';
@@ -121,19 +126,27 @@ export class Paintings {
       const u = { ...this.U, uCoordLo: { value: blob.coordLo }, uCoordSpan: { value: blob.coordHi - blob.coordLo },
         uWidthK: { value: blob.widthK }, uShort: { value: Math.min(e.w, e.h) }, uSize: { value: new THREE.Vector2(e.w, e.h) },
         uProgress: { value: 0 }, uArrive: { value: 0.012 }, uKey: { value: new THREE.Color() }, uKeyDir: { value: keyDir },
-        uGain: { value: e.slug === 'potatoeaters' ? 1.6 : 1.05 } };
+        uGain: { value: e.slug === 'potatoeaters' ? 1.6 : 1.05 }, uLift: { value: e.lift || 1 } };
+      // the coda keeps a haze of its own, so that it can stand out of the linen only once you are there
+      if (e.coda) u.uFogDen = it.fog;
       const strokes = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: STROKE_VERT, fragmentShader: STROKE_FRAG, uniforms: u,
         side: THREE.DoubleSide, alphaToCoverage: true }));
       strokes.frustumCulled = false;
-      const bu = { ...this.U, uUnder: { value: null }, uHas: { value: 0 }, uProgress: u.uProgress, uKey: u.uKey, uKeyDir: u.uKeyDir, uGrain: { value: 1 }, uGain: u.uGain, uTint: { value: new THREE.Vector3(1, 1, 1) } };
-      const base = new THREE.Mesh(new THREE.PlaneGeometry(e.w, e.h), new THREE.ShaderMaterial({ vertexShader: BASE_VERT, fragmentShader: BASE_FRAG, uniforms: bu }));
+      const bu = { ...this.U, uUnder: { value: null }, uHas: { value: 0 }, uProgress: u.uProgress, uKey: u.uKey, uKeyDir: u.uKeyDir, uGrain: { value: e.grain ?? 1 }, uGain: u.uGain, uTint: { value: new THREE.Vector3(1, 1, 1) }, uFogDen: u.uFogDen };
+      // seen from eighty metres the depth buffer cannot tell the cloth from paint laid on it, or from the stretcher
+      // behind it: so the coda's cloth is pushed back, its strokes are held further off it (lift), and its stretcher
+      // stands a hand's breadth further back than the station easels' do
+      const base = new THREE.Mesh(new THREE.PlaneGeometry(e.w, e.h), new THREE.ShaderMaterial({ vertexShader: BASE_VERT, fragmentShader: BASE_FRAG, uniforms: bu,
+        polygonOffset: !!e.coda, polygonOffsetFactor: 1, polygonOffsetUnits: 4 }));
       const su = { ...bu, uHas: { value: 0 }, uGrain: { value: 0.3 }, uTint: { value: new THREE.Vector3(0.34, 0.27, 0.2) } };
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(e.w + 0.04, e.h + 0.04, 0.035), new THREE.ShaderMaterial({ vertexShader: BASE_VERT, fragmentShader: BASE_FRAG, uniforms: su }));
-      frame.position.z = -0.021;
+      const E = e.edge || 1;
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(e.w + 0.04 * E, e.h + 0.04 * E, 0.035 * E), new THREE.ShaderMaterial({ vertexShader: BASE_VERT, fragmentShader: BASE_FRAG, uniforms: su }));
+      frame.position.z = -0.021 * E - (e.coda ? 0.2 : 0);
       this.tex.load(e.under, t => { t.colorSpace = THREE.NoColorSpace; bu.uUnder.value = t; bu.uHas.value = 1; }, undefined, () => {});
       const grp = new THREE.Group();
       grp.position.set(e.x, e.y, e.z);
       grp.rotation.y = e.yaw;
+      grp.visible = !e.coda;
       grp.add(frame, base, strokes);
       this.group.add(grp);
       Object.assign(it, { grp, u, count: blob.count, state: 'ready' });
@@ -142,14 +155,14 @@ export class Paintings {
       it.state = 'failed';
     }
   }
-  update(camera, time, dt, begun) {
+  update(camera, time, dt, begun, s = 0) {
     const cam = camera.position;
-    const night = this.U.uNight.value;
     let near = null;
     this.painting = 0;
     for (const it of this.items) {
       const e = it.e, d = Math.hypot(cam.x - e.x, cam.z - e.z);
-      if (it.state === 'idle' && d < 180) this.load(it);
+      if (it.state === 'idle' && d < (e.coda ? 600 : 180)) this.load(it);
+      if (e.coda) { this.coda(it, d, dt, s); continue; }
       if (it.state !== 'ready') continue;
       it.grp.visible = d < 240;
       if (d < 34 && begun) it.started = true;
@@ -158,11 +171,55 @@ export class Paintings {
         if (it.progress < 1) this.painting = Math.max(this.painting, 1 - d / 34);
       }
       it.u.uProgress.value = it.progress;
-      const k = lerp(0.62, 0.92, night) * (it.e.gain || 1);
-      it.u.uKey.value.setRGB(1.0 * k, 0.88 * k, 0.7 * k);
+      this.key(it);
       if (d < 9 && (!near || d < near.dist))
         near = { key: e.key, title: e.title, sub: [e.date, e.collection].filter(Boolean).join(' · '), dist: d };
     }
+    // his portrait's plaque is up while you are on the bare canvas with it, however far off it stands
+    const c = this.codaIt;
+    if (!near && c && c.started && this.here > 0.5)
+      near = { key: c.e.key, title: c.e.title, sub: [c.e.date, c.e.collection].filter(Boolean).join(' · '), dist: 0 };
     return near;
+  }
+  key(it) {
+    const k = lerp(0.62, 0.92, this.U.uNight.value) * (it.e.gain || 1);
+    it.u.uKey.value.setRGB(1.0 * k, 0.88 * k, 0.7 * k);
+  }
+  // The coda: his portrait past the end of the road, on the easel scenes.js builds for it. None of it is there
+  // until you are on the bare canvas past the last field. Then the easel paints itself in, the canvas comes up
+  // primed and is held, and he paints himself on it, far more slowly than any canvas on the road.
+  coda(it, d, dt, s) {
+    const e = it.e, C = e.coda, st = e.stand;
+    const here = this.here = smoothstep(this.last - 0.55, this.last - 0.15, s);
+    this.dist = d;
+    if (!it.t && here >= 1) it.t = 1e-4;
+    if (it.t) it.t += dt;
+    const up = smoothstep(C.easel * 0.7, C.easel + 1.5, it.t);
+    // coming back out of the last field it rises through a haze rather than appearing; on the bare canvas it
+    // keeps less of the haze than anything else does, so that his colour carries eighty metres
+    const haze = this.U.uFogDen.value * C.haze + (1 - here) * 0.05;
+    st.g.visible = here > 0 && it.t > 0;
+    st.u.uProgress.value = Math.min(1.05, it.t / C.easel);
+    st.u.uFogDen.value = haze;
+    if (it.state !== 'ready') return;
+    it.grp.visible = st.g.visible && up > 0;
+    it.fog.value = haze + (1 - up) * 0.05;
+    if (!it.started && it.t > C.easel + 1.5 + C.hold) it.started = true;
+    if (it.started && it.progress < 1.02) {
+      it.progress = Math.min(1.02, it.progress + dt / C.paint);
+      if (it.progress < 1) this.painting = Math.max(this.painting, clamp(1 - d / 170, 0, 1) * here);
+    }
+    it.u.uProgress.value = it.progress;
+    this.key(it);
+  }
+  // the end card waits for his portrait to be finished, and gives way to it if you walk on up to it -- or goes up as
+  // it always did, if there is no portrait to wait for
+  get done() { const c = this.codaIt; return !c || c.state === 'failed' || (c.progress >= 1 && this.dist > 60); }
+  get codaOn() { const c = this.codaIt; return !!c && c.started && this.here > 0.5; }
+  codaState() {
+    const c = this.codaIt;
+    return c && { state: c.state, t: +c.t.toFixed(2), easel: +c.e.stand.u.uProgress.value.toFixed(3), progress: +c.progress.toFixed(3),
+                  here: +this.here.toFixed(3), started: c.started, x: +c.e.x.toFixed(2), z: +c.e.z.toFixed(2), yaw: +c.e.yaw.toFixed(4),
+                  w: +c.e.w.toFixed(2), h: c.e.h };
   }
 }
