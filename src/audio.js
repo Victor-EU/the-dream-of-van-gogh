@@ -9,7 +9,6 @@ const CHORDS = [
   [146.8, 220.0, 370.0, 293.7],   // the harvest: D
   [98.0, 146.8, 246.9, 392.0],    // the Yellow House: G
   [164.8, 246.9, 392.0, 329.6],   // the night of Arles: E minor
-  null,                           // the strokes stop
   [116.5, 174.6, 293.7, 523.3],   // Saint-Remy: B flat, with the ninth
   [130.8, 196.0, 329.6, 523.3],   // Auvers: C
   [146.8, 220.0, 261.6, 349.2],   // the wheatfield: D minor seventh

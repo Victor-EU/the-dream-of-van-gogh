@@ -121,7 +121,7 @@ export class Paintings {
       const u = { ...this.U, uCoordLo: { value: blob.coordLo }, uCoordSpan: { value: blob.coordHi - blob.coordLo },
         uWidthK: { value: blob.widthK }, uShort: { value: Math.min(e.w, e.h) }, uSize: { value: new THREE.Vector2(e.w, e.h) },
         uProgress: { value: 0 }, uArrive: { value: 0.012 }, uKey: { value: new THREE.Color() }, uKeyDir: { value: keyDir },
-        uGain: { value: e.slug === 'potatoeaters' ? 1.6 : e.slug === 'berceuse' ? 1.25 : 1.05 } };
+        uGain: { value: e.slug === 'potatoeaters' ? 1.6 : 1.05 } };
       const strokes = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: STROKE_VERT, fragmentShader: STROKE_FRAG, uniforms: u,
         side: THREE.DoubleSide, alphaToCoverage: true }));
       strokes.frustumCulled = false;

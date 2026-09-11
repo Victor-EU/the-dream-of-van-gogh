@@ -19,7 +19,7 @@ class Ctx {
   constructor(i, st) {
     this.i = i; this.st = st;
     this.z0 = J.stationZ(i); this.x0 = J.roadX(this.z0);
-    this.R = rng(4200 + i * 97);
+    this.R = rng(4200 + (st.id - 1) * 97);   // by the station's own number, so it keeps its look wherever it stands
     this.S = new StrokeBuilder(); this.C = new CoreBuilder();
     this.easels = []; this.lamps = []; this.colliders = []; this.movers = [];
     this.base = 0;
@@ -143,22 +143,6 @@ function olive(c, x, z, o = {}) {
   }
 }
 
-function bareTree(c, x, z) {
-  const R = c.R; c.at(x, z);
-  const ink = P(['#2a2826', '#3a3632', '#1e1c1a']);
-  const grow = (p, d, len, w, depth) => {
-    const e = add3(p, mul3(d, len));
-    c.line(p, e, norm3(cross3(d, [0.4, 0, 1])), w, ink, { seg: 0.3 });
-    if (depth <= 0) return;
-    const k = 2 + (R() < 0.4 ? 1 : 0);
-    for (let i = 0; i < k; i++) {
-      const nd = norm3(add3(d, [R.range(-0.7, 0.7), R.range(-0.1, 0.5), R.range(-0.7, 0.7)]));
-      grow(e, nd, len * R.range(0.55, 0.75), w * 0.7, depth - 1);
-    }
-  };
-  grow([x, c.gy(x, z), z], [0, 1, 0], 2.6, 0.05, 4);
-}
-
 // ------------------------------------------------------------ buildings --
 function house(c, o) {
   const R = c.R;
@@ -272,23 +256,6 @@ function church(c, x, z, yaw) {
     windows: [-5.5, -2, 2, 5.5].map(u => ({ face: 0, u, v: 4.2, w: 1.3, h: 3.2, col: win, frame: '#c07030' })) });
   house(c, { x, z, yaw, w: 4.6, d: 4.6, h: 17, roofH: 5, wall, roof: ['#4a4a7a', '#3a3a6a'], density: 12,
     windows: [{ face: 0, u: 0, v: 14, w: 1.2, h: 1.8, col: win, frame: '#c07030' }, { face: 3, u: 0, v: 14, w: 1.2, h: 1.8, col: win, frame: '#c07030' }] });
-}
-
-function charcoalHouse(c, x, z, yaw, w, d, h, rh) {
-  c.at(x, z);
-  const b = c.gy(x, z), cy = Math.cos(yaw), sy = Math.sin(yaw);
-  const W = (lx, ly, lz) => [x + lx * cy + lz * sy, b + ly, z - lx * sy + lz * cy];
-  const ink = P(['#2a2826', '#3a3632', '#1e1c1a']);
-  const q = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]];
-  for (let i = 0; i < 4; i++) {
-    const [ax, az] = q[i], [bx, bz] = q[(i + 1) % 4];
-    c.line(W(ax, 0, az), W(bx, 0, bz), UP, 0.03, ink);
-    c.line(W(ax, h, az), W(bx, h, bz), UP, 0.03, ink);
-    c.line(W(ax, 0, az), W(ax, h, az), norm3([1, 0, 1]), 0.03, ink);
-  }
-  c.line(W(-w / 2, h + rh, 0), W(w / 2, h + rh, 0), UP, 0.03, ink);
-  for (const s of [-1, 1]) for (const e of [-1, 1]) c.line(W(e * w / 2, h, s * d / 2), W(e * w / 2, h + rh, 0), UP, 0.03, ink);
-  for (let i = 0; i < 5; i++) { const u = -w / 2 + (i + 0.7) * w / 5; c.line(W(u, h * 0.3, d / 2 + 0.02), W(u + 0.6, h * 0.55, d / 2 + 0.02), [0, 0, 1], 0.02, ink); }
 }
 
 // --------------------------------------------------------- little things --
@@ -518,7 +485,7 @@ class Crows {
   constructor(U) {
     const R = rng(777);
     this.birds = [];
-    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 7: 2, 8: 2, 9: 16, 10: 9 };
+    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 6: 2, 7: 2, 8: 16, 9: 9 };   // birds by place on the road, from 0
     for (const [si, n] of Object.entries(plan)) {
       const z0 = J.stationZ(+si), x0 = J.roadX(z0);
       for (let k = 0; k < n; k++)
@@ -645,13 +612,6 @@ const BUILDERS = [
     }
     village(c, c.rx(z0) - 82, z0 - 12, 20, 26);
     easelsAt(c, [[0, 1, 10, 3.6], [1, 1, -2, 3.6], [2, -1, -9, 3.4]]);
-  },
-  c => {                                             // 7 23 December 1888: the strokes stop
-    const z0 = c.z0;
-    charcoalHouse(c, c.rx(z0 - 6) + 12, z0 - 6, -Math.PI / 2, 10, 7, 7.2, 1.5);
-    bareTree(c, c.rx(z0 + 8) - 7, z0 + 8);
-    bareTree(c, c.rx(z0 - 22) - 9, z0 - 22);
-    easelsAt(c, [[0, -1, 2, 3.4]]);
   },
   c => {                                             // 8 Saint-Rémy, 1889: the cypress under the Starry Night
     const R = c.R, z0 = c.z0;

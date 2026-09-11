@@ -347,7 +347,7 @@ export class Sky {
 
   layer(i) {
     if (this.layers[i]) return this.layers[i];
-    const { P, glows } = buildSky(this.stations[i], 7001 + i * 131);
+    const { P, glows } = buildSky(this.stations[i], 7001 + (this.stations[i].id - 1) * 131);
     const u = { uTime: this.U.uTime, uFade: { value: 0 }, uSide: { value: 0 }, uBrush: this.U.uBrush,
                 uFlow: { value: 1 }, uOpacity: { value: 1 }, uIntro: this.U.uIntro };
     const mesh = new THREE.Mesh(packGeometry(P), new THREE.ShaderMaterial({

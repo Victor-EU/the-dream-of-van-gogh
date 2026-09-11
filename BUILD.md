@@ -2889,3 +2889,41 @@ still reads.
 - **The touch controls are written but untested on a phone.** The left thumb walks and the right looks.
 - **Nothing yet measures the new world the way M3 to M8 measured theirs.** The old runtime's harness went with it;
   the new one's checks live in `window.vgu` and were driven from a scratch script, not a tool in this repo.
+
+### After M9 — Station 7 taken out
+
+**What was asked.** On seeing station 7, *The strokes stop* (Arles, 23 December 1888), the author asked for it to be
+removed. It was the charcoal outline of a house, two bare trees and *La Berceuse* on a pale, half-painted field.
+
+**What changed.**
+
+- The station is gone from the walk, and so is everything that existed only for it:
+  - its entry in `config.js` and its builder in `scenes.js`;
+  - the two things only it drew, `charcoalHouse` and `bareTree`;
+  - its entry in the chord list, and the extra light its painting got in `canvases.js`;
+  - `stations/s07-the-strokes-stop.json`, which is in the history at `cd7beb2`.
+- The road is 90 m shorter, and the night of Arles hands straight over to Saint-Rémy. Everything after it stands one
+  place earlier:
+  - the ground table is 10 × 17;
+  - the line along the bottom has ten ticks;
+  - the digits 1 to 9 reach the nine painted places, and 0 the end;
+  - the crows keep their stations.
+- A station's sky and props are now seeded by the station's own number, not its place on the road. So Saint-Rémy,
+  Auvers, the wheatfield and the end keep their props and skies. The bend of the road and the scatter of the ground
+  differ a little there, because both follow from where a station stands.
+
+**What was kept.** The source material of *La Berceuse*, in case the canvas is hung somewhere else:
+`params/berceuse.json`, its two golden images, and its blob under `strokes/s07/`. The bare ground and sky stay too,
+because the ending is painted with them.
+
+**How it was verified.** Headless Chrome again, driven by the same scratch script as M9.
+
+- No exceptions and no console errors.
+- The line along the bottom has ten ticks with the right names. There are 30 easels, all on the nine painted
+  stations, and none holds *La Berceuse*.
+- 7 goes to Saint-Rémy and shows its name, 9 goes to the wheatfield, and 0 to the end.
+- The road was photographed 30 m and 50 m past the night of Arles. Night goes into night, and the date runs through
+  January and March 1889.
+- Saint-Rémy, Auvers and the wheatfield were photographed from the same standpoints as during M9. They have the same
+  props, skies and easels.
+- `tools/station.py` passes over the ten station files that remain.

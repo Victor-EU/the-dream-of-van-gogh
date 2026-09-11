@@ -10,6 +10,10 @@
 > the canvases is painted rather than left as primed cloth. The opening is the world painting itself, not a wait.
 > `BUILD.md` M9 records what changed and why. The thesis, the act of painting, survives where the paintings are: on
 > their easels, stroke by stroke.
+>
+> **Station 7, on the author's word.** After M9 the author asked for station 7, *The strokes stop*, to be taken out,
+> and it is. The road now goes from the night of Arles straight to Saint-Rémy. Its row and the notes on it below stay
+> as the record of what was intended; `BUILD.md` records the removal after M9.
 
 A single web page. You begin on bare primed canvas — white, woven, nothing on it but a charcoal line going forward.
 You drag one control, and the world starts being painted around you: strokes arriving in order, in his direction, at
@@ -600,7 +604,7 @@ which are not places at all, and it lets us drop the geographic filler that a pr
                                  the walled garden · the window · THE STARRY NIGHT overhead
                                  olive groves where the ground writhes
             ——————————————————— the climb, the Alpilles ——————————————
-                             [7] THE STROKES STOP — 23 December 1888
+                             [7] THE STROKES STOP — 23 December 1888   (removed after M9)
                              [6] THE NIGHT OF ARLES — September 1888
                                  the terrace · the café · the Rhône
                              [5] THE YELLOW HOUSE, INSIDE — Sept–Oct 1888
@@ -625,7 +629,7 @@ which are not places at all, and it lets us drop the geographic filler that a pr
 | 4 | **The Harvest** | La Crau, Jun 1888 | Wide, hot, yellow, the blue cart. *The Sower* at the far edge of the plain. The mistral, which he complained about in letter after letter and which physically moved his easel. | shelled |
 | 5 | **The Yellow House, inside** | Sept–Oct 1888 | Home, and it is small. Up the stairs: **the three Bedrooms occupying the same space**, so that walking forward changes the colour of the room around you without a cut. That is what a repetition actually *is*, and no gallery can hang it that way. The Sunflowers enormous and close. The two chairs facing each other across the floor. The only safe place in the universe. | built |
 | 6 | **The night of Arles** | Sep 1888 | Out into dusk. The Café Terrace, the Night Café, the Rhône under the Dipper. Here each individual stroke becomes **a star or a gaslight** — the atom of the paint and the atom of the subject are the same object, which happens nowhere else in his work. | built + shelled |
-| 7 | **The strokes stop** | 23 Dec 1888 | No ear. No blood. No razor. **The painting simply stops mid-canvas**, the brush sound cuts, and the scrub refuses to advance for a beat. Then it resumes somewhere else, on rougher cloth. The restraint is the entire effect and it will be tempting to ruin. | — |
+| 7 | **The strokes stop** | 23 Dec 1888 | No ear. No blood. No razor. **The painting simply stops mid-canvas**, the brush sound cuts, and the scrub refuses to advance for a beat. Then it resumes somewhere else, on rougher cloth. The restraint is the entire effect and it will be tempting to ruin. | removed after M9 |
 | 8 | **Saint-Rémy** | 1889 | The walled garden, *Irises* as the literal ground at your feet — he painted them in that garden. Then the window, and the night: **The Starry Night as a sky, overhead, each spiral turning along its own curl.** Cypresses. Olive groves where the ground itself writhes. The summit of the piece, and the reason to lie down. | lifted + shelled |
 | 9 | **Auvers** | May–Jul 1890 | Descend into cool green and grey-blue. Thatch, *Daubigny's Garden*, the church with its two paths splitting around it. The canvases go double-square here (50 × 100 cm) — so **the frame of the world itself widens**, which the viewer will feel and not notice. | lifted |
 | 10 | **The wheatfield** | 27 Jul 1890 | Three paths. Crows — the only living creatures in the universe, and if the viewer looks back they have been in the corner of the eye since Arles. The rush with no holds. Then the strokes stop arriving and you are standing on bare primed canvas with the field behind you. | lifted |

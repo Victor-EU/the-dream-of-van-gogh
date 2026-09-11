@@ -5,7 +5,7 @@
 // the golden flats), then pushed the way he pushed them.
 
 // The Starry Night, placed from the canvas: u,v on the painting, horizon at
-// v 0.74, 62 degrees wide -- so standing at station 8 and looking down the
+// v 0.74, 62 degrees wide -- so standing at Saint-Rémy and looking down the
 // road, the sky ahead is that sky.
 const SN = (u, v) => ({ az: (u - 0.5) * 62, el: (0.74 - v) * 49.6 });
 const STARRY_STARS = [
@@ -126,21 +126,6 @@ export const STATIONS = [
       wind: 0.2, hill: 0.1, valley: 0.0, water: 1, waterA: '#0a1e40', waterB: '#1f4a86',
       cobble: 0.9, cobbleA: '#6a7a8e', plaza: 16 },
     audio: { wind: 0.15, night: 1.0, river: 0.6, cafe: 0.5 } },
-
-  { id: 7, file: 'stations/s07-the-strokes-stop.json', place: 'Arles', year: '1888',
-    sky: { zenith: '#8a8a84', mid: '#b4b0a4', horizon: '#d6d0c0',
-      low: ['#c8c2b0', '#d8d2c0'], high: ['#9a9a92', '#aaa89c'], light: ['#e8e4d8'],
-      swirl: 0, wave: 0.1, bare: 0.8 },
-    light: { az: -30, el: 25, col: '#e8e0d0', k: 1.2, sky: '#b0b0a8', gnd: '#8a8478', amb: 0.95, night: 0.1, exposure: 1.0 },
-    fog: '#d0cabb', fogDen: 0.006, fogStart: 20,
-    ground: { c0: '#b8b0a0', c1: '#c8c0ae', c2: '#d8d0be',
-      wheat: 0, wheatA: '#9a9080', wheatB: '#8a8070', tip: '#b0a898', wheatH: 0.4,
-      grass: 0.15, grassA: '#6a6a58', grassB: '#8a8a70', grassH: 0.2,
-      furrow: 0, furrowA: '#9a9080', furrowB: '#aaa090',
-      flower: 0, flowerA: '#a09080', flowerB: '#b0a090',
-      road: '#9a9080', roadEdge: '#8a8272', roadW: 1.2,
-      bare: 0.85, wind: 0.1, hill: 0.1, valley: 0.1, plaza: 9 },
-    audio: { wind: 0.05 } },
 
   { id: 8, file: 'stations/s08-saint-remy.json', place: 'Saint-Rémy', year: '1889',
     sky: { zenith: '#081a44', mid: '#1a3a82', horizon: '#3f64a8',
