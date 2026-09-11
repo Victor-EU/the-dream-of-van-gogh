@@ -65,6 +65,8 @@ def main():
     ap.add_argument("--size", default="2560x1440")
     ap.add_argument("--dpr", type=float, default=2.0)
     ap.add_argument("--probe", type=int, default=3500, help="real ms before reading")
+    ap.add_argument("--wav", default=None,
+                    help="write what the brush played here -- the url needs ?sound&soundlog")
     a = ap.parse_args()
 
     with socket.socket() as s:
@@ -80,6 +82,9 @@ def main():
     prof = tempfile.mkdtemp()
     cmd = [chrome(), "--headless=new", "--use-angle=metal", "--enable-gpu",
            "--hide-scrollbars", "--disable-lcd-text", "--mute-audio",
+           # the brush is off by default and a browser will not start sound
+           # without a gesture; the harness has no hands
+           "--autoplay-policy=no-user-gesture-required",
            "--no-first-run", "--no-default-browser-check",
            f"--user-data-dir={prof}", f"--window-size={a.size.replace('x', ',')}",
            f"--force-device-scale-factor={a.dpr}", url]
@@ -100,11 +105,16 @@ def main():
         print(url, file=sys.stderr)
         raise SystemExit(1)
     png = probe.pop("png", None)
+    wav = probe.pop("wav", None)
     print(json.dumps(probe.get("state", probe), indent=2, sort_keys=True))
     if a.out and png:
         with open(a.out, "wb") as f:
             f.write(base64.b64decode(png.split(",", 1)[1]))
         print(f"-> {a.out}", file=sys.stderr)
+    if a.wav and wav and wav.get("b64"):
+        with open(a.wav, "wb") as f:
+            f.write(base64.b64decode(wav["b64"]))
+        print(f"-> {a.wav}", file=sys.stderr)
 
 
 if __name__ == "__main__":

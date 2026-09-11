@@ -235,12 +235,16 @@
   "gain": 0.55,
   "rate": 0.42
  },
- "_letter": "To Theo, from the asylum, the week he painted the sky. The text stays null until M7, which owns the voice and the verification against the Van Gogh Museum and Huygens edition.",
+ "_letter": "To Theo, the week he painted it, and the edition's note on the sentence is F 612, 73 x 92 cm, at MoMA -- the canvas overhead. M3 had the right letter and a day the edition does not give: on or about 18 June.",
  "letter": {
   "n": 782,
   "to": "Theo van Gogh",
-  "date": "1889-06-19",
-  "text": null
+  "place": "Saint-Rémy-de-Provence",
+  "date": "on or about 18 June 1889",
+  "para": 12,
+  "text": "At last I have a landscape with olive trees, and also a new study of a starry sky.",
+  "canvas": "starry",
+  "note": "n-8"
  },
  "caption": {
   "title": "Saint-Remy",

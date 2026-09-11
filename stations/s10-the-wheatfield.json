@@ -62,12 +62,16 @@
   "burst": 4000,
   "hold": 0.0
  },
- "_letter": "The citation only. M7 owns the voice and the verification, and a line typed from memory is not a quotation -- least of all here, where the most misquoted sentences in the literature are.",
+ "_letter": "The edition's note on this sentence names the two likeliest canvases, and this is one of them: Wheatfield under Troubled Skies (F 778) at station 9 and Wheatfield with Crows (F 779) here, both at the Van Gogh Museum. The line stops before the rest of the sentence, which says what he was trying to express: DESIGN 9 asks for the working painter and not the biography, and what the ending means is M8's to get right. M3 cited 902, his last letter to Theo, which names no canvas here.",
  "letter": {
-  "n": 902,
-  "to": "Theo van Gogh",
-  "date": "1890-07-10",
-  "text": null
+  "n": 898,
+  "to": "Theo van Gogh and Jo van Gogh-Bonger",
+  "place": "Auvers-sur-Oise",
+  "date": "on or about 10 July 1890",
+  "para": 3,
+  "text": "They’re immense stretches of wheatfields under turbulent skies…",
+  "canvas": "crows",
+  "note": "n-4"
  },
  "caption": {
   "title": "Wheatfield with Crows",

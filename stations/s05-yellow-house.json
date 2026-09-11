@@ -150,12 +150,16 @@
   "gain": 0.0,
   "rate": 0.42
  },
- "_letter": "To Theo, the week he painted the first Bedroom, describing it colour by colour and saying the shadows and the cast shadows are suppressed. The text stays null until M7, which owns the voice and the verification against the Van Gogh Museum and Huygens edition.",
+ "_letter": "To Theo, the day he described the first Bedroom, which is where the line appears; the edition's own note on the paragraph is F 482, 72 x 90 cm, at the Van Gogh Museum. The line stops where the sentence goes on to say what the colour is for, and the ellipsis says so. The Sunflowers painted from sunrise, which DESIGN 9 lists, are the August 1888 canvases, and the one this station stands is the January 1889 repetition: that line would be about a different painting.",
  "letter": {
   "n": 705,
   "to": "Theo van Gogh",
-  "date": "1888-10-16",
-  "text": null
+  "place": "Arles",
+  "date": "16 October 1888",
+  "para": 3,
+  "text": "This time it’s simply my bedroom, but the colour has to do the job here…",
+  "canvas": "bedroom1",
+  "note": "n-1"
  },
  "caption": {
   "title": "The Yellow House",

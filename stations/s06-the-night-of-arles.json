@@ -97,11 +97,16 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_letter": "To Theo, 8 September 1888: the red and the green of the Night Cafe, which DESIGN 9 names. The edition's note two paragraphs on is F 463 at Yale -- this canvas. M3 cited 678, which is to Wil; its passage on the Cafe Terrace was the other candidate and is left out, because DESIGN 9 says one line.",
  "letter": {
-  "n": 678,
+  "n": 676,
   "to": "Theo van Gogh",
-  "date": "1888-09-08",
-  "text": null
+  "place": "Arles",
+  "date": "8 September 1888",
+  "para": 2,
+  "text": "I’ve tried to express the terrible human passions with the red and the green.",
+  "canvas": "nightcafe",
+  "note": "n-7"
  },
  "caption": {
   "title": "The night of Arles",

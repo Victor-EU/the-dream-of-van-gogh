@@ -75,11 +75,16 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_letter": "Letter 499, the one he sent with the painting; M3 cited 497, two days earlier, which says it is not finished yet. The line is the edition's translation, found by tools/letters.py in the paragraph named, and the edition's own note one paragraph before it is The Potato Eaters, F 82, 82 x 114 cm, at the Van Gogh Museum -- this canvas. The lamp is the one station 1 is lit by.",
  "letter": {
-  "n": 497,
+  "n": 499,
   "to": "Theo van Gogh",
-  "date": "1885-04-30",
-  "text": null
+  "place": "Nuenen",
+  "date": "on or about 2 May 1885",
+  "para": 4,
+  "text": "The subject here is a grey interior, lit by a small lamp.",
+  "canvas": "potatoeaters",
+  "note": "n-2"
  },
  "caption": {
   "title": "The Potato Eaters",

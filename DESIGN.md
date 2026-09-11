@@ -817,6 +817,20 @@ numbers and dates. Rules:
   Night Café; working on the sunflowers from sunrise because the flowers fade; colour doing the work in the Bedroom;
   the mistral; the cost of canvas and paint; the number of canvases at Auvers.
 
+*M7 checked the citations before a word of text went in, and seven of the nine that M3 to M6 had typed were wrong:
+the right number to the wrong person four times — 569 is to Horace Mann Livens and not to Wil, 590 and 678 are to Wil
+and not to Theo, 628 is to Bernard — and three letters on a day the edition does not give them. The rule above that
+no line goes in from memory had been kept for the quotations and broken for the citations, which is the same mistake
+made one step earlier. So a line now gets into a station only through `tools/letters.py`, which finds it verbatim in
+the named paragraph of the edition, writes the recipient, place and date in from the edition's own pages, and applies
+a test this section did not ask for: **a line appears at the canvas the edition's own note says the passage is
+about**, matched on the holder, the title and the size. Six of the nine do. The other three are about a week or a
+whole station rather than one canvas, and their station files say why. Two of the nine are his words exactly,
+because he wrote to Livens and to Russell in English. Of the subjects listed above, two are here — the red and the
+green of the Night Café, and the colour doing the work in the Bedroom — and two could not be: the sunflowers painted
+from sunrise are the August 1888 canvases and the piece stands the January 1889 repetition, and the mistral that
+pegged his easel to the ground is, by the edition's note, on a painting the piece does not have.*
+
 ---
 
 ## 10. Sound
@@ -830,6 +844,17 @@ When the burst ends the silence is enormous, and at station 7 the silence is the
 Underneath: the mistral at Arles, cicadas in the Provence heat, the asylum's quiet, rooks at Auvers. Nothing else. No
 score. No piano. Off by default, behind one button, because it is the one thing that will make a stranger close the
 tab in the first two seconds — but it is half the piece for anyone who turns it on.
+
+*M7 builds the brush, and `tools/listen.py` measures it from a recording of what the page actually played. There is
+no sample in it: it is noise shaped by the record — the strokes crossing the scrub each frame set the loudness, ten
+decibels for every tenfold, and the chunks they land in say where it comes from. A burst is **−16.0 dBFS RMS** at the
+Harvest and **−13.9** at the night of Arles, peaking at −3.8 and −1.0; the corridor's small canvases never sustain
+one and sit ten decibels under, which is the record's doing and not a setting. **When an act ends the output is
+exactly zero within 280 ms of the last stroke** and stays zero for the whole hold — not quiet, zero — in all
+twenty-one holds at three stations. **The louder ear is the side the paint is arriving on** in every one of the 313
+frames where it arrived twenty degrees or more off centre, on the left at the corridor and the Harvest and on the
+right at the night. What it has not had is a person listening to it, which is the half of this section a number
+cannot do. The mistral, the cicadas and the rooks stay deferred until the brush has been lived with.*
 
 ---
 
@@ -1134,6 +1159,10 @@ Van Gogh universe/
 The code will be MIT. The paintings are by Vincent van Gogh (1853–1890) and are in the public domain;
 `paintings/CREDITS.md` records every canvas, its collection and the reproduction it was extracted from. The letters
 are quoted from the Van Gogh Museum and Huygens Institute edition at `vangoghletters.org` and cited by letter number.
+
+*M7: the edition publishes its source files under CC BY-NC-SA 4.0, and the nine quotations are used on those terms —
+attributed in the edition's own form, not for commercial use, and shared alike — so `letters/` and the `letter` in
+each station file are CC BY-NC-SA 4.0 and not MIT. `letters/README.md` says so where the quotations are.*
 three.js is used under the MIT licence.
 
 The experience shape owes its existence to `monets-universe` in this repository's neighbour directory, and through it

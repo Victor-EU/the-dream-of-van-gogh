@@ -103,11 +103,17 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_letter": "M3 cited 590, which the edition has as a letter to Wil and not to Theo. This one is to Theo on 9 April 1888, in the middle of the orchards, and it is about the pace -- the fastest scrub in the piece. The sentence further on in it about the pink peach trees is, by the edition's own note, the Kroller-Muller's Souvenir de Mauve and not this station's peach tree, so it is not the one used.",
  "letter": {
-  "n": 590,
+  "n": 594,
   "to": "Theo van Gogh",
-  "date": "1888-03-30",
-  "text": null
+  "place": "Arles",
+  "date": "9 April 1888",
+  "para": 1,
+  "text": "Am hard at work again, still orchards in blossom.",
+  "canvas": "whiteorchard",
+  "note": null,
+  "why": "About the run of orchards, which is what this station is, and not one canvas in it: the paintings the edition's note names beside this line are the Kroller-Muller's Langlois Bridge and Souvenir de Mauve, neither of which the piece has."
  },
  "caption": {
   "title": "Snow, then blossom",

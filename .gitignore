@@ -13,9 +13,15 @@ ref/
 strokes/**/*.bin
 strokes/**/*.json
 strokes/**/*.png
+strokes/**/*.wav
 
 # ...except the golden image, which is the pipeline regression: every build
 # reports its RMS against this, and a change that moves it without meaning to
 # is caught in seconds instead of in a milestone.
 !strokes/golden/
 !strokes/golden/*.png
+
+# tools/letters.py keeps the edition's pages it read, so a check can be re-run
+# without asking the edition again. letters/letters.json is the record; this is
+# only the cache behind it.
+letters/.cache/

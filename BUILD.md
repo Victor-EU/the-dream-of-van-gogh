@@ -566,6 +566,16 @@ arriving from. Off by default behind one button.
 - The DOM carries every quotation as text for a screen reader.
 - With sound on, a burst is felt; when it ends, the silence is enormous.
 
+*Done. Nine lines for ten stations, and the brush. The Progress entry below has the numbers; the short version is two
+findings and an instrument. **The citations were wrong before anything was quoted** — seven of the nine letters M3 to
+M6 had named were to someone else or on another day, which is the misquotation this section warns about made one step
+earlier — so a line now gets into a station only through `tools/letters.py`, which reads the edition's own pages and
+adds a test the design did not ask for: the line stands at the canvas the edition's own note says the passage is
+about, and six of the nine do. **The silence is exactly zero** — at three stations every hold between two acts falls
+to digital zero within 280 ms of the last stroke and stays there, and the louder ear is the paint's side in all 313
+frames where it arrived off centre. What no number here can say is whether a person turning it on hears a roar or a
+hiss, and that is the first thing to ask the people M8 is going to find for station 7.*
+
 ---
 
 ## M8 — The two beats  *(1–2 weeks, and expect to redo them)*
@@ -2370,3 +2380,144 @@ coda, and station 7's beat beyond the fact that it exists — M8 owns both and e
 The two chairs, *Van Gogh's Chair* and *Gauguin's Chair*, both fetched and neither extracted. The other four
 *Sunflowers*. Committing a station's blobs, which `.gitignore` says happens once a station is frozen and M6 freezes
 none.
+
+### M7 — The voice and the brush
+
+**Asked.** The letters, DESIGN 9: one line from his own letters per station, two at most, every quotation verified
+against `vangoghletters.org` by letter number and date before it ships and cited in `letters/`, nothing from memory.
+The sound, DESIGN 10: the brush — a stroke laid has a sound, four thousand of them a roar, from the direction the
+paint is arriving from — off by default behind one button. Exit: every line traceable to a letter number and
+checkable by a stranger; every quotation in the DOM as text for a screen reader; a burst felt, and the silence after
+it enormous.
+
+**Built.** `tools/letters.py`, which reads the edition's pages for each station's letter and is now the only way
+text gets into a station file, and `letters/`: the record it writes, `letters.json`, and a `README.md` that says how
+to check it and whose words these are. Nine lines in nine station files. In the runtime, DESIGN 11's letter —
+centred low, italic, the citation beneath in very small type — arriving once the caption has had its four seconds,
+`aria-live`, with all nine in a list in the DOM whatever τ is; and the brush, with the one corner button and M on the
+keyboard. `tools/listen.py`, which plays a station headless from bare canvas with the brush on, records what came out
+on the audio context's own clock and measures it; `tools/shot.py` learns `--wav` to carry the recording back.
+
+**Seven of the nine citations were wrong, and they were wrong before anything was quoted.** DESIGN 9's rule is that
+no line goes in from memory, and M3 kept it by leaving `text` null and writing only a citation — a letter number, a
+recipient and a date. Those were typed from memory, which is the same mistake one step earlier: it would have sent
+this milestone to the wrong letter for a right-sounding line at seven stations of nine. The edition's index settled
+each in one request:
+
+| station | M3 to M6 said | the edition says |
+|---|---|---|
+| 2 | 569, to Wil, 1 October 1887 | 569 is to **Horace Mann Livens**, Paris, September or October 1886 |
+| 3 | 590, to Theo | 590 is to **Wil** |
+| 4 | 628, to Theo, 12 June 1888 | 628 is to **Émile Bernard**, on or about 19 June |
+| 6 | 678, to Theo, 8 September 1888 | 678 is to **Wil**, 9 and about 14 September |
+| 8 | 782, 19 June 1889 | on or about **18** June |
+| 9 | 898, 2 July 1890 | on or about **10** July, to Theo **and Jo** |
+| 10 | 902, 10 July 1890 | **23** July |
+
+Four to the wrong person and three on the wrong day; stations 1 and 5 were right. So the recipient, the place and
+the date in a station file are now written in by the tool from the edition's own words and never typed, and a person
+chooses only the letter, the paragraph, the words and the canvas.
+
+**And the edition says which canvas a line is about, which DESIGN 9 did not think to ask.** "Appearing in the air as
+you reach the canvas it describes" was a judgement until the edition's notes turned out to identify every work a
+passage discusses, by catalogue number, holder and size. So `tools/letters.py` checks that the canvas a line stands
+at is one the edition's own note says the passage is about — within two paragraphs of the line, and matched on the
+holder, the title and the size together, because each alone names a crowd: the Van Gogh Museum holds five canvases in
+this piece within two centimetres of 73 × 92, which is a size-30 off the shelf, and a holder-and-size match would
+have hung the Harvest's line on the Reaper. The sizes are allowed a twentieth apart because they are two authorities
+measuring one object — the edition gives the *Night Café* as 70 × 89 cm and Yale, whose figure this repository has
+used since M6, as 72.4 × 92.1 — and the record says so wherever they differ by more than two centimetres. Six of the
+nine lines are tied to their canvas that way:
+
+| station | letter | to | date | at | the edition's note |
+|---|---|---|---|---|---|
+| 1 | 499 | Theo | on or about 2 May 1885 | *The Potato Eaters* | F 82 |
+| 5 | 705 | Theo | 16 October 1888 | *The Bedroom* | F 482 |
+| 6 | 676 | Theo | 8 September 1888 | *The Night Café* | F 463 |
+| 8 | 782 | Theo | on or about 18 June 1889 | *The Starry Night* | F 612 |
+| 9 | 879 | Wil | 5 June 1890 | *The Church at Auvers* | F 789 |
+| 10 | 898 | Theo and Jo | on or about 10 July 1890 | *Wheatfield with Crows* | F 779, with F 778 |
+
+and three are about a run of days rather than one canvas — the corridor (569), the orchards (594), the week of the
+harvest (627) — and say so in a `why` that the tool checks is true: no note within two paragraphs of any of them
+names a canvas its station has. The same test took three of DESIGN 9's own subjects away from the stations they were
+meant for, each for a reason the design would accept. The mistral pegging his easel to the ground is letter 628, and
+the edition's note puts that painting at Winterthur. The pink peach trees "painted with a certain passion" are the
+Kröller-Müller's *Souvenir de Mauve*, not the Van Gogh Museum's peach tree at station 3. And the sunflowers painted
+from sunrise are the August 1888 canvases, while station 5 stands the January 1889 repetition — M6's finding, arriving
+again from the other side.
+
+**Two of the nine are his own words.** He wrote to Livens and to Russell in English, so those two lines are checked
+against his original and not a translation; the other seven are the edition's English, and `letters.json` carries
+the paragraph he wrote beside each. The edition publishes its source files under CC BY-NC-SA 4.0, and `letters/`
+says that the quotations are used on those terms and are not MIT.
+
+**The letter waits for the caption.** The first version appeared 1.4 s after arrival just above the hint line, and a
+screenshot of the page as a person sees it put it on top of both the hint and the long captions this piece writes.
+It now sits in the lower third and arrives at 4.4 s, as the caption fades: the plaque first and then his words, never
+the two in the same seconds. **A still is still a still**: `?still` shows no letter unless `?letter` asks, and M6's
+reference frame — which happens to stand at the Bedroom, a letter's canvas — is byte-identical after M7, before the
+brush went in and after.
+
+**The brush is noise shaped by the record.** Nothing in it is a recording. Each frame, the strokes that crossed the
+scrub are counted chunk by chunk, and that count is the whole of the input: the rate sets the loudness, ten decibels
+for every tenfold because the strokes are incoherent, compressed past the 2,000-a-second burst so that a hand on the
+scrub thirty times faster is louder but not thirty times louder; the chunks they fell in, weighted by how near they
+are, give the direction, and an HRTF panner puts it there. Under a few hundred a second the single strokes are
+audible on their own — high-passed noise rippled at the rate a brush crosses threads, with the knock of oil letting
+go of the hair at the front — and above that they are grain in a roar. When nothing arrives the bed falls with a
+30 ms time constant and is set to zero at 250 ms: not a tail, not a floor, not a room. The noise is seeded, so two
+runs of the harness hear the same brush.
+
+**The silence is exactly zero, and the roar comes from where the paint is.** `tools/listen.py` plays a station from
+bare canvas with the brush on and keeps the output sample for sample, on the context's clock — the recording and the
+page's log agree to within 6 ms on the first stroke. Three stations, chosen for paint on both sides of the head:
+
+| | burst, dBFS RMS | peak | holds | exact zero after the last stroke | off-centre frames louder on the paint's side |
+|---|---|---|---|---|---|
+| 2 the corridor | −25.9 (never sustained) | −8.9 | 9 | 265 ms median, 278 ms most | 14 of 14, paint at −32°: left ear +5.2 dB |
+| 4 the Harvest | **−16.0** | −3.8 | 5 | 272 ms | 21 of 21, paint at −68°: left ear +5.9 dB |
+| 6 the night of Arles | **−13.9** | −1.0 | 7 | 272 ms median, 278 ms most | 278 of 278, paint at +60°: right ear +6.5 dB |
+
+Every hold is zero from the moment it falls until the next act begins. The instrument's first answer said one of the
+Harvest's holds never went silent at all, and the recording said it did: the window had run on into the next act's
+attack. It now stops 60 ms short of the next act, and the WAV and a picture of its envelope go beside every run.
+
+**Verified.**
+
+| | measured | |
+|---|---|---|
+| every line against the edition | 9 of 9, 6 at the canvas the edition's note names | `tools/letters.py --check` exits 0; exit criterion 1 |
+| the citations M3 to M6 typed | 7 of 9 wrong | replaced from the edition's own metadata |
+| every quotation in the DOM | 9 of 9, verbatim, in `#letterlist` | exit criterion 2 |
+| each letter at its canvas | 9 of 9 `?still&letter` frames show exactly their own line | `vg.state.letter` |
+| a burst | −16.0 and −13.9 dBFS RMS at stations 4 and 6 | exit criterion 3 |
+| the silence | 21 of 21 holds exactly zero within 280 ms | exit criterion 3 |
+| the direction | 313 of 313 off-centre frames louder on the paint's side | DESIGN 10 |
+| `?still` at the Bedroom | byte-identical to M6's, `01337c1d` | twice |
+| `?flat` parity against `tools/flat.py` | RMS **0.0476** at 1272 px | M6 0.0476 |
+| the brush's cost | 60 fps, 1.5 to 2.3 ms submit mid-burst, Rich | nothing to see |
+| the station audit | 10 stations | `tools/station.py` exits 0 |
+
+**Still visible, and named rather than fixed.**
+
+- **Nobody has listened to it.** Every number above is about a recording, and whether a person hears a roar or a hiss
+  is in none of them. `tools/listen.py` makes the WAV; a person has to judge it.
+- **The harness cannot see a letter.** `vg.snap()` is the WebGL canvas and the letter is DOM, so every frame
+  `tools/shot.py` takes is a frame without his words in it. The screenshot that found the collision above was
+  Chrome's own `--screenshot`, which writes its file and then does not exit. M9's photo mode has to decide whether a
+  photograph carries the line.
+- **The hint line and a long caption overlap** at 1200 px whenever the caption is up. The hint is permanent where
+  DESIGN 11 asks for a single line on first load; that is M9's.
+- **The licence rests on the edition's source files.** The edition releases those under CC BY-NC-SA 4.0 and its web
+  pages say all rights reserved, and `tools/letters.py` reads the pages. The XML itself, `vangoghxml.zip`, 9.6 MB, is
+  the licensed artefact, and reading the lines out of it instead is a small change that needs the download.
+- **Station 10's line is M8's to keep or cut.** It is the one sentence the edition ties to *Wheatfield with Crows*,
+  and it stops before the half that says what he was trying to express, because DESIGN 9 asks for the working painter
+  and not the biography; what the ending means is M8's to get right.
+- **The corridor is quiet** — ten decibels under the Harvest and the night, because its canvases are small and its
+  acts short. That is the record, and it may be right; it may also want to be louder.
+
+**Not started, per scope.** The mistral, the cicadas and the rooks, deferred until the brush has been lived with.
+Station 7's beat, which the brush now cuts with and M8 has to make land, and stations 10 and 11. Photo mode, the
+accessibility pass and the performance pass, M9's.

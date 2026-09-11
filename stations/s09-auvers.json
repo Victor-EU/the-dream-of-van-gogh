@@ -115,11 +115,16 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_letter": "To Wil, 5 June 1890, describing the Church at Auvers the week he painted it; the edition's note is F 789, 94 x 74 cm, the Orsay's -- this canvas. The line is lifted out of the middle of a longer sentence and says so at both ends. M3 cited 898, a July letter about the wheatfields, which is station 10's.",
  "letter": {
-  "n": 898,
-  "to": "Theo van Gogh",
-  "date": "1890-07-02",
-  "text": null
+  "n": 879,
+  "to": "Willemien van Gogh",
+  "place": "Auvers-sur-Oise",
+  "date": "5 June 1890",
+  "para": 3,
+  "text": "…the building appears purplish against a sky of a deep and simple blue of pure cobalt…",
+  "canvas": "church",
+  "note": "n-8"
  },
  "caption": {
   "title": "Auvers",

@@ -140,11 +140,18 @@
   "burst": 2000,
   "hold": 2.4
  },
+ "_letter": "M3 cited 569 as a letter to Wil of October 1887. The edition's 569 is this one, to Horace Mann Livens from Paris in the autumn of 1886, and the October 1887 letter to Wil is 574. It stands at the first canvas of the corridor because it is about all of them.",
  "letter": {
   "n": 569,
-  "to": "Wilhelmina van Gogh",
-  "date": "1887-10-01",
-  "text": null
+  "to": "Horace Mann Livens",
+  "place": "Paris",
+  "date": "September or October 1886",
+  "para": 9,
+  "lang": "en",
+  "text": "Trying to render intense COLOUR and not a grey harmony.",
+  "canvas": "selfgrey",
+  "note": null,
+  "why": "About what the whole corridor is doing rather than one canvas in it: the edition ties nothing around this paragraph to a painting the piece has. He wrote this letter in English, so the line is his own words and capitals, not a translation."
  },
  "caption": {
   "title": "The corridor of self-portraits",

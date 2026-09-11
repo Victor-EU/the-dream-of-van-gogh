@@ -92,12 +92,18 @@
   "burst": 2000,
   "hold": 2.4
  },
- "_letter": "DESIGN 11's letter. The number and date are the citation; the text is deliberately null until M7, which is the milestone that owns the voice and the verification of the quotations against the Van Gogh Museum and Huygens edition. A quotation typed from memory is not a quotation.",
+ "_letter": "M3 cited 628 as a letter to Theo of 12 June; the edition's 628 is to Emile Bernard, on or about the 19th. It holds the line DESIGN 7 wanted here -- he painted out in the mistral with the easel's feet pegged into the ground -- but the edition's note puts that painting as the Winterthur Wheatfield with Setting Sun (F 465), which the piece does not have. So the line is his own English to Russell, the same week, about the harvest and nothing else.",
  "letter": {
-  "n": 628,
-  "to": "Theo van Gogh",
-  "date": "1888-06-12",
-  "text": null
+  "n": 627,
+  "to": "John Peter Russell",
+  "place": "Arles",
+  "date": "on or about 17 June 1888",
+  "para": 1,
+  "lang": "en",
+  "text": "We have harvest time here at present and I am always in the fields.",
+  "canvas": "harvest",
+  "note": null,
+  "why": "About the week of the harvest and not one canvas: the letter names no painting this station stands. Written in English, to John Peter Russell, so the words are his exactly."
  },
  "caption": {
   "title": "The Harvest",

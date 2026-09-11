@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Van Gogh's Universe — M6</title>
+<title>Van Gogh's Universe — M7</title>
 <style>
   :root { color-scheme: dark; }
   html, body { margin: 0; height: 100%; background: #0b0b0d; overflow: hidden; }
@@ -20,10 +20,32 @@
   #caption b { font: 600 17px/1.35 ui-serif, Georgia, "Times New Roman", serif;
                letter-spacing: .01em; display: block; }
   #caption span { display: block; opacity: .62; margin-top: 5px; font-size: 12px; }
+  /* DESIGN 11's letter: centred low, small, italic, his words, and the letter's
+     number and date beneath in very small type. In the lower third and clear of
+     the hint line, and it fades rather than persisting, like the caption. */
+  #letter { position: absolute; left: 50%; bottom: max(96px, 21vh); transform: translateX(-50%);
+            width: min(36em, 88vw); text-align: center; opacity: 0;
+            text-shadow: 0 1px 14px rgba(0,0,0,.9); transition: opacity 1.8s ease; }
+  #letter.on { opacity: .9; }
+  #letter q { display: block; quotes: none;
+              font: italic 400 16px/1.5 ui-serif, Georgia, "Times New Roman", serif; }
+  #letter cite { display: block; margin-top: 6px; font-style: normal; font-size: 10.5px;
+                 letter-spacing: .05em; opacity: .5; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap; }
+  /* DESIGN 10 and 11: the one corner button for sound, and it starts off. */
+  #sound { position: absolute; right: 16px; top: 14px; pointer-events: auto;
+           background: none; color: inherit; cursor: pointer;
+           font: 11px/1 ui-sans-serif, -apple-system, Helvetica, sans-serif;
+           letter-spacing: .08em; padding: 7px 11px; border-radius: 14px;
+           border: 1px solid rgba(232,228,220,.22); opacity: .5;
+           transition: opacity .2s ease, border-color .2s ease; }
+  #sound:hover, #sound:focus-visible { opacity: .85; outline: none; }
+  #sound[aria-pressed="true"] { opacity: .85; border-color: rgba(232,228,220,.5); }
   #hint { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%);
           opacity: .42; font-size: 12px; letter-spacing: .04em; text-align: center;
           text-shadow: 0 1px 12px rgba(0,0,0,.9); }
-  #debug { position: absolute; right: 16px; top: 14px; display: none;
+  #debug { position: absolute; right: 16px; top: 48px; display: none;
            font: 11px/1.55 ui-monospace, Menlo, monospace; opacity: .8;
            text-align: right; text-shadow: 0 1px 10px rgba(0,0,0,.9);
            white-space: pre; }
@@ -63,7 +85,10 @@
 <body>
 <div id="ui">
   <div id="caption" role="status" aria-live="polite"><b id="capt">The Harvest</b><span id="caps"></span></div>
-  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; space to let it paint itself &nbsp;·&nbsp; Z lie down &nbsp;·&nbsp; C the caption</div>
+  <div id="letter" role="status" aria-live="polite" aria-atomic="true"><q id="lettq"></q><cite id="lettc"></cite></div>
+  <section class="sr" aria-label="Lines from his letters"><ol id="letterlist"></ol></section>
+  <button id="sound" type="button" aria-pressed="false" aria-label="The sound of the brush">sound off</button>
+  <div id="hint">drag to look &nbsp;·&nbsp; W A S D to walk &nbsp;·&nbsp; ← → the scrub &nbsp;·&nbsp; space to let it paint itself &nbsp;·&nbsp; Z lie down &nbsp;·&nbsp; C the caption &nbsp;·&nbsp; M the sound</div>
   <div id="when"></div>
   <div id="debug"></div>
   <div id="band"><div id="bandfill"></div><div id="bandknob"></div></div>
@@ -2346,6 +2371,338 @@ async function main() {
       showCaption();
   });
 
+  // ---------------------------------------------------------- the letter ---
+  // DESIGN 9: one line from his own letters per station, appearing in the air
+  // as you reach the canvas it describes, small, and fading after several
+  // seconds. His words, not ours: each one is in its station file only because
+  // tools/letters.py found it in the named paragraph of the Van Gogh Museum and
+  // Huygens edition, and the recipient, the place and the date beside it are
+  // the edition's own words. This shows what it is given and adds nothing.
+  const letEl = document.getElementById('letter');
+  const letQ = document.getElementById('lettq'), letC = document.getElementById('lettc');
+  const LETTERS = [];
+  for (const sn of STS) {
+    const L = sn.letter;
+    if (!L?.n || !L.text) continue;
+    const k = specs.findIndex(c => c._st === sn._i &&
+                              c.blob.split('/').pop().startsWith(L.canvas + '-canvas'));
+    if (k < 0) {
+      console.warn(`station ${sn.id}: its letter stands at '${L.canvas}', which is not one of its canvases`);
+      continue;
+    }
+    LETTERS.push({ k, sn, L });
+  }
+  const citeOf = L => `to ${L.to}, ${L.place}, ${L.date}  \u00b7  letter ${L.n}`;
+  // DESIGN 11: every quotation is also in the DOM as text, so the voice of the
+  // piece is there for a screen reader whether or not tau has reached it.
+  const listEl = document.getElementById('letterlist');
+  if (listEl) for (const { sn, L } of LETTERS) {
+    const li = document.createElement('li');
+    li.textContent = `${sn.title}. ${L.text} (${citeOf(L)})`;
+    listEl.appendChild(li);
+  }
+  // Long enough to read twice at the pace of small type, and never so long it
+  // is still there at the next canvas.
+  const letHold = L => Math.min(9, Math.max(5, 2.6 + 0.3 * L.text.split(/\s+/).length));
+  // A still is a still: the letter is not in one unless ?letter asks for it,
+  // which keeps every frame taken before M7 byte-identical after it.
+  const letForce = has('letter');
+  let letAt = -1, letShown = null, letTimer = 0, letFade = 0;
+  function letterAt(k) {
+    letAt = k;
+    clearTimeout(letTimer); clearTimeout(letFade);
+    const x = LETTERS.find(e => e.k === k);
+    if (!x || x.L !== letShown) letEl?.classList.remove('on');
+    if (!letEl || !x || (still && !letForce)) return;
+    const show = () => {
+      letQ.textContent = x.L.text;
+      letC.textContent = citeOf(x.L);
+      letShown = x.L;
+      letEl.classList.add('on');
+      if (!still) letFade = setTimeout(() => letEl.classList.remove('on'), letHold(x.L) * 1000);
+    };
+    // The plaque first and then his words: the caption says what the painting
+    // is and fades at four seconds, and the letter arrives as it goes, so the
+    // two never compete for the same seconds. In a still, at once, and the
+    // caption steps back for it.
+    if (still) { letEl.style.transition = 'none'; capEl?.classList.add('dim'); show(); }
+    else letTimer = setTimeout(show, 4400);
+  }
+
+  // ----------------------------------------------------------- the brush ---
+  // DESIGN 10: not ambience -- the brush. A stroke being laid has a sound,
+  // bristle dragging on weave and the small stick of loaded oil. One is nearly
+  // nothing; four thousand arriving over two seconds is a roar, and it comes
+  // from the direction the paint is arriving from. When the burst ends the
+  // silence is enormous, and at station 7 the silence is the event. Off by
+  // default, behind one button, because it is the one thing that will make a
+  // stranger close the tab in the first two seconds.
+  //
+  // None of it is a recording. It is noise shaped by what the record says is
+  // arriving -- how many strokes crossed the scrub this frame, and where their
+  // chunks stand in the world -- so its loudness is the rate he painted at and
+  // its direction is where on the canvas that paint went. The mistral, the
+  // cicadas and the rooks wait until this exists at scale; it is the only sound.
+  const soundBtn = document.getElementById('sound');
+  if (soundBtn && flatMode) soundBtn.hidden = true;
+  const brush = (() => {
+    // seeded, so two runs of the harness hear the same noise
+    let seed = 1888;
+    const rng = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    let ctx = null, on = false, master, ceil, bedGain, bedBand, bedBody, bedPan, rec = null;
+    let quiet = 0, rate = 0, az = null;
+    const pans = [], grains = [], log = [], top = [];
+    const dir = new THREE.Vector3(), eye = new THREE.Vector3(), w = new THREE.Vector3();
+    const fw = new THREE.Vector3(), up = new THREE.Vector3(), inv = new THREE.Quaternion();
+    // One stroke is nearly nothing and two thousand a second is the burst, and
+    // between them the sum is incoherent: ten times the strokes is ten times the
+    // power, ten decibels. Past the burst rate a hand on the scrub can go thirty
+    // times faster, and that may be louder but not thirty times louder.
+    const BURST_DB = -16, BED_K = 2.2, GRAIN_K = 0.035, JUMP = 20000;
+    const dbOf = r => r < 2000 ? BURST_DB + 10 * Math.log10(r / 2000)
+                               : BURST_DB + 4 * Math.log10(r / 2000);
+    const setv = (p, v) => { p.value = v; };
+    const placeAt = (p, v) => {
+      if (p.positionX) { setv(p.positionX, v.x); setv(p.positionY, v.y); setv(p.positionZ, v.z); }
+      else p.setPosition(v.x, v.y, v.z);
+    };
+    const panner = () => {
+      const p = ctx.createPanner();
+      p.panningModel = 'HRTF'; p.distanceModel = 'linear';
+      p.refDistance = 1; p.maxDistance = 1e4; p.rolloffFactor = 0;   // distance is ours, below
+      p.connect(master);
+      return p;
+    };
+
+    function build() {
+      ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+      const sr = ctx.sampleRate;
+      master = ctx.createGain(); master.gain.value = 0;
+      // A soft ceiling rather than a limiter: a roar may be loud and may not
+      // clip. The curve is odd and has a point at the origin, so zero in is zero
+      // out and a silence stays exactly one.
+      ceil = ctx.createWaveShaper();
+      const curve = new Float32Array(2049);
+      for (let i = 0; i < 2049; i++) curve[i] = Math.tanh(1.3 * (i / 1024 - 1)) / Math.tanh(1.3);
+      ceil.curve = curve;
+      master.connect(ceil); ceil.connect(ctx.destination);
+
+      // two seconds of noise, pinkish, because paint on cloth is not a hiss
+      const noise = ctx.createBuffer(1, sr * 2, sr), nd = noise.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, e2 = 0;
+      for (let i = 0; i < nd.length; i++) {
+        const x = rng() * 2 - 1;
+        b0 = 0.99765 * b0 + x * 0.0990460; b1 = 0.96300 * b1 + x * 0.2965164;
+        b2 = 0.57000 * b2 + x * 1.0526913;
+        nd[i] = b0 + b1 + b2 + x * 0.1848; e2 += nd[i] * nd[i];
+      }
+      const unit = 1 / Math.sqrt(e2 / nd.length);
+      for (let i = 0; i < nd.length; i++) nd[i] *= unit;
+      const bed = ctx.createBufferSource(); bed.buffer = noise; bed.loop = true;
+      bedBand = ctx.createBiquadFilter(); bedBand.type = 'bandpass';
+      bedBand.frequency.value = 1300; bedBand.Q.value = 0.5;
+      bedBody = ctx.createBiquadFilter(); bedBody.type = 'lowshelf';
+      bedBody.frequency.value = 240; bedBody.gain.value = 0;
+      bedGain = ctx.createGain(); bedGain.gain.value = 0;
+      bedPan = panner();
+      bed.connect(bedBand); bedBand.connect(bedBody); bedBody.connect(bedGain); bedGain.connect(bedPan);
+      bed.start();
+
+      // and a dozen single strokes, each a little different: high-passed noise
+      // rippled at the rate the threads go by under a brush moving a few
+      // centimetres a second, and at the front of it the knock of the oil
+      // letting go of the hair
+      for (let g = 0; g < 12; g++) {
+        const len = Math.round(sr * (0.05 + 0.09 * rng()));
+        const b = ctx.createBuffer(1, len, sr), d = b.getChannelData(0);
+        const weave = 120 + 360 * rng(), ph = 6.2832 * rng(), knock = 140 + 120 * rng();
+        let hp = 0, x0 = 0;
+        for (let i = 0; i < len; i++) {
+          const t = i / sr, u = i / len, x = rng() * 2 - 1;
+          hp = 0.86 * (hp + x - x0); x0 = x;
+          const env = Math.min(1, u / 0.07) * Math.pow(1 - u, 1.7);
+          const rip = 0.6 + 0.4 * Math.sin(6.2832 * weave * t + ph);
+          const fade = Math.min(1, (1 - u) / 0.1);
+          d[i] = fade * (0.55 * hp * env * rip + 0.5 * Math.sin(6.2832 * knock * t) * Math.exp(-t / 0.011));
+        }
+        grains.push(b);
+      }
+      for (let i = 0; i < 4; i++) pans.push(panner());
+      if (has('soundlog')) record();
+    }
+
+    // ?soundlog: keep what came out, sample for sample and on the context's own
+    // clock, for tools/listen.py to measure and for a person to listen to. A
+    // worklet from a Blob, so it needs no second file and has no latency to guess.
+    function record() {
+      rec = { t0: null, L: [], R: [], n: 0, max: ctx.sampleRate * num('soundsecs', 40) };
+      const src = "registerProcessor('tap', class extends AudioWorkletProcessor {" +
+        "constructor(){super();this.L=new Float32Array(8192);this.R=new Float32Array(8192);this.n=0;this.t=-1;}" +
+        "process(ins){const i=ins[0],L=i&&i[0],R=i&&(i[1]||i[0]);if(this.t<0)this.t=currentTime;" +
+        "if(L){this.L.set(L,this.n);this.R.set(R,this.n);}this.n+=L?L.length:128;" +
+        "if(this.n>=8192){this.port.postMessage({t:this.t,L:this.L,R:this.R},[this.L.buffer,this.R.buffer]);" +
+        "this.L=new Float32Array(8192);this.R=new Float32Array(8192);this.n=0;this.t=-1;}return true;}});";
+      ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })))
+        .then(() => {
+          const tap = new AudioWorkletNode(ctx, 'tap', { numberOfInputs: 1, numberOfOutputs: 1,
+                                                         channelCount: 2, channelCountMode: 'explicit' });
+          const zero = ctx.createGain(); zero.gain.value = 0;
+          tap.port.onmessage = e => {
+            if (rec.n >= rec.max) return;
+            if (rec.t0 === null) rec.t0 = e.data.t;
+            rec.L.push(e.data.L); rec.R.push(e.data.R); rec.n += e.data.L.length;
+          };
+          ceil.connect(tap); tap.connect(zero); zero.connect(ctx.destination);
+        })
+        .catch(e => console.warn('no recording:', e.message));
+    }
+
+    function wav() {
+      if (!rec || !rec.n) return null;
+      const n = Math.min(rec.n, rec.max), sr = ctx.sampleRate;
+      const buf = new ArrayBuffer(44 + n * 4), v = new DataView(buf);
+      const tag = (o, s) => { for (let i = 0; i < 4; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+      tag(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); tag(8, 'WAVE'); tag(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true);
+      v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true);
+      v.setUint16(32, 4, true); v.setUint16(34, 16, true);
+      tag(36, 'data'); v.setUint32(40, n * 4, true);
+      const q = s => Math.round(Math.max(-1, Math.min(1, s)) * 32767);
+      let o = 44, k = 0;
+      for (let c = 0; c < rec.L.length && k < n; c++)
+        for (let i = 0; i < rec.L[c].length && k < n; i++, k++, o += 4) {
+          v.setInt16(o, q(rec.L[c][i]), true); v.setInt16(o + 2, q(rec.R[c][i]), true);
+        }
+      let s = '';
+      const u8 = new Uint8Array(buf);
+      for (let i = 0; i < u8.length; i += 0x8000)
+        s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+      return { t0: rec.t0, sr, b64: btoa(s) };
+    }
+
+    function update(dt) {
+      if (!ctx || !on) {
+        // re-baselined on the way back on, so that turning it on is not a burst
+        // of everything that arrived while it was off
+        for (const cv of canvases) if (cv) cv._brush = null;
+        return;
+      }
+      cam.getWorldPosition(eye);
+      inv.copy(cam.quaternion).invert();
+      fw.set(0, 0, -1).applyQuaternion(cam.quaternion);
+      up.set(0, 1, 0).applyQuaternion(cam.quaternion);
+      const Ls = ctx.listener;
+      if (Ls.forwardX) {
+        setv(Ls.forwardX, fw.x); setv(Ls.forwardY, fw.y); setv(Ls.forwardZ, fw.z);
+        setv(Ls.upX, up.x); setv(Ls.upY, up.y); setv(Ls.upZ, up.z);
+      } else Ls.setOrientation(fw.x, fw.y, fw.z, up.x, up.y, up.z);
+      // what crossed the scrub this frame, chunk by chunk, and where each chunk is
+      let n = 0, heard = 0;
+      dir.set(0, 0, 0); top.length = 0;
+      for (const cv of canvases) {
+        if (!cv) continue;
+        const sc = cv.uni.uScrub.value;
+        const got = c => c.olo > sc ? 0 : c.ohi <= sc ? c.count
+          : upperBound(cv.orders, c.first, c.first + c.count, sc) - c.first;
+        if (!cv._brush) { cv._brush = { sc, n: cv.chunkList.map(got) }; continue; }
+        if (sc === cv._brush.sc) continue;
+        const fwd = sc > cv._brush.sc;
+        cv._brush.sc = sc;
+        cv.chunkList.forEach((c, j) => {
+          const now = got(c), d = now - cv._brush.n[j];
+          cv._brush.n[j] = now;
+          if (!fwd || d <= 0) return;            // paint going backwards makes no sound
+          w.copy(c.centre).applyMatrix4(cv.group.matrixWorld).sub(eye);
+          const far = Math.max(0.5, w.length());
+          w.divideScalar(far);
+          // near paint louder than paint out on the plain, and none of it lost
+          const k = d * Math.min(1, Math.max(0.3, 5 / far));
+          n += d; heard += k;
+          dir.addScaledVector(w, k);
+          top.push([k, w.x, w.y, w.z]);
+        });
+      }
+      const t = ctx.currentTime;
+      const r = n > JUMP ? 0 : heard / Math.max(dt, 1e-3);   // a click on the band is not painting
+      rate = r;
+      if (r > 0) {
+        quiet = 0;
+        bedGain.gain.cancelScheduledValues(t);
+        bedGain.gain.setTargetAtTime(Math.pow(10, dbOf(r) / 20) * BED_K, t, 0.025);
+        // brighter as it thickens, and a body under it once it is a roar
+        bedBand.frequency.setTargetAtTime(900 + 1100 * clamp01(Math.log10(Math.max(r, 1) / 50) / 3), t, 0.05);
+        bedBody.gain.setTargetAtTime(9 * clamp01(Math.log10(Math.max(r, 1) / 800) / 1.5), t, 0.05);
+        dir.normalize();
+        placeAt(bedPan, dir);
+        w.copy(dir).applyQuaternion(inv);
+        az = Math.atan2(w.x, -w.z) * 180 / Math.PI;
+        // single strokes, heard on their own when few arrive and a grain in the
+        // roar when many do: as many as arrived, up to seventy a second
+        top.sort((a, b) => b[0] - a[0]);
+        const m = Math.min(pans.length, top.length);
+        let tot = 0;
+        for (let i = 0; i < m; i++) { placeAt(pans[i], w.set(top[i][1], top[i][2], top[i][3])); tot += top[i][0]; }
+        const want = Math.min(n, Math.ceil(70 * dt));
+        for (let e = 0; e < want; e++) {
+          let u = rng() * tot, i = 0;
+          while (i < m - 1 && (u -= top[i][0]) > 0) i++;
+          const s = ctx.createBufferSource(), gg = ctx.createGain();
+          s.buffer = grains[(rng() * grains.length) | 0];
+          s.playbackRate.value = 0.8 + 0.5 * rng();
+          gg.gain.value = GRAIN_K * (0.6 + 0.4 * rng());
+          s.connect(gg); gg.connect(pans[i]);
+          s.start(t + rng() * dt);
+        }
+      } else if (!quiet) {
+        quiet = t;
+        // the silence: a thirtieth of a second to fall, and then nothing at all --
+        // not a tail, not a floor, not a room
+        bedGain.gain.cancelScheduledValues(t);
+        bedGain.gain.setTargetAtTime(0, t, 0.03);
+        bedGain.gain.setValueAtTime(0, t + 0.25);
+      }
+      if (rec) log.push([+t.toFixed(4), n, Math.round(r), az === null ? null : +az.toFixed(1),
+                         r > 0 ? +dbOf(r).toFixed(1) : null]);
+    }
+
+    function set(v) {
+      if (v && !ctx) build();
+      on = !!v;
+      if (ctx) {
+        if (on && ctx.state !== 'running') ctx.resume();
+        const t = ctx.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setTargetAtTime(on ? 1 : 0, t, 0.04);
+        if (!on) {
+          master.gain.setValueAtTime(0, t + 0.3);
+          setTimeout(() => { if (!on && ctx.state === 'running') ctx.suspend(); }, 450);
+        }
+      }
+      if (soundBtn) {
+        soundBtn.setAttribute('aria-pressed', String(on));
+        soundBtn.textContent = on ? 'sound on' : 'sound off';
+      }
+      return on;
+    }
+
+    return {
+      set, update, wav,
+      get on() { return on; },
+      wake: () => { if (on && ctx && ctx.state !== 'running') ctx.resume(); },
+      state: () => ({ on, running: ctx ? ctx.state : null, sr: ctx ? ctx.sampleRate : null,
+                      rate: Math.round(rate), az: az === null ? null : +az.toFixed(1),
+                      t0: rec ? rec.t0 : null, recorded: rec ? rec.n : 0,
+                      log: rec ? log : undefined }),
+    };
+  })();
+  soundBtn?.addEventListener('click', () => brush.set(!brush.on));
+  addEventListener('keydown', e => { if (e.code === 'KeyM' && !e.repeat) brush.set(!brush.on); });
+  // A browser will not start sound without a gesture, so ?sound -- the
+  // harness's switch -- is heard from the first one when there is no autoplay.
+  addEventListener('pointerdown', () => brush.wake());
+  addEventListener('keydown', () => brush.wake());
+  if (has('sound')) brush.set(true);
+
   // ------------------------------------------------------------ the loop --
   const still = has('still');
   const dbgEl = document.getElementById('debug');
@@ -2515,8 +2872,10 @@ async function main() {
     cam.updateMatrixWorld();
     scene.updateMatrixWorld();
     updateChunks();
+    brush.update(dt);
     const at = canvasAt(scrub);
     if (at !== capShown && !STS[0].lone && fetched[at]) showCaption(at);
+    if (at !== letAt && !STS[0].lone && fetched[at]) letterAt(at);
 
     const gq = gpuBegin();
     renderer.render(scene, cam);
@@ -2608,6 +2967,13 @@ async function main() {
                orderHeur: b.orderHeur, orderBlock: b.orderBlock,
                acts: actList.map(a => ({ name: a.name, hi: a.hi, canvas: a.canvas })),
                playing, held: +held.toFixed(2),
+               letter: letShown && letEl?.classList.contains('on')
+                 ? { n: letShown.n, text: letShown.text, cite: citeOf(letShown) } : null,
+               letters: LETTERS.map(e => ({ station: e.sn.id, n: e.L.n, canvas: specs[e.k].title,
+                                            text: e.L.text })),
+               audio: brush.state(),
+               // DESIGN 11: every quotation in the DOM as text, whatever tau is
+               letterDom: [...document.querySelectorAll('#letterlist li')].map(li => li.textContent),
                station: st.lone ? null : st.id, stationTitle: st.title,
                where: axisAt(scrub).a.kind, when: dateText(dateAt(scrub)),
                base: [carry.x, carry.y],
@@ -2756,6 +3122,11 @@ async function main() {
     // render immediately before reading: the drawing buffer is not preserved,
     // so a toDataURL that is not preceded by a draw comes back blank
     snap: () => { renderer.render(scene, cam); return renderer.domElement.toDataURL('image/png'); },
+    // the brush, from outside a pair of hands: on, off, what it is doing, and
+    // what it has recorded under ?soundlog
+    sound: v => brush.set(v === undefined ? !brush.on : !!v),
+    audio: () => brush.state(),
+    wav: () => brush.wav(),
     reload: async (path) => {
       const b = readBlob(await (await fetch(path + '?t=' + Date.now())).arrayBuffer());
       const cv = canvases[0];
@@ -2797,6 +3168,7 @@ async function main() {
       fetch('/__probe', { method: 'POST', body: JSON.stringify({
         state: window.vg.state,
         png: has('nopng') ? null : window.vg.snap(),
+        wav: has('soundlog') ? window.vg.wav() : null,
       }) }).catch(() => {});
     }, num('probe', 3000));
   }
