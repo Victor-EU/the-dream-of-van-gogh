@@ -1,7 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "vangogh", "url": "http://127.0.0.1:8710", "port": 8710 },
+    { "name": "vangogh", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8710", "--bind", "127.0.0.1"], "port": 8710 },
     { "name": "monet", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8791", "--bind", "127.0.0.1", "--directory", "../monets-universe"], "port": 8791 }
   ]
 }
