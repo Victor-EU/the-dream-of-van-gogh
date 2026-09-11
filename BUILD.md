@@ -2957,3 +2957,88 @@ It uses DOM key events and a synthetic wheel event.
 | the eye off its height | ±2.8 cm, 2.6 times a second walking, 6.4 running | 0.000 cm on every frame, at every speed |
 
 No exceptions and no console errors, at 60 fps. The probe lives in the session's scratchpad, like M9's driver.
+
+### After M9 — The opening, after Monet's
+
+**What was asked.** The opening should be more like Monet's Universe's, and its animation could be inspired by *The
+Starry Night*. Monet's opens on a veil of the pond's palette that washes in while its world is built. Then the veil
+lifts, you are standing in *The Water-Lily Pond* with its caption and one line of keys, and there is no button. Ours
+opened on 0.7 s of black and then bare linen. A title card with a paragraph and "Begin the walk" came up at 2 s, and
+the walk was locked until the button was pressed.
+
+**What changed.**
+
+- **The veil is *The Starry Night* painting itself.** `src/veil.js` is new. From the first paint the page is dark,
+  with a primed canvas in the middle and the title and a plaque under it. The canvas is painted from the painting's
+  own stroke record, `strokes/s08/starry-canvas.bin`: the 13,999 strokes its easel at Saint-Rémy plays back.
+  - They come in the order the pipeline solved. That order runs dark to light and from the bottom up: the mean
+    luminance of each tenth of it rises from 0.15 to 0.57. So the village, the hills and the cypress come first, then
+    the wind, and the stars and the moon last.
+  - All of them take 3.2 s: slowly at first, then a flurry, then slowly again.
+  - Each is the easel's ribbon, drawn flat: its quadratic, its width and its taper, with one ridge lit from the upper
+    left and one in shadow.
+  - The extractor's underlayer comes up behind the strokes as they are laid, and never ahead of them.
+  - When the canvas is finished, soft glows breathe on his eleven stars and the moon, where `config.js` places them.
+- **The brush does not stop for the build.** The canvas is handed to a worker as an `OffscreenCanvas`, so the world's
+  long task on the main thread cannot stall it. Where a canvas cannot be handed over, it paints in the page.
+- **The veil lifts into the world.** It waits until the painting has been finished for 0.6 s and the world has been
+  painting itself for 1 s. Then the canvas comes towards you until it fills the window, and only then dissolves into
+  the dusk at Nuenen. The world's own opening, painting itself outward from bare linen, still runs, now behind the veil.
+- **No title card and no button.** The world can be walked as soon as it is ready, and a key, a click or a touch during
+  the veil lifts it at once.
+- **The first view is Monet's.**
+  - As the veil lifts, the card for where you stand comes up (Nuenen, *The Potato Eaters*), with his letter after it
+    as before.
+  - One line of keys follows at the bottom, which is what §11 asked for.
+  - The line along the bottom and the corner buttons wait for the first touch of a hand, and the line of keys goes
+    when they come.
+  - The card of keys no longer shows by itself. H and its button still bring it.
+- **The eye comes level smoothly.** Until a hand moves, the eye drifts a little and looks up into the sky, as it did
+  under the title card. It used to snap level on Begin; it now eases level over about two seconds.
+- **Sound starts with the first gesture**, as it started with Begin, unless M or the button has turned it off first.
+  A sound started by the wheel or the start of a touch is born suspended, so the next key, click or touch wakes it.
+- **Everything else:**
+  - `?notitle`, `?at=` and `vgu.begin()` skip the veil and open in the world with the chrome up, as before.
+  - Reduced motion paints the whole canvas at once, and the veil fades without the zoom.
+  - Where the stroke record is missing, the veil keeps the title and the glows, and lifts a second after the world is
+    ready. The blobs are not committed, so a clone without the pipeline's output gets this.
+  - `.claude/launch.json` is new: the preview pane's settings for this page (8710) and for Monet's (8791).
+
+**How it was verified.** Headless Chrome, driven over the DevTools protocol from a scratch script. The red vineyard
+was being added in the same working tree at the time, so the timings were taken on copies: `HEAD` against `HEAD` plus
+this change's four files. Each is three runs, old and new alternating, timed by the page's own clock, with no
+screenshots taken during a run.
+
+| | before | after |
+|---|---|---|
+| first thing on screen | 0.7 s of black | the veil, from the first paint |
+| world ready | 0.73–0.81 s | 0.79–0.93 s, under the veil |
+| title card | 1.95–2.04 s, walk locked until Begin | none |
+| painting finished | — | 3.38–3.46 s |
+| veil lifts, with no hand | — | 3.98–4.07 s |
+| card for where you stand | after Begin, 2 m down the road | 4.90–4.98 s |
+| line of keys | — | 6.38–6.46 s, until a hand moves |
+| veil gone | — | 6.58–6.66 s |
+| longest task on the main thread | 280–301 ms | 284–288 ms |
+| the veil's brush | — | 3,200 ms for 13,999 strokes, 192 frames, longest gap 17 ms |
+
+- **The frames.** The canvas is bare at 0.3 s, with the cypress and the village at 1.2 s, the sky at 2.2 s and all of
+  it by 3.4 s. In the lift, the canvas fills the window by 1.2 s and has dissolved into Nuenen by 1.8 s.
+- **A key during the veil.** Held 0.3 s after the world was ready, with the painting unfinished: the veil lifting, the
+  chrome up, 4.06 m/s, and 7.5 m down the road after 3 s.
+- **`?notitle` and `?at=5`** open on Nuenen and on the Yellow House, with the chrome up and the veil hidden.
+- **Reduced motion.** The painting is whole at 0.9 s, in no frames, and the veil has lifted by 4.9 s.
+- **A resize mid-painting** (1280 × 720 to 1000 × 800): the canvas was laid out again at 700 × 560 and repainted, and
+  the brush kept its 3.2 s.
+- **No stroke record** (a copy of the site without it): the bare veil, one warning, and the lift at 1.9 s.
+- **A phone**, 390 × 844 at 3× with touch: the canvas, plaque and title centred as one group, and the touch line of
+  keys. The brush's longest gap there was 450 ms, once, while the world's shaders compiled. It holds the brush rather
+  than dropping strokes.
+- No exceptions and no console errors in any run.
+
+**Still visible.**
+
+- **The veil is not the lit easel.** Its strokes are flat paint with painted ridges, not relief under a light.
+- **A clone without the pipeline's output gets the bare veil**, because the stroke records are not in the repository.
+- **The lift's zoom enlarges the canvas's pixels**, 2.2 times at 16:9 and more in a wider window, while it dissolves.
+- **Measured headless on this machine only**, not on a phone or an integrated GPU.

@@ -1,6 +1,6 @@
-// The interface: a title over the living world, one card of keys, the name of
-// each place as you arrive, his words, a plaque by each painting, and the
-// road itself as a line along the bottom that you can click to travel.
+// The interface: one line that says how until a hand moves, one card of keys, the name of each place as you
+// arrive, his words, a plaque by each painting, and the road itself as a line along the bottom that you can
+// click to travel. The opening is the veil's (src/veil.js).
 import { stationZ, tauAt } from './journey.js';
 
 const $ = id => document.getElementById(id);
@@ -11,6 +11,7 @@ export class UI {
     this.st = stations;
     this.api = api;
     this.cur = -1;
+    this.from = Infinity;
     const ticks = $('j-ticks');
     stations.forEach((s, i) => {
       const b = document.createElement('button');
@@ -26,24 +27,25 @@ export class UI {
     $('btn-sound').addEventListener('click', () => api.sound());
     $('btn-help').addEventListener('click', () => this.toggleHelp());
     $('btn-fs').addEventListener('click', () => api.fullscreen());
-    $('begin').addEventListener('click', () => api.begin());
     $('again').addEventListener('click', () => api.jump(0));
     if (matchMedia('(pointer: coarse)').matches) {
       $('help').innerHTML = '<div class="k">left thumb · walk and turn</div><div class="k">right thumb · look around</div><div class="k">the line below · travel</div>';
-      document.querySelector('#title .keys').textContent = 'Left thumb walks · right thumb looks · best with sound';
+      $('hint').textContent = 'Left thumb walks · right thumb looks';
     }
   }
-  loading(f, text) {
-    $('loadbar').firstElementChild.style.transform = `scaleX(${f})`;
-    if (text) $('begin-text').textContent = text;
+  loading(text) { window.veil?.status(text); }
+  // the veil has lifted: once the world has come up, say where you stand, and after a moment how to walk
+  begin() {
+    this.from = performance.now() + 900;
+    this.hintT = setTimeout(() => { if (!this.awake) $('hint').classList.add('show'); }, 2400);
   }
-  ready() {
-    $('begin').disabled = false;
-    $('begin-text').textContent = 'Begin the walk';
-    $('title').classList.add('ready');
+  // the first touch of a hand: the line goes, and the road and the corner come up
+  wake() {
+    this.awake = true;
+    clearTimeout(this.hintT);
+    $('hint').classList.remove('show');
+    document.body.classList.add('awake');
   }
-  showTitle() { $('title').classList.add('show'); }
-  hideTitle() { $('title').classList.add('gone'); document.body.classList.add('begun'); }
   showHelp(on, ms) {
     const h = $('help');
     h.classList.toggle('on', on);
@@ -63,7 +65,9 @@ export class UI {
     $('j-fill').style.width = (S.tau * 100).toFixed(3) + '%';
     $('j-dot').style.left = (S.tau * 100).toFixed(3) + '%';
     if (S.date !== this._date) { this._date = S.date; $('j-date').textContent = S.date; }
-    if (S.begun && S.stationDist < 42 && S.station !== this.cur) { this.cur = S.station; this.arrive(S.station); }
+    // the walk begins 44 m short of the first station, so where you stand is named once, as the veil lifts
+    const here = S.stationDist < 42 || (this.cur === -1 && performance.now() > this.from);
+    if (S.begun && here && S.station !== this.cur) { this.cur = S.station; this.arrive(S.station); }
     if (S.stationDist > 52 && this.cur === S.station) { clearTimeout(this.lT1); $('letter').classList.remove('on'); }
     if (S.stationDist > 52 && this.cur !== -1 && S.station !== this.cur) { clearTimeout(this.lT1); $('letter').classList.remove('on'); }
     const p = S.near;

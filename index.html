@@ -18,34 +18,60 @@
   #stage canvas { cursor: grab; }
   #stage canvas:active { cursor: grabbing; }
   button { font: inherit; color: inherit; }
-  .serif, #title h1, #title .lede, #st-title, #st-sub, #letter q, #plaque b, #end h2 {
+  .serif, .veil-title h1, .veil-plaque b, #st-title, #st-sub, #letter q, #plaque b, #end h2 {
     font-family: "Cormorant Garamond", "Iowan Old Style", Georgia, serif; }
   kbd { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box;
     border: 1px solid rgba(244,238,227,.55); border-bottom-width: 2px; border-radius: 6px; margin: 0 2px;
     font: 600 12.5px/1 -apple-system, Helvetica, sans-serif; background: rgba(12,14,22,.4); }
   kbd.wide { min-width: 52px; }
 
-  /* the title, over the world as it paints itself */
-  #title { position: fixed; inset: 0; display: grid; place-items: end center; padding: 0 6vw 13vh; text-align: center;
-    background: radial-gradient(130% 90% at 50% 15%, rgba(0,0,0,0) 45%, rgba(6,8,14,.5) 100%),
-                linear-gradient(to top, rgba(6,8,14,.78) 0%, rgba(6,8,14,.3) 42%, rgba(6,8,14,0) 68%);
-    transition: opacity 2.4s ease, visibility 0s linear 2.4s; z-index: 5; opacity: 0; }
-  #title.show { opacity: 1; }
-  #title.gone { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 1.6s ease, visibility 0s linear 1.6s; }
-  #title .kicker { letter-spacing: .34em; text-transform: uppercase; font-size: 12px; opacity: .85; margin: 0 0 14px; }
-  #title h1 { font-weight: 600; font-size: clamp(48px, 7.6vw, 108px); line-height: .95; margin: 0 0 18px;
-    text-shadow: 0 2px 36px rgba(0,0,0,.5); }
-  #title .lede { font-size: clamp(18px, 1.7vw, 23px); line-height: 1.45; max-width: 33em; margin: 0 auto 30px;
-    font-style: italic; opacity: .94; text-shadow: 0 1px 18px rgba(0,0,0,.6); }
-  #begin { cursor: pointer; border: 1px solid rgba(244,238,227,.6); background: rgba(12,14,22,.38);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 14px 36px; border-radius: 999px;
-    font-size: 14px; letter-spacing: .16em; text-transform: uppercase; transition: background .25s, border-color .25s, transform .25s; }
-  #begin:hover:not(:disabled), #begin:focus-visible { background: rgba(244,238,227,.16); border-color: var(--bone); transform: translateY(-1px); outline: none; }
-  #begin:disabled { opacity: .65; cursor: progress; }
-  #loadbar { width: 200px; height: 1px; background: rgba(244,238,227,.2); margin: 18px auto 0; overflow: hidden; transition: opacity .8s; }
-  #loadbar i { display: block; height: 100%; background: var(--bone); transform-origin: left; transform: scaleX(0); transition: transform .5s ease; }
-  #title.ready #loadbar { opacity: 0; }
-  #title .keys { margin: 16px 0 0; font-size: 13px; letter-spacing: .04em; opacity: .8; }
+  /* the opening: The Starry Night, painted in front of you on a primed canvas from his own stroke record while
+     the world is built behind it (src/veil.js); then it lifts, and you are standing in the world */
+  #veil { position: fixed; inset: 0; z-index: 7; overflow: hidden; touch-action: none;
+    background: radial-gradient(90% 75% at 50% 40%, #182139 0%, #0d1222 55%, #06080f 100%);
+    transition: opacity 1.9s ease-in-out, visibility 0s linear 1.9s; }
+  #veil-art { position: absolute; inset: 0; transition: transform 2.4s cubic-bezier(.45, 0, .85, .55); }
+  #veil-canvas { position: absolute; background:
+      repeating-linear-gradient(0deg, rgba(70,56,34,.06) 0 1px, rgba(0,0,0,0) 1px 3px),
+      repeating-linear-gradient(90deg, rgba(70,56,34,.05) 0 1px, rgba(0,0,0,0) 1px 3px), #cdc3a6;
+    box-shadow: 0 26px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3); }
+  #veil-under, #veil-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #veil-under { opacity: 0; transition: opacity .5s linear; }
+  #veil .glow { position: absolute; width: 7%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; opacity: 0;
+    mix-blend-mode: screen; transform: translate(-50%, -50%) scale(.85); transition: opacity 1.8s ease;
+    background: radial-gradient(closest-side, rgba(255,242,178,.8), rgba(250,222,128,.3) 45%, rgba(250,222,128,0)); }
+  #veil .glow.moon { width: 13%; }
+  #veil.painted .glow { opacity: .7; animation: twinkle 3.4s ease-in-out infinite alternate; }
+  @keyframes twinkle { to { transform: translate(-50%, -50%) scale(1.14); } }
+  #veil.bare #veil-canvas { background: none; box-shadow: none; }
+  #veil.bare .veil-plaque { display: none; }
+  .veil-plaque { position: absolute; right: 0; top: 100%; margin: 12px 0 0; font-size: 11.5px; letter-spacing: .03em;
+    opacity: .66; white-space: nowrap; }
+  .veil-plaque b { font-style: italic; font-weight: 500; font-size: 15px; letter-spacing: 0; margin-right: 8px; }
+  .veil-title { position: absolute; left: 0; right: 0; top: 80%; padding: 0 6vw; text-align: center; opacity: 0;
+    transition: opacity 1.4s ease; }
+  #veil.type .veil-title { opacity: 1; }
+  .veil-title h1 { font-weight: 600; font-size: clamp(30px, 3.4vw, 50px); line-height: 1; margin: 0 0 12px;
+    text-shadow: 0 2px 30px rgba(0,0,0,.6); }
+  #veil-status { margin: 0; min-height: 1.6em; font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+    opacity: .72; transition: opacity .8s ease; }
+  #veil-status.off { opacity: 0; }
+  /* the lift: you go into the painting -- it comes towards you until it fills the window, and only then lets go */
+  #veil.lift { opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity 1.5s cubic-bezier(.4, 0, .6, 1) .75s, visibility 0s linear 2.25s; }
+  #veil.lift #veil-art { transform: scale(var(--fill, 1.32)); transition: transform 1.8s cubic-bezier(.55, 0, .35, 1); }
+  #veil.lift .veil-title { opacity: 0; transition-duration: .7s; }
+  @media (prefers-reduced-motion: reduce) {
+    #veil-art { transition: none; }
+    #veil.lift #veil-art { transform: none; }
+    #veil.painted .glow { animation: none; }
+  }
+
+  /* the one line that says how, until a hand moves */
+  #hint { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); white-space: nowrap; font-size: 13px;
+    letter-spacing: .04em; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; z-index: 3;
+    text-shadow: 0 1px 14px rgba(0,0,0,.8), 0 0 3px rgba(0,0,0,.55); }
+  #hint.show { opacity: .92; }
 
   /* one card of keys */
   #help { position: fixed; left: 50%; bottom: 84px; transform: translate(-50%, 14px); display: flex; gap: 22px;
@@ -86,7 +112,7 @@
   #auto.on { opacity: .92; }
 
   #corner { position: fixed; right: 18px; top: 16px; display: flex; gap: 8px; opacity: 0; transition: opacity 1.2s; z-index: 4; }
-  body.begun #corner { opacity: 1; }
+  body.awake #corner { opacity: 1; }
   #corner button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(244,238,227,.32);
     background: rgba(10,12,20,.42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); cursor: pointer;
     display: grid; place-items: center; padding: 0; transition: border-color .2s, background .2s; }
@@ -97,7 +123,7 @@
 
   /* the road, as a line you can travel along */
   #journey { position: fixed; left: 44px; right: 44px; bottom: 26px; height: 30px; opacity: 0; transition: opacity 1.2s; z-index: 4; }
-  body.begun #journey { opacity: 1; }
+  body.awake #journey { opacity: 1; }
   #j-track { position: absolute; left: 0; right: 0; top: 14px; height: 2px; background: rgba(244,238,227,.22); border-radius: 2px;
     box-shadow: 0 0 10px rgba(0,0,0,.35); }
   #j-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(244,238,227,.78); border-radius: 2px; }
@@ -136,22 +162,27 @@
     #plaque { left: 20px; }
     #help { bottom: 76px; gap: 12px; padding: 12px 14px; }
     #help .k { font-size: 12px; }
+    #hint { white-space: normal; width: 88vw; text-align: center; bottom: 22px; }
+    .veil-plaque { white-space: normal; width: 100%; text-align: right; }
   }
 </style>
 </head>
 <body>
 <div id="stage"></div>
 
-<div id="title" role="dialog" aria-labelledby="t-h">
-  <div>
-    <p class="kicker">Vincent van Gogh · 1885 – 1890</p>
-    <h1 id="t-h">Van Gogh’s Universe</h1>
-    <p class="lede">Walk into the world he painted — from the peat fields of Nuenen to the wheat under the crows at Auvers. His paintings stand along the road, and paint themselves, stroke by stroke, as you arrive.</p>
-    <button id="begin" type="button" disabled><span id="begin-text">Loading…</span></button>
-    <div id="loadbar"><i></i></div>
-    <p class="keys">Walk with <kbd>↑</kbd> · turn with <kbd>←</kbd><kbd>→</kbd> · best with sound</p>
+<div id="veil">
+  <div id="veil-art" aria-hidden="true">
+    <div id="veil-canvas">
+      <img id="veil-under" src="strokes/s08/starry-canvas-under.png" alt="">
+      <canvas id="veil-cv"></canvas>
+      <p class="veil-plaque"><b>The Starry Night</b>Saint-Rémy, June 1889 · Museum of Modern Art, New York</p>
+    </div>
   </div>
+  <div class="veil-title"><h1>Van Gogh’s Universe</h1><p id="veil-status">Mixing the colours</p></div>
 </div>
+<script src="src/veil.js"></script>
+
+<div id="hint" aria-hidden="true">Walk with <kbd>↑</kbd> · turn with <kbd>←</kbd><kbd>→</kbd> · drag to look · <kbd class="wide">space</kbd> walks on its own</div>
 
 <div id="help" role="note" aria-label="Controls">
   <div class="k"><kbd>↑</kbd><kbd>↓</kbd> walk</div>

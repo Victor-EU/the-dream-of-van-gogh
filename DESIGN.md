@@ -14,6 +14,12 @@
 > **Station 7, on the author's word.** After M9 the author asked for station 7, *The strokes stop*, to be taken out,
 > and it is. The road now goes from the night of Arles straight to Saint-Rémy. Its row and the notes on it below stay
 > as the record of what was intended; `BUILD.md` records the removal after M9.
+>
+> **The opening, on the author's word.** After M9 the author asked for the opening to be more like Monet's Universe's,
+> with its animation taken from *The Starry Night*. There is no title card and no button now. The page opens on *The
+> Starry Night* painting itself on a primed canvas from its own stroke record while the world is built; then it
+> comes towards you, dissolves into the world, and the world is walkable at once. §11's "a single line on first load"
+> is back, as the line of keys that waits for the first touch of a hand. `BUILD.md` records it after M9.
 
 A single web page. You begin on bare primed canvas — white, woven, nothing on it but a charcoal line going forward.
 You drag one control, and the world starts being painted around you: strokes arriving in order, in his direction, at

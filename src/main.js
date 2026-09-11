@@ -28,6 +28,8 @@ addEventListener('unhandledrejection', e => fail('Something stopped the paint.',
 const WALK = 4.5, RUN = 10.5, TURN = 1.9, LOOK = 0.0032, EYE = 1.65;
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const roadYaw = z => Math.atan2(-J.roadSlope(z), 1);
+// the opening's veil (src/veil.js); a page without it simply opens on the world
+const veil = window.veil || { up: false, painted: true, status() {}, lift() {}, skip() {} };
 
 async function boot() {
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false });
@@ -75,45 +77,62 @@ async function boot() {
   if (startIdx >= 0) body.z = J.stationZ(startIdx) + 18;
   body.x = J.roadX(body.z);
   body.yaw = roadYaw(body.z);
-  let begun = false, time = 0, frozen = has('t') ? parseFloat(Q.get('t')) : null;
+  let begun = false, awake = false, ready = false, hush = false, time = 0, frozen = has('t') ? parseFloat(Q.get('t')) : null;
   let jump = null, black = 0, fps = 60, frames = 0, sNow = 0;
-  // the opening: bare primed canvas, and the world painting itself outward from where you stand
-  let intro = has('notitle') || startIdx >= 0 ? 1 : 0, introT = 0;
+  // the opening: the veil's Starry Night paints itself while all this is built; once it is finished the world
+  // paints itself outward from where you stand, from bare primed canvas, and the veil lifts into it
+  let intro = has('notitle') || startIdx >= 0 ? 1 : 0, introT = 0, held = 0;
+  // until a hand moves, the eye drifts a little and looks up into the sky; it comes level when one does
+  let idle = 1;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let dprCur = renderer.getPixelRatio(), slow = 0, quick = 0;
   const dprMax = dprCur;
 
   const ui = new UI(stations, {
-    jump: i => jumpTo(i), begin: () => begin(),
-    sound: () => ui.setSound(sound.toggle()),
+    jump: i => jumpTo(i),
+    sound: () => { ui.setSound(sound.toggle()); hush = !sound.on; },
     fullscreen: () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}),
   });
-  ui.loading(0.35, 'Mixing the colours…');
+  ui.loading('Mixing the colours');
 
-  function begin() {
+  // the veil lifts, and the world is yours to walk; `now` takes it away at once (?notitle, ?at, the harness)
+  function begin(now = false) {
     if (begun) return;
     begun = true;
-    ui.hideTitle();
-    ui.showHelp(true, 14000);
-    body.pitchT = 0.02;
-    sound.start();
-    ui.setSound(sound.on);
+    if (now) veil.skip(); else veil.lift();
+    ui.begin();
     cv.focus({ preventScroll: true });
   }
-  function jumpTo(i) {
+  // the first touch of a hand: the road and the corner come up, the hint goes, the eye comes level, and the
+  // sound starts, as the title's button used to start it -- unless it has been turned off already
+  function wake(withSound = true) {
     if (!begun) begin();
+    if (awake) return;
+    awake = true;
+    ui.wake();
+    if (withSound && !hush) { sound.start(); ui.setSound(sound.on); }
+  }
+  // a hand counts once the world under the veil can be walked
+  const hand = () => { if (!ready) return false; wake(); return true; };
+  function jumpTo(i) {
+    wake();
     jump = { t: 0, z: J.stationZ(clamp(i, 0, J.NST - 1)) + 18, done: false };
     body.auto = false;
     ui.setAuto(false);
   }
-  controls.on('begin', begin);
-  controls.on('move', () => { if (!begun) begin(); ui.moved(); });
-  controls.on('look', () => { body.pitchT = null; });
-  controls.on('auto', () => { if (!begun) { begin(); } body.auto = !body.auto; ui.setAuto(body.auto); });
+  controls.on('begin', hand);
+  controls.on('move', () => { if (hand()) ui.moved(); });
+  controls.on('look', () => { if (hand()) body.pitchT = null; });
+  controls.on('auto', () => { if (!hand()) return; body.auto = !body.auto; ui.setAuto(body.auto); });
   controls.on('lie', () => { if (!begun) return; body.lieT = body.lieT ? 0 : 1; body.pitchT = body.lieT ? 1.12 : 0.02; });
-  controls.on('sound', () => ui.setSound(sound.toggle()));
+  controls.on('sound', () => { ui.setSound(sound.toggle()); hush = !sound.on; if (ready) wake(false); });
   controls.on('help', () => ui.toggleHelp());
-  controls.on('jump', n => jumpTo(n - 1));
+  controls.on('jump', n => { if (ready) jumpTo(n - 1); });
   controls.on('fullscreen', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}));
+  document.getElementById('veil')?.addEventListener('pointerdown', hand);
+  // a sound started on a wheel or the start of a touch is born suspended; the next gesture a browser counts wakes it
+  for (const ev of ['keydown', 'pointerup', 'touchend'])
+    addEventListener(ev, () => { if (sound.on && sound.ctx && sound.ctx.state === 'suspended') sound.ctx.resume(); }, true);
 
   const autoSpeed = () => {
     const d = Math.abs(body.z - J.stationZ(J.nearestStation(body.z)));
@@ -207,12 +226,11 @@ async function boot() {
   addEventListener('resize', resize);
   resize();
 
-  ui.loading(0.7, 'Laying the ground…');
+  ui.loading('Laying the ground');
   sky.update(J.stationAt(body.z));
   await new Promise(r => setTimeout(r, 30));
   renderer.compile(sky.scene, camera);
   renderer.compile(world, camera);
-  ui.loading(1, 'Laying the ground…');
 
   let last = performance.now();
   function frame(now) {
@@ -221,11 +239,13 @@ async function boot() {
     fps += (1 / dt - fps) * 0.05;
     time = frozen ?? time + dt;
     U.uTime.value = time;
-    if (intro < 1 && window.vgu.ready) {
+    if (intro < 1 && ready) {
       introT += dt;
       intro = smoothstep(0.15, 5.0, introT);
-      if (introT > 1.2) ui.showTitle();
     }
+    // the veil lifts a moment after its painting is finished, once the world under it has begun to paint itself
+    if (veil.painted) held += dt;
+    if (!begun && ready && held > 0.6 && introT > 1.0) begin();
     U.uIntro.value = intro;
     // keep the frame rate: give up resolution before smoothness, take it back when there is room
     if (frames > 150 && frozen === null) {
@@ -235,13 +255,14 @@ async function boot() {
     }
     step(dt);
 
-    const title = begun ? 0 : 1;
-    const sway = title * (0.16 * Math.sin(time * 0.06) + 0.05 * Math.sin(time * 0.17));
+    idle += ((awake ? 0 : 1) - idle) * (1 - Math.exp(-dt * 1.4));
+    const drift = calm ? 0 : 1;
+    const sway = idle * drift * (0.16 * Math.sin(time * 0.06) + 0.05 * Math.sin(time * 0.17));
     const eye = lerp(EYE, 0.3, body.lie);
     // the eye stays level while you walk: a bob here read as riding, not walking
     camera.position.set(body.x, J.terrainH(body.x, body.z) + eye, body.z);
     camera.rotation.y = -(body.yaw + sway);
-    camera.rotation.x = body.pitch + title * (0.13 + 0.03 * Math.sin(time * 0.11));
+    camera.rotation.x = body.pitch + idle * (0.13 + 0.03 * drift * Math.sin(time * 0.11));
     camera.updateMatrixWorld();
     U.uCam.value.copy(camera.position);
 
@@ -266,20 +287,20 @@ async function boot() {
     grade.black = black;
     post.render([sky.scene, world], camera, grade);
 
-    if (++frames === 6) { window.vgu.ready = true; ui.ready(); }
+    if (++frames === 6) { ready = true; window.vgu.ready = true; ui.loading(''); }
     if (dbg && frames % 15 === 0)
       dbg.textContent = `${fps.toFixed(0)} fps\nz ${body.z.toFixed(1)}  x ${body.x.toFixed(1)}\ns ${sNow.toFixed(2)}  τ ${J.tauAt(body.z).toFixed(3)}`;
     requestAnimationFrame(frame);
   }
   const dbg = has('debug') ? document.getElementById('debug') : null;
   if (dbg) dbg.hidden = false;
-  if (has('notitle') || startIdx >= 0) begin();
+  if (has('notitle') || startIdx >= 0) { begin(true); wake(false); idle = 0; }
 
   window.vgu = {
     ready: false,
     state: () => ({ x: body.x, z: body.z, y: camera.position.y, yaw: body.yaw, pitch: body.pitch, s: sNow,
                     station: J.nearestStation(body.z) + 1, tau: J.tauAt(body.z), fps: Math.round(fps),
-                    begun, auto: body.auto, lie: body.lie, v: body.v, date: calendar(body.z).text }),
+                    begun, awake, auto: body.auto, lie: body.lie, v: body.v, date: calendar(body.z).text }),
     go: o => {
       if (o.station) { body.z = J.stationZ(o.station - 1) + (o.dz ?? 18); body.x = J.roadX(body.z) + (o.dx ?? 0); body.yaw = roadYaw(body.z); }
       if (o.x != null) body.x = o.x;
@@ -289,7 +310,9 @@ async function boot() {
       if (o.lie != null) body.lie = body.lieT = o.lie;
       body.v = body.vs = 0;
     },
-    begin, freeze: t => { frozen = t; }, jump: i => jumpTo(i - 1),
+    // straight into the world, as ?notitle does
+    begin: () => { begin(true); wake(false); idle = 0; },
+    freeze: t => { frozen = t; }, jump: i => jumpTo(i - 1),
     // for the harness: everything painted at once, and a place to stand in front of any easel
     paint: () => {
       props.st.forEach(s => { s.started = true; s.progress = 1.05; });
