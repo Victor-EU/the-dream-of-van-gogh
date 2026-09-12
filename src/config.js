@@ -218,7 +218,7 @@ export const STATIONS = [
       flower: 0, flowerA: '#d0c8b8', flowerB: '#d8d0c0',
       road: '#2a2826', roadEdge: '#d0cabc', roadW: 0.06,
       bare: 1, wind: 0, hill: 0, valley: 0, plaza: 6 },
-    audio: { wind: 0.02, crows: 0.3 } },
+    audio: { wind: 0.02 } },
 ];
 
 // defaults for anything a station leaves out

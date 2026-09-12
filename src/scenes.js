@@ -378,7 +378,7 @@ function coda(c, cv) {
   c.stand = st;
   c.easels.push({ slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'), title: cv.title, date: cv.date,
     collection: cv.collection, key: `${c.i}-coda`, x, y: b + ledge + H / 2, z, yaw, w: W, h: H, station: c.i,
-    lift: 40, edge: k, grain: 0, gain: 1.1, stand: st, coda: { hold: cv.hold, paint: cv.paint, easel: 6, haze: 0.12, foot: 7 } });
+    lift: 40, edge: k, grain: 0, gain: 1.1, stand: st, coda: { hold: cv.hold, paint: cv.paint, approach: cv.approach ?? 1, easel: 6, haze: 0.12, foot: 7 } });
 }
 
 function haystack(c, x, z, R0 = 2.2, H = 3.2, o = {}) {
@@ -569,39 +569,26 @@ function cafe(c, x, z, yaw) {
 
 // ------------------------------------------------------------------ crows --
 class Crows {
-  constructor(U, coda) {
+  constructor(U) {
     const R = rng(777);
     this.birds = [];
-    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 7: 2, 8: 2, 9: 16, 10: 9 };   // birds by place on the road, from 0; none over the vineyard
+    // birds by place on the road, from 0: none over the vineyard, and none past the wheatfield. The nine that
+    // circled the bare canvas, and then his portrait, were taken out on the author's word: over him they were
+    // an omen, not a tribute. Past the last field the sky is empty.
+    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 7: 2, 8: 2, 9: 16 };
     for (const [si, n] of Object.entries(plan)) {
       const z0 = J.stationZ(+si), x0 = J.roadX(z0);
-      // past the last field they circle his portrait, if it is there, from the height of his hands to over its
-      // top: out on the bare canvas they are what says how big it is
-      const round = !!coda && +si === J.NST - 1;
-      for (let k = 0; k < n; k++) {
-        const b = { cx: x0 + R.range(-26, 26), cy: R.range(9, 22), cz: z0 - R.range(-6, 42), R: R.range(6, 18),
-                    w: R.range(0.12, 0.3) * R.sign(), ph: R() * 6.28, fl: R.range(6, 9), s: R.range(1.0, 1.5) };
-        if (round) Object.assign(b, { cx: coda.x + (b.cx - x0) * 0.75, cy: 14 + (b.cy - 9) * 2.4, cz: coda.z + 4 + (z0 - b.cz) * 0.6, round });
-        this.birds.push(b);
-      }
+      for (let k = 0; k < n; k++)
+        this.birds.push({ cx: x0 + R.range(-26, 26), cy: R.range(9, 22), cz: z0 - R.range(-6, 42), R: R.range(6, 18),
+                          w: R.range(0.12, 0.3) * R.sign(), ph: R() * 6.28, fl: R.range(6, 9), s: R.range(1.0, 1.5) });
     }
-    // those keep the portrait's own haze, so that they are no paler than it is and are not there before it
-    const ink = lin('#0b0c12');
-    const flock = (birds, extra = {}) => {
-      const S = new StrokeBuilder();
-      for (let i = 0; i < birds.length * 3; i++) S.add([0, -99, 0], [1, 0, 0], [0, 1, 0], 0.3, 0.07, ink, { order: 0 });
-      const mesh = S.build(U, { uProgress: { value: 1 }, ...extra });
-      return { birds, mesh, A: mesh.geometry.attributes };
-    };
-    this.flocks = [flock(this.birds.filter(b => !b.round))];
-    if (coda) this.flocks.push(flock(this.birds.filter(b => b.round), { uFogDen: coda.stand.u.uFogDen }));
-    this.mesh = new THREE.Group();
-    for (const f of this.flocks) this.mesh.add(f.mesh);
+    const ink = lin('#0b0c12'), S = new StrokeBuilder();
+    for (let i = 0; i < this.birds.length * 3; i++) S.add([0, -99, 0], [1, 0, 0], [0, 1, 0], 0.3, 0.07, ink, { order: 0 });
+    this.mesh = S.build(U, { uProgress: { value: 1 } });
+    this.A = this.mesh.geometry.attributes;
   }
   update(t) {
-    for (const f of this.flocks) this.fly(f, t);
-  }
-  fly({ birds, A }, t) {
+    const { birds, A } = this;
     const P2 = A.iPos.array, D = A.iDir.array, N = A.iNrm.array, S = A.iShape.array;
     birds.forEach((b, i) => {
       const a = b.ph + b.w * t;
@@ -827,7 +814,7 @@ export class World {
       this.easels.push(...c.easels); this.lamps.push(...c.lamps); this.colliders.push(...c.colliders);
       this.st.push({ g, u, z0: c.z0, progress: 0, started: false, movers: c.movers, strokes: c.S.n });
     });
-    this.crows = new Crows(U, this.easels.find(e => e.coda));
+    this.crows = new Crows(U);
     this.group.add(this.crows.mesh);
     this._near = [];
   }

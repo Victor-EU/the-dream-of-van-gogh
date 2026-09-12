@@ -116,7 +116,8 @@ Most pairs of strokes never touch, and those are put in order by his habits. Thi
 light, sky before land, the contours late, and the brightest impasto last. So the solved sequence still correlates
 0.89 with the habits it started from.
 
-The timing is invented: every canvas paints itself in thirteen seconds, and the portrait at the end in thirty-two.
+The timing is invented: every canvas paints itself in thirteen seconds, and the portrait at the end in twenty,
+or sooner if you walk up to it.
 The strokes are fitted to flat-lit photographs, so they are a reading of the paint, not a measurement of it; a scan
 keeps no shadow of the relief. And the world between the canvases is not his. It is painted procedurally, in colours
 sampled from his canvases of each place and pushed the way he pushed them. `DESIGN.md` §4.3 and the M2 entry in

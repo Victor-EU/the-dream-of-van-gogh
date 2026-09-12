@@ -3269,3 +3269,56 @@ shows the paintings.
 **How it was verified.** Before the records were committed, an exact copy of `HEAD` served on its own showed the whole
 world with every easel empty and the opening lifting without its painting, which is what the first draft of the README
 said. After, the same copy of the new `HEAD` loads every record with no 404.
+
+### After M9 — The portrait without its crows, and sooner
+
+**What was asked.** Two things about the last scene, the author's portrait at the end of the road. The crows
+circling it were creepy, and should go. And the portrait should be fully there sooner as you approach it.
+
+**What was decided.**
+
+- **No crows past the last field.** The nine of station 11, which M8 sent in from behind over the bare canvas and
+  which the coda entry set circling the portrait from the height of his hands to over its top, are taken out. Over
+  a wheatfield they are his; over him they were an omen, not a tribute. The sixteen over the wheatfield stay, and so
+  do the eleven that have been in the corner of the eye since station 3. The caws that station 11 still carried at
+  0.3 go with the birds.
+  - The coda entry had them as what says how big the portrait is on the bare canvas. That is now the walk up to it
+    alone, and the timbers of the easel.
+- **Faster, and faster as you come.** The blank canvas is held for 3 s instead of 6, and he paints himself in 20 s
+  instead of 32: half as long again as a canvas on the road, not two and a half times.
+  - The whole sequence, easel, hold and paint, now runs at a pace set by how far off you are: its own time from
+    120 m out, where it begins, up to three times as fast at its foot, with the ramp smooth between. Standing
+    still at the road's end it finishes in half a minute; walking up to it, it finishes as you come.
+  - The pace is `approach` in `stations/s11-after.json`, next to `hold` and `paint`, and 1 leaves the old behaviour.
+
+**What changed.**
+
+- `src/scenes.js`: `Crows` has no bird past the wheatfield and no flock of its own for the portrait; it takes no
+  coda. The coda's easel entry carries `approach`.
+- `src/canvases.js`: `coda()` scales its clock by the pace before the easel, the hold or the painting see it.
+- `stations/s11-after.json`: `hold` 3, `paint` 20, `approach` 3, and `_coda` says why.
+- `src/config.js`: station 11 has no `crows` in its audio.
+- The docs: DESIGN.md's row 11, README.md's timing paragraph, and this entry.
+
+**How it was verified.** Headless Chrome over the DevTools protocol, from a scratch script that logs the coda's
+state on the page's own frames and, in the second run, carries the body forward at walking pace (4.5 m/s) from the
+moment the coda begins. Both runs start at `?at=11`, 128 m from the portrait.
+
+| | easel in | first stroke | finished | where it finished |
+|---|---|---|---|---|
+| before, standing still | 6 s | 13.5 s | 45.5 s | 128 m |
+| now, standing still | 6 s | 10.5 s | 30.5 s | 128 m |
+| now, walking up to it | 6 s | 9.5 s | 19.8 s | 47 m off |
+
+- Twenty-seven birds are built, none of them past the wheatfield; the wheatfield's own are in its sky as before.
+- From the road's end, finished: the portrait on its easel with an empty sky round it, and the end card under it.
+  From 12 m at its foot the strokes and the timbers hold together as they did.
+- `tools/station.py` exits 0 and reports the coda's 8,428 strokes.
+
+**Still visible.**
+
+- **From where the walk stops, it is a picture of a big easel**, and now nothing in the sky says how big. The walk
+  up to it is what says.
+- **The pace is a ramp on distance, not on approach.** Standing at 47 m it runs at twice its time whether you
+  walked there or arrived by the line.
+- **Measured headless on this machine only.**

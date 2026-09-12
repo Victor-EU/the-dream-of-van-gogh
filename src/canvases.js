@@ -187,11 +187,15 @@ export class Paintings {
   }
   // The coda: his portrait past the end of the road, on the easel scenes.js builds for it. None of it is there
   // until you are on the bare canvas past the last field. Then the easel paints itself in, the canvas comes up
-  // primed and is held, and he paints himself on it, far more slowly than any canvas on the road.
+  // primed and is held, and he paints himself on it. All of it goes faster the nearer you are: from where it
+  // begins it keeps its own time, and at its foot it runs `approach` times as fast, so that walking up to it
+  // brings him out on the canvas as you come.
   coda(it, d, dt, s) {
     const e = it.e, C = e.coda, st = e.stand;
     const here = this.here = smoothstep(this.last - 0.55, this.last - 0.15, s);
     this.dist = d;
+    const pace = lerp(1, C.approach, smoothstep(120, C.foot + 8, d));
+    dt *= pace;
     if (!it.t && here >= 1) it.t = 1e-4;
     if (it.t) it.t += dt;
     const up = smoothstep(C.easel * 0.7, C.easel + 1.5, it.t);
