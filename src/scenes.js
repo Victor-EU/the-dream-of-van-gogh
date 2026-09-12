@@ -505,29 +505,42 @@ function bush(c, x, z, cols, r = 0.5) {
   }
 }
 
-// a bush vine, pruned low the way they grow round Arles: a gnarled stock, often
-// a stake, and a low dome of leaves the autumn has turned red
+// a bush vine, pruned low the way they grow round Arles, in November: a gnarled stock, a stake beside it, and a
+// low sprawl of shoots the autumn has turned red, wider than it is tall. Nothing about it is a dome: the leaves lie
+// through it and its shading is the leaves' own, so that from the road a row of them is a tangle and not a row of
+// balls. Between the vines the earth shows through, as it does across the front of his canvas.
 function vine(c, x, z, o) {
   const R = c.R; c.at(x, z);
-  const b = c.gy(x, z), H = R.range(0.5, 0.8), r0 = R.range(0.36, 0.52);
+  const b = c.gy(x, z), H = R.range(0.28, 0.42), r0 = R.range(0.6, 0.9);
   for (let k = 0; k < 3; k++) {
-    const a = R() * 6.28, lean = norm3([Math.cos(a) * 0.3, 1, Math.sin(a) * 0.3]);
-    c.add([x + lean[0] * H * 0.15, b + H * 0.17, z + lean[2] * H * 0.15], lean, norm3([Math.cos(a + 1.6), 0, Math.sin(a + 1.6)]),
-      H * 0.18, 0.035, R.pick(o.stock), { bend: R.range(-0.4, 0.4), order: c.ord(0.1) });
+    const a = R() * 6.28, lean = norm3([Math.cos(a) * 0.35, 1, Math.sin(a) * 0.35]);
+    c.add([x + lean[0] * 0.1, b + 0.12, z + lean[2] * 0.1], lean, norm3([Math.cos(a + 1.6), 0, Math.sin(a + 1.6)]),
+      0.2, 0.04, R.pick(o.stock), { bend: R.range(-0.5, 0.5), order: c.ord(0.1) });
   }
-  if (R() < 0.6) {
-    const s0 = [x + R.range(-0.14, 0.14), b, z + R.range(-0.14, 0.14)];
-    c.line(s0, add3(s0, [R.range(-0.06, 0.06), H + R.range(0.2, 0.45), R.range(-0.06, 0.06)]), norm3([R() - 0.5, 0, R() - 0.5]), 0.022, o.stake, { seg: 0.45 });
+  // the stakes: thin, dark and upright, the one vertical in the field
+  if (R() < 0.8) {
+    const s0 = [x + R.range(-0.2, 0.2), b, z + R.range(-0.2, 0.2)];
+    c.line(s0, add3(s0, [R.range(-0.05, 0.05), R.range(0.7, 1.15), R.range(-0.05, 0.05)]), norm3([R() - 0.5, 0, R() - 0.5]), 0.022, o.stake, { seg: 0.4 });
   }
-  const cy = b + H * 0.5, n = Math.round(r0 * r0 * 320);
+  // the shoots: long bent canes out of the stock, low over the ground and lifting at their ends
+  const nc = 5 + Math.floor(R() * 4);
+  for (let k = 0; k < nc; k++) {
+    const a = R() * 6.28, L = R.range(0.5, 1.0), up = R.range(0.15, 0.5);
+    const s0 = [x + Math.cos(a) * 0.08, b + 0.08, z + Math.sin(a) * 0.08];
+    const cane = R() < 0.25 ? o.cane : o.cols;
+    c.line(s0, add3(s0, [Math.cos(a) * L, up, Math.sin(a) * L]), norm3([-Math.sin(a), 0.6, Math.cos(a)]), 0.03, cane, { seg: 0.3, bend: R.range(-0.5, 0.5), sway: 0.35, base: b });
+  }
+  // the leaves: through a flat mound, not on its surface; their normals are their own, so there is no ball to shade
+  const n = Math.round(r0 * r0 * 105);
   for (let i = 0; i < n; i++) {
-    const u = R() * 1.15 - 0.15, a = R() * Math.PI * 2, s = Math.sqrt(Math.max(0, 1 - u * u));
-    const nrm = [Math.cos(a) * s, u, Math.sin(a) * s], k = R.range(0.8, 1);
-    const p = [x + nrm[0] * r0 * k, cy + nrm[1] * H * 0.55, z + nrm[2] * r0 * k];
-    const d = proj(add3([-nrm[2], R.range(-0.6, 0.6), nrm[0]], mul3([R() - 0.5, R() - 0.5, R() - 0.5], 0.8)), nrm);
-    const col = jitter(R.pick(u > 0.6 && R() < 0.35 ? o.top : u < 0.05 && R() < 0.5 ? o.low : o.cols), R, 0.12);
-    c.add(p, d, nrm, R.range(0.07, 0.13), R.range(0.04, 0.065), col,
-      { col2: R() < 0.3 ? R.pick(o.top) : col, bend: R.range(-0.4, 0.4), sway: 0.5, phase: x * 0.4 + z * 0.3, base: b, order: c.ord(0.3 + 0.55 * (u + 0.15)) });
+    const a = R() * Math.PI * 2, k = 0.15 + 0.85 * Math.sqrt(R()), u = R();
+    const h = H * (1 - 0.7 * k * k) * (0.3 + 0.7 * u);
+    const p = [x + Math.cos(a) * r0 * k, b + 0.03 + h, z + Math.sin(a) * r0 * k];
+    const nrm = norm3([R.range(-0.7, 0.7), 1, R.range(-0.7, 0.7)]);
+    const d = proj(norm3([Math.cos(a) * 0.6 + R.range(-0.8, 0.8), R.range(-0.3, 0.6), Math.sin(a) * 0.6 + R.range(-0.8, 0.8)]), nrm);
+    const col = jitter(R.pick(u > 0.7 && R() < 0.4 ? o.top : k > 0.85 && R() < 0.4 ? o.low : o.cols), R, 0.12);
+    c.add(p, d, nrm, R.range(0.1, 0.2), R.range(0.05, 0.08), col,
+      { col2: R() < 0.3 ? R.pick(o.top) : col, bend: R.range(-0.5, 0.5), sway: 0.4, phase: x * 0.4 + z * 0.3, base: b, order: c.ord(0.3 + 0.5 * u) });
   }
 }
 
@@ -709,12 +722,13 @@ const BUILDERS = [
       cols: P(['#b02a22', '#c23a26', '#962226', '#cc4a2a', '#7e1c24', '#b8362c', '#d45a2e', '#8a2a3a']),
       top: P(['#f0a040', '#f4c050', '#e88a34', '#f8d070']),
       low: P(['#6a1a26', '#5a2a3a', '#4a2a5a', '#3f452b']),
+      cane: P(['#8a8a2e', '#6a7a2a', '#a09040', '#c8a030']),
       stake: P(['#2a1a16', '#3a2418', '#1e1a24']), stock: P(['#3a2a20', '#4a3226', '#2a2024']) };
     // rows of vines either side of the road, stopping short of the canal on the right.
     // The easel stands among them turned back up the road, so that from in front of it
     // the sun is just past its right edge and the canal is behind it.
     const ez = z0 + 6, ex = c.rx(ez) + 3.4, cz = z0 - 34, cx = c.rx(cz) + 8.5;
-    for (let z = z0 + 38; z > z0 - 40; z -= 1.45)
+    for (let z = z0 + 38; z > z0 - 40; z -= 1.6)
       for (const [u0, du, k] of [[-3.4, -1.9, 8], [3.4, 1.9, 6]])
         for (let j = 0; j < k; j++) {
           const zz = z + R.range(-0.22, 0.22), x = c.rx(zz) + u0 + du * j + R.range(-0.2, 0.2);

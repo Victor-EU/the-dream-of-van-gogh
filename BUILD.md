@@ -3322,3 +3322,46 @@ moment the coda begins. Both runs start at `?at=11`, 128 m from the portrait.
 - **The pace is a ramp on distance, not on approach.** Standing at 47 m it runs at twice its time whether you
   walked there or arrived by the line.
 - **Measured headless on this machine only.**
+
+### After M9 — The vines, low
+
+**What was asked.** The red vineyard did not look like a vineyard: round red things in a field. The author was right.
+From the road it was a mass of tall red wheat with red balls standing in it.
+
+**What was decided.**
+
+- **What was wrong, in two parts.** The vine was a dome: leaves laid on the surface of a half-sphere, each with the
+  sphere's own normal, so the light shaded every vine as a ball. And the ground between them was the wheat the
+  ground table draws, red and 0.6 m tall, so the field read as grass with balls in it. His canvas has neither: a low
+  tangle of red, orange and yellow that lies flat across the field, thin dark stakes standing out of it, and the
+  violet earth showing between and across the front.
+- **The vine is a tangle now, wider than it is tall.** 0.3 to 0.4 m high and 0.6 to 0.9 m across, where it was
+  0.5 to 0.8 m high and 0.36 to 0.52 m across.
+  - Its leaves lie through a flat mound rather than on a surface, and each has a normal of its own, so that there
+    is no ball to shade. The marks are larger, 0.1 to 0.2 m, nearer the size of his.
+  - Five to eight shoots go out of the stock as long bent canes, low over the ground and lifting at the ends. A
+    quarter are olive and yellow, as the green in his rows is.
+  - Four vines in five have a stake, and they stand higher than the vine: the one vertical in the field.
+- **The ground is a carpet.** The wheat is 0.22 m tall at 0.4 instead of 0.6 m at 0.8; the olive tufts are lower; the
+  violet furrow is stronger, and the yellow and orange dots more, so that the earth shows between the rows.
+- **The rows are 1.6 m apart** instead of 1.45, to pay for the wider vines.
+
+**What changed.**
+
+- `src/scenes.js`: `vine()`, and the vineyard's palette gains `cane`.
+- `src/config.js`: station 7's ground cover.
+
+**How it was verified.** Headless Chrome, `?at=7&painted`, from the road at the station and from beside the easel,
+before and after.
+
+- From the road, the field is a low tangle with the stakes standing out of it and the earth showing, and no ball
+  anywhere in it. From beside the easel, the near vines are canes and leaves.
+- The station's scenery is 70,889 marks, from 65,883: the leaves were thinned once, from 80,673, to keep it near what
+  it was. Single frame-rate readings in the same runs were 41 before and 36 after, which is within the noise of a
+  headless reading and was not measured back to back.
+- No exceptions. `tools/station.py` exits 0.
+
+**Still visible.**
+
+- **The pickers are still not in it**, by the decision in the vineyard's own entry.
+- **The blue dashes in the sky are the sky's**, as they were.
