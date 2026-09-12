@@ -375,6 +375,22 @@ function coda(c, cv) {
     const p = at(u, 0, v);
     c.colliders.push({ x: p[0], z: p[2], r: hw + 0.5 });
   }
+  // The line to him. The piece began on bare canvas with one charcoal line going forward, and the road dwindles to
+  // nothing coming onto this canvas; from where it does, the line goes on, along the road's own way to where the
+  // road ends and then straight to the foot of the easel, in short dashes laid by hand. It is the easel's, so it
+  // is there when the easel is, and it draws itself out towards him while the timbers stand up.
+  const foot = [x + nrm[0] * 7, z + nrm[2] * 7], way = [];
+  for (let zz = c.z0 - 2; zz > zv; zz -= 0.85) way.push([c.rx(zz), zz]);
+  const L = Math.hypot(foot[0] - xv, foot[1] - zv);
+  for (let t = 0; t < L; t += 0.85) way.push([xv + (foot[0] - xv) * t / L, zv + (foot[1] - zv) * t / L]);
+  const ink = P(['#3a3532', '#46403c', '#2e2a28']);
+  way.forEach(([px, pz], i) => {
+    if (i + 1 >= way.length || R() < 0.14) return;
+    const [qx, qz] = way[i + 1], d = norm3([qx - px, 0, qz - pz]), side = R.range(-0.05, 0.05);
+    const m = [(px + qx) / 2 - d[2] * side, c.gy((px + qx) / 2, (pz + qz) / 2) + 0.03, (pz + qz) / 2 + d[0] * side];
+    st.S.add(m, d, [0, 1, 0], R.range(0.45, 0.6), R.range(0.1, 0.13), jitter(R.pick(ink), R, 0.06),
+      { bend: R.range(-0.12, 0.12), order: 0.04 + 0.6 * i / way.length + R() * 0.02 });
+  });
   c.stand = st;
   c.easels.push({ slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'), title: cv.title, date: cv.date,
     collection: cv.collection, key: `${c.i}-coda`, x, y: b + ledge + H / 2, z, yaw, w: W, h: H, station: c.i,

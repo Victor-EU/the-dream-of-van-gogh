@@ -3365,3 +3365,46 @@ before and after.
 
 - **The pickers are still not in it**, by the decision in the vineyard's own entry.
 - **The blue dashes in the sky are the sky's**, as they were.
+
+### After M9 — The line to him
+
+**What was asked.** On the bare canvas after the wheatfield the viewer is lost: the road has dwindled to nothing,
+the portrait stands off to one side across blank ground, and nothing says which way to go. Design the road to the
+portrait.
+
+**What was decided.**
+
+- **A charcoal line, not a road.** The piece began on bare primed canvas with one charcoal line going forward; it
+  ends on bare canvas with one going to him. A road of the station kind would make the bare canvas a place, which
+  it is not.
+- **It takes up where the road dwindles**, two metres past station 11's tick, follows the road's own way to where
+  the road ends, and goes straight on to the foot of the easel, 7 m in front of the canvas, where the walk's limit
+  is. About 115 m in all.
+- **It is the easel's.** It is laid in the easel's own mesh, so it is there when the easel is and not before, keeps
+  the portrait's haze, and draws itself out towards him while the timbers stand up: from the viewer's end, over the
+  first 3.6 s of the easel's 6.
+- **Dashes laid by hand**: 0.45 to 0.6 m long and 10 to 13 cm wide, 0.85 m apart, one in seven missing, each a
+  little off the line and a little bent, in three charcoal greys.
+  - A first cut at 6 to 10 cm wide was under a pixel from the road's end and vanished past 40 m; at 16 to 22 cm it
+    carried to the easel but lay on the ground in front of you like tar. 10 to 13 cm carries, and reads as charcoal.
+  - The first cut also had a bug: the foot was a pair and read as a triple, so the straight part had no length and
+    was never laid. Found in the first frames, where the line stopped at the road's end.
+
+**What changed.**
+
+- `src/scenes.js`: `coda()` lays the line into the stand's stroke builder.
+- `stations/s11-after.json`: `_coda` records it; `_ground` says the ground itself still has no line.
+
+**How it was verified.** Headless Chrome, `?at=11`, frames from before the tick at 3 s, and at 9 s from the tick,
+from the road's end and from 45 m out on the line, each looking the way the road faces.
+
+- From the tick the line runs from the foot of the frame along the road and on to the easel's foot; from the road's
+  end it goes straight to him; from 45 m out it is dashes to his feet. In none of them is there a question of which
+  way to go.
+- No exceptions.
+
+**Still visible.**
+
+- **The line is the easel's, so it appears when the easel does**, about 128 m off, and not from the field's edge.
+  Before that the bare canvas is as it was, with the road dwindling into it; the line is where the road was going.
+- **From 100 m the far dashes are two pixels wide.** They carry, on this screen; a phone was not checked.
