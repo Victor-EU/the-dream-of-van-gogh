@@ -152,7 +152,8 @@ export class Sound {
     if (time > this.nextBird) { const l = lv('birds'); if (Math.random() < l) this.bird(); this.nextBird = time + 1.2 + Math.random() * 3.5; }
     if (time > this.nextCrow) { const l = lv('crows'); if (Math.random() < l) this.caw(); this.nextCrow = time + 2.5 + Math.random() * 5; }
     const speed = Math.abs(v);
-    if (speed > 0.4) { this.phase += dt * (1.2 + speed * 0.27); if (this.phase > 1) { this.phase -= 1; this.step(speed); } }
+    // the steps quicken with the pace up to a sprint's five a second, however much faster the walking speed goes
+    if (speed > 0.4) { this.phase += dt * (1.2 + Math.min(speed, 14) * 0.27); if (this.phase > 1) { this.phase -= 1; this.step(speed); } }
     else this.phase = 0.6;
     const k = coda ? 'coda' : Math.round(s);
     if (k !== this.chord) {

@@ -119,6 +119,7 @@
   #corner button:hover, #corner button:focus-visible { border-color: rgba(244,238,227,.85); outline: none; }
   #corner button.on { background: rgba(244,238,227,.18); border-color: rgba(244,238,227,.7); }
   #corner svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #btn-pace { font: 600 12.5px/1 -apple-system, Helvetica, sans-serif; letter-spacing: .01em; }
   #btn-sound .x { display: inline; } #btn-sound.on .x { display: none; } #btn-sound .w { display: none; } #btn-sound.on .w { display: inline; }
 
   /* the road, as a line you can travel along */
@@ -157,7 +158,7 @@
   #debug { position: fixed; right: 18px; top: 66px; font: 11px/1.5 ui-monospace, Menlo, monospace; white-space: pre; text-align: right;
     opacity: .85; text-shadow: 0 1px 8px #000; z-index: 6; pointer-events: none; }
   @media (max-width: 760px) {
-    #station { left: 20px; top: 20px; max-width: 78vw; }
+    #station { left: 20px; top: 68px; max-width: 78vw; }
     #journey { left: 22px; right: 22px; }
     #plaque { left: 20px; }
     #help { bottom: 76px; gap: 12px; padding: 12px 14px; }
@@ -189,6 +190,7 @@
   <div class="k"><kbd>←</kbd><kbd>→</kbd> turn</div>
   <div class="k"><kbd class="wide">drag</kbd> look around</div>
   <div class="k"><kbd class="wide">space</kbd> walk on its own</div>
+  <div class="k"><kbd>X</kbd> walk faster</div>
   <div class="k"><kbd>Z</kbd> lie down and look up</div>
   <div class="k"><kbd>1</kbd>–<kbd>0</kbd> jump to a place</div>
 </div>
@@ -200,6 +202,7 @@
 <div id="end"><p class="kicker">Auvers-sur-Oise · 29 July 1890</p><h2>Vincent van Gogh<br>1853 – 1890</h2><button id="again" type="button">Walk it again</button></div>
 
 <div id="corner">
+  <button id="btn-pace" type="button" aria-label="Walking speed, normal" title="Walking speed 1× (X)">1×</button>
   <button id="btn-sound" type="button" aria-pressed="false" aria-label="Sound" title="Sound (M)">
     <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="M17 10l4 4M21 10l-4 4"/></svg>
   </button>

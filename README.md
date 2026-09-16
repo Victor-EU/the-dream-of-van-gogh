@@ -54,6 +54,7 @@ gets a smaller budget and two-thumb controls, but no real phone has been measure
 | Turn | ← →; A D step sideways | the left thumb, sideways |
 | Look around | drag | the right thumb |
 | Walk on its own | Space; ← → steer it off the road, ↑ ↓ take over | |
+| Walk faster | X, or the 1× button: 1.5×, 2×, 3× and back | the 1× button |
 | Lie down and look up | Z | |
 | Go to a place | 1 to 9, and 0 for the tenth; or click the line along the bottom, which reaches all eleven | tap the line |
 | Sound | M, or the speaker button | the speaker button |
@@ -63,6 +64,13 @@ gets a smaller budget and two-thumb controls, but no real phone has been measure
 The walk on its own keeps to the road: drag to look around and it walks on regardless. ← → steer it off the
 road, and once let go it finds the road again. It slows at every place and stops where the road ends. The last
 eighty metres, up to the portrait, are for a hand.
+
+The 1× button in the corner, or X, sets the walking speed. Every way of walking, the walk on its own included,
+goes one and a half, two or three times as fast, and turning does not. On its own the whole road takes about seven
+minutes at 1× and under two and a half at 3×, and at any speed it comes to rest in the same place. The canvases
+keep their thirteen seconds, so the faster you go the less of each is painted as you pass it: at 1× most are
+finished as you come level with them, and at 3× a canvas is typically a little over a third laid. At 3× a line
+from his letters is up for eight of its twelve seconds.
 
 ## The walk
 
@@ -172,7 +180,8 @@ These exist for testing and for reproducing a frame.
 
 `window.vgu` exposes the state and a few controls for headless checks.
 
-- `vgu.state()` returns position, place, progress, frame rate and whether the walk is on its own.
+- `vgu.state()` returns position, place, progress, frame rate, whether the walk is on its own, and the walking
+  speed (`pace`).
 - `vgu.go({ station, dz, x, z, yaw, pitch, lie })` puts you somewhere, and `vgu.jump(n)` travels to a place as the
   line does.
 - `vgu.easels()` lists every canvas, and `vgu.easel(i, metres)` stands you in front of one.

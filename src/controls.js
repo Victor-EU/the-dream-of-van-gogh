@@ -4,7 +4,7 @@
 import { clamp } from './util.js';
 
 const MOVE = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
-const KEYMAP = { Space: 'auto', KeyZ: 'lie', KeyM: 'sound', KeyH: 'help', Slash: 'help', Enter: 'begin', Escape: 'escape', KeyF: 'fullscreen' };
+const KEYMAP = { Space: 'auto', KeyZ: 'lie', KeyX: 'pace', KeyM: 'sound', KeyH: 'help', Slash: 'help', Enter: 'begin', Escape: 'escape', KeyF: 'fullscreen' };
 
 export class Controls {
   constructor(el) {

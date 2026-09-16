@@ -5,6 +5,9 @@ import { stationZ, tauAt } from './journey.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// a button pressed with a click or a tap gives the focus back, or the space bar would press it again instead of
+// walking on its own; one reached with Tab keeps it
+const press = (b, f) => b.addEventListener('click', e => { if (e.detail) b.blur(); f(e); });
 
 export class UI {
   constructor(stations, api) {
@@ -21,15 +24,16 @@ export class UI {
       const name = s.json.title || s.place, when = s.json.when || '';
       b.innerHTML = `<i></i><span>${esc(name)}${when ? `<em>${esc(when)}</em>` : ''}</span>`;
       b.setAttribute('aria-label', `Go to ${name}${when ? ', ' + when : ''}`);
-      b.addEventListener('click', e => { e.stopPropagation(); api.jump(i); });
+      press(b, e => { e.stopPropagation(); api.jump(i); });
       ticks.appendChild(b);
     });
-    $('btn-sound').addEventListener('click', () => api.sound());
-    $('btn-help').addEventListener('click', () => this.toggleHelp());
-    $('btn-fs').addEventListener('click', () => api.fullscreen());
-    $('again').addEventListener('click', () => api.jump(0));
+    press($('btn-pace'), () => api.pace());
+    press($('btn-sound'), () => api.sound());
+    press($('btn-help'), () => this.toggleHelp());
+    press($('btn-fs'), () => api.fullscreen());
+    press($('again'), () => api.jump(0));
     if (matchMedia('(pointer: coarse)').matches) {
-      $('help').innerHTML = '<div class="k">left thumb · walk and turn</div><div class="k">right thumb · look around</div><div class="k">the line below · travel</div>';
+      $('help').innerHTML = '<div class="k">left thumb · walk and turn</div><div class="k">right thumb · look around</div><div class="k">the line below · travel</div><div class="k">1× in the corner · walk faster</div>';
       $('hint').textContent = 'Left thumb walks · right thumb looks';
     }
   }
@@ -61,6 +65,13 @@ export class UI {
   }
   setSound(on) { const b = $('btn-sound'); b.setAttribute('aria-pressed', String(on)); b.classList.toggle('on', on); b.title = on ? 'Sound on (M)' : 'Sound off (M)'; }
   setAuto(on) { $('auto').classList.toggle('on', on); }
+  setPace(k) {
+    const b = $('btn-pace');
+    b.textContent = `${k}×`;
+    b.classList.toggle('on', k !== 1);
+    b.title = `Walking speed ${k}× (X)`;
+    b.setAttribute('aria-label', k === 1 ? 'Walking speed, normal' : `Walking speed, ${k} times`);
+  }
   update(S) {
     $('j-fill').style.width = (S.tau * 100).toFixed(3) + '%';
     $('j-dot').style.left = (S.tau * 100).toFixed(3) + '%';

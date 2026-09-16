@@ -26,6 +26,9 @@ addEventListener('error', e => fail('Something stopped the paint.', e.error || e
 addEventListener('unhandledrejection', e => fail('Something stopped the paint.', e.reason));
 
 const WALK = 4.5, RUN = 10.5, TURN = 1.9, LOOK = 0.0032, EYE = 1.65;
+// the walking speeds the corner button and X step through: every way of walking goes that many times as fast, and
+// turning and looking do not
+const PACES = [1, 1.5, 2, 3];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const roadYaw = z => Math.atan2(-J.roadSlope(z), 1);
 // the opening's veil (src/veil.js); a page without it simply opens on the world
@@ -79,6 +82,7 @@ async function boot() {
                  lie: 0, lieT: 0, auto: false };
   // seconds since a hand last dragged to look: the walk on its own turns the eye back to the road only after a pause
   let lookAgo = 9;
+  let pace = 1;
   const startIdx = has('at') ? clamp(parseInt(Q.get('at'), 10) || 1, 1, J.NST) - 1 : -1;
   if (startIdx >= 0) body.z = J.stationZ(startIdx) + 18;
   body.x = J.roadX(body.z);
@@ -98,6 +102,7 @@ async function boot() {
     jump: i => jumpTo(i),
     sound: () => { ui.setSound(sound.toggle()); hush = !sound.on; },
     fullscreen: () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}),
+    pace: () => stepPace(),
   });
   ui.loading('Mixing the colours');
 
@@ -126,10 +131,17 @@ async function boot() {
     body.auto = false;
     ui.setAuto(false);
   }
+  // one step up the walking speeds, and from the fastest back to a walk
+  function stepPace() {
+    if (!hand()) return;
+    pace = PACES[(PACES.indexOf(pace) + 1) % PACES.length];
+    ui.setPace(pace);
+  }
   controls.on('begin', hand);
   controls.on('move', () => { if (hand()) ui.moved(); });
   controls.on('look', () => { if (hand()) body.pitchT = null; });
   controls.on('auto', () => { if (!hand()) return; body.auto = !body.auto; ui.setAuto(body.auto); });
+  controls.on('pace', stepPace);
   controls.on('lie', () => { if (!begun) return; body.lieT = body.lieT ? 0 : 1; body.pitchT = body.lieT ? 1.12 : 0.02; });
   controls.on('sound', () => { ui.setSound(sound.toggle()); hush = !sound.on; if (ready) wake(false); });
   controls.on('help', () => ui.toggleHelp());
@@ -157,13 +169,14 @@ async function boot() {
       if (Math.abs(f) > 0.3 && body.auto) { body.auto = false; ui.setAuto(false); }
       if ((f || st) && body.lieT) { body.lieT = 0; body.pitchT = 0.02; }
       if (!body.auto) body.yaw += tr * TURN * dt;
-      let target = f * (controls.run ? RUN : WALK), side = st * WALK * 0.8;
+      let target = f * (controls.run ? RUN : WALK) * pace, side = st * WALK * 0.8 * pace;
       if (body.auto && body.z < J.ZEND + 4.3) { body.auto = false; ui.setAuto(false); }
       if (body.auto) {
-        target = autoSpeed() * clamp((body.z - J.ZEND - 4) / 10, 0.15, 1);
-        side = clamp(tr + st, -1, 1) * WALK * 0.8;
+        // at any pace it slows over the road's last 10 m as it does at a walk, and comes to rest in the same place
+        target = autoSpeed() * clamp((body.z - J.ZEND - 4) / 10, 0.15, pace);
+        side = clamp(tr + st, -1, 1) * WALK * 0.8 * pace;
       }
-      target += body.wheelV;
+      target += body.wheelV * pace;
       body.wheelV *= Math.exp(-dt * 2.2);
       if (body.lieT) { target = 0; side = 0; }
       body.v += (target - body.v) * (1 - Math.exp(-dt * 5));
@@ -190,9 +203,16 @@ async function boot() {
       const lat = nx - J.roadX(nz), LIM = 42;
       if (Math.abs(lat) > LIM) nx = J.roadX(nz) + Math.sign(lat) * LIM;
       nz = clamp(nz, zLast, J.ZSTART + 8);
-      for (const c of props.colliders) {
-        const dx = nx - c.x, dz = nz - c.z, d = Math.hypot(dx, dz);
-        if (d < c.r && d > 1e-4) { nx = c.x + dx / d * c.r; nz = c.z + dz / d * c.r; }
+      // a frame's step at three times a run is longer than a lamp post's 0.35 m and would go through it, so a long
+      // step meets the posts in pieces of 0.3 m; a walk is one piece
+      const n = Math.ceil(Math.hypot(nx - body.x, nz - body.z) / 0.3) || 1, sx = (nx - body.x) / n, sz = (nz - body.z) / n;
+      nx = body.x; nz = body.z;
+      for (let i = 0; i < n; i++) {
+        nx += sx; nz += sz;
+        for (const c of props.colliders) {
+          const dx = nx - c.x, dz = nz - c.z, d = Math.hypot(dx, dz);
+          if (d < c.r && d > 1e-4) { nx = c.x + dx / d * c.r; nz = c.z + dz / d * c.r; }
+        }
       }
       body.x = nx; body.z = nz;
     }
@@ -323,7 +343,7 @@ async function boot() {
     ready: false,
     state: () => ({ x: body.x, z: body.z, y: camera.position.y, yaw: body.yaw, pitch: body.pitch, s: sNow,
                     station: J.nearestStation(body.z) + 1, tau: J.tauAt(body.z), fps: Math.round(fps),
-                    begun, awake, auto: body.auto, lie: body.lie, v: body.v, date: calendar(body.z).text }),
+                    begun, awake, auto: body.auto, pace, lie: body.lie, v: body.v, date: calendar(body.z).text }),
     go: o => {
       if (o.station) { body.z = J.stationZ(o.station - 1) + (o.dz ?? 18); body.x = J.roadX(body.z) + (o.dx ?? 0); body.yaw = roadYaw(body.z); }
       if (o.x != null) body.x = o.x;

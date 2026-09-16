@@ -3408,3 +3408,81 @@ from the road's end and from 45 m out on the line, each looking the way the road
 - **The line is the easel's, so it appears when the easel does**, about 128 m off, and not from the field's edge.
   Before that the bare canvas is as it was, with the road dwindling into it; the line is where the road was going.
 - **From 100 m the far dashes are two pixels wide.** They carry, on this screen; a phone was not checked.
+
+### After M9 — A walking speed, on a button
+
+**What was asked.** A button to walk faster, at 1.5, 2 and 3 times. Then, once the new button gave the focus back
+after a click, the same for every other button on the page.
+
+**What was decided.**
+
+- **One button that steps through the speeds**: 1×, 1.5×, 2×, 3× and back to 1×. It stands first in the corner with
+  its speed written on it, not an icon, and is lit above 1×. X does the same, for the × on the button, and the card
+  of keys says so.
+- **Every way of walking follows it**, as in *A quicker walk*: the arrows, Shift, the side step, the thumb pad, a
+  flick of the wheel, and the walk on its own and its steer. Turning and looking do not.
+- **The walk on its own still comes to rest where it did.** Its speed is capped by the 1× slowing over the road's
+  last 10 m instead of multiplied by it. Multiplied, 3× would brake into the same 10 m at 7.9 m/s², three times
+  as hard as at a walk.
+- **The steps stop quickening at a sprint**, five a second, from 14 m/s. Three times a run is 31.5 m/s, which was ten
+  steps a second.
+- **A long step meets the colliders in pieces of 0.3 m.** At three times a run a frame's step at 60 fps is 0.53 m,
+  longer than a lamp post's radius of 0.35 m, and running straight at a post went through it every time. A walk is
+  still one piece.
+- **Every button pressed with a click or a tap gives the focus back**: the speed, the sound, the keys, full screen,
+  the line's ticks and *Walk it again*. At HEAD each kept it, so Space pressed it again instead of walking on its
+  own. It turned the sound back off, closed the card of keys, left full screen, or travelled again to where the tick
+  or *Walk it again* had just gone. A button reached with Tab keeps the focus, and Enter or Space still presses it.
+- **On a phone a place's name now starts below the corner.** On a 375 px screen the three buttons already covered
+  part of *Saint-Rémy · May to November 1889*, and a fourth covered more. Under 760 px it now starts 68 px down.
+
+**What changed.**
+
+- `src/main.js`: `PACES`, `pace` and `stepPace()`; the speeds; the capped slowing at the road's end; the collider
+  pieces; `pace` in `vgu.state()`.
+- `src/controls.js`: X.
+- `src/ui.js`: `press()`, which every button's click now goes through; `setPace()`; a line on a touch screen's card.
+- `src/audio.js`: the cap on the steps.
+- `index.html`: the button, its type, the card of keys, and where a place's name starts on a narrow screen.
+- `README.md`: the controls, and `vgu.state()`.
+
+**How it was verified.** Headless Chrome at 60 fps, on a copy of HEAD and on HEAD plus these files. A probe held keys
+over CDP, read `vgu.state()`, and sampled positions on the page's own frames.
+
+| | HEAD | 1× | 1.5× | 2× | 3× |
+|---|---|---|---|---|---|
+| ↑ held | 4.50 m/s | 4.50 | 6.75 | 9.00 | 13.50 |
+| Shift + ↑ | 10.50 m/s | 10.50 | 15.75 | 21.00 | 31.50 |
+| D held | 3.68 m/s | 3.59 | 5.37 | 7.16 | 10.87 |
+| → held, turning | 1.94 rad/s | 1.89 | 1.94 | 1.89 | 1.89 |
+| space, between places | 3.60 m/s | 3.60 | 5.40 | 7.20 | 10.80 |
+| one flick of the wheel, deltaY −100 | 1.25 m | 1.25 | 1.87 | 2.50 | 3.75 |
+
+- **The road's end.** On its own from 26 m past station 11, at rest 4.19 m short of the end at HEAD, at 1× and at 3×.
+  The hardest braking was 2.76 m/s² at HEAD, 2.71 at 1× and 3.96 at 3×.
+- **The whole road on its own at 3×**, from the start: 2 min 24 s to rest, 0.000 m off the road's centre line, never
+  under 0.5 m/s, longest frame 49 ms. A model of the same formulas gives 2 min 23 s, and 6 min 48 s at 1×.
+- **Lamp posts.** The fifteen with 2.5 m clear around them were run straight at from two sides with Shift held, 30
+  runs at each speed. A run through a post's middle, within 0.1 m of its centre, happened 0 times at 1×, 2× and 3×.
+  Before the pieces it happened 30 times of 30 at 3×. At HEAD it happened 4 times in 90 runs at an ordinary run,
+  presumably on long frames.
+- **The button.** A click goes to 1.5×, lights it and leaves the focus off it; Space then walks on its own at 1.5×.
+  X steps to 2×, 3× and 1×. Enter on the button when focused steps too and keeps the focus. The title and label
+  follow.
+- **Every button, clicked and then Space.** At HEAD none of the five kinds walked on its own: the focus stayed on the
+  button, and the sound, the card and full screen each went back off. Now all six walk on its own, and what the
+  click did stays done: the sound on, the card up, full screen, 1.5×, the place the tick went to, the start of the
+  road. The sound button focused and pressed with Enter still turns the sound on and off and keeps the focus.
+- **Frames**: the corner at 1.5×, the card of keys at 2×, and an emulated 375 × 812 touch screen before and after
+  the place's name moved.
+- No exceptions, and no console errors or warnings.
+
+**Still visible.**
+
+- **The canvases keep their thirteen seconds.** From the model, with the easels' own positions, on the walk on its
+  own: as you come level with a canvas it is painted to a median 100% at 1×, with 22 of 31 finished; 77% at 1.5×;
+  58% at 2×; and 38% at 3×. None is finished at 2× or 3×.
+- **At 3× a line from his letters is up for 8.3 s of its 12**, because the next place arrives first. At 2× and
+  slower it keeps all twelve.
+- **The speed is not kept.** A reload walks at 1×.
+- **A phone was not checked**, only an emulated one.
