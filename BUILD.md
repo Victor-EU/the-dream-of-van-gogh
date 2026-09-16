@@ -3550,3 +3550,84 @@ profile came back. The server's own log counted the scripts it sent.
 - **The underlayers and stroke records are not stamped**, as above.
 - **Only Chrome was run.** Safari and Firefox also keep an `immutable` copy without asking, and read import maps the
   same way, but neither was measured.
+
+### After M9 — The road to him
+
+**What was asked.** In the last scene the way to the portrait did not read as a road. From the bare canvas it was a
+trail of dark dashes running up to the easel's foot, like blots of tar. The author asked for a real road leading to the
+painting.
+
+**What was decided.**
+
+- **A road, not a line.** This reverses *The line to him*, which kept the bare canvas from becoming a place. On the
+  author's word it now has a road across it.
+- **The field's road goes on.** It no longer dwindles into the bare canvas. Over the last 36 m of the field, where the
+  ground turns to linen, it keeps its 2.2 m and turns from the wheatfield's rust and green to the bare canvas's road.
+- **Straight to him.** From where the walk on its own stops, 30 m past station 11's tick, the road runs straight on
+  along its own line. The easel already stood on that line, so it has not moved. The road ends in a round end under the
+  canvas, 80 m on.
+  - The line is one function for the land, the body and the drawing, in JavaScript and GLSL alike. So the land keeps
+    it past the end too, where nothing draws it.
+- **The ground draws it**, as it draws every station's road: the same marks laid along it, the same worn line down
+  each side, olive at its edges. Everywhere but the road, the bare canvas is linen as before.
+- **Earth, with a fringe of grass.** The road is `#86705a`, its edges `#6a6448`, and a few olive blades, 8 to 21 cm
+  tall, grow within 0.6 m of it. Nothing else grows on the bare canvas.
+  - The wheatfield's own rust and green came first. Under station 11's white light the road was tomato red between
+    two bright green hedges, and the end card's dark letters sat on red.
+  - Then eight palettes, set at run time. Ochres and cream went yellow through the grade, and the darker rusts still
+    darkened the card. The earth reads as a dirt road and leaves the card legible.
+  - With grass to 1.7 m out, as the stations' verges have, it was a hedge on bare canvas. With no grass it was a ribbon
+    laid on the canvas. A fringe within 0.6 m, with seven blades in ten kept, reads as grass at a road's edge.
+- **Two things on the road were the bare canvas's.** Its linen marks lay across the road's edges and read as tears;
+  none lies within reach of the edge now (0.42 m near, 1.39 m in the far field, whose marks are larger). And a mark's
+  second colour, which is the station's, was the linen, so the road's marks carried pale flakes. On the bare canvas
+  the road's marks take their edge colour instead.
+- **The dashes are gone** from the easel's mesh.
+
+**What changed.**
+
+- `src/journey.js`: `ZSTRAIGHT`, and the road straight on from it, in both `roadX` and `roadSlope`. `roadDist` ends
+  the road at `uRoadEnd`.
+- `src/ground.js`: the linen leaves the road; the fringe; no linen marks across the road; the road's second colour.
+- `src/config.js`: station 11's road, its edges and its width, and its grass.
+- `src/scenes.js`: the line is taken out; the coda's easel says where the road ends, and stands on `ZSTRAIGHT`'s line.
+- `src/main.js`: `uRoadEnd`, from the coda.
+- `stations/s11-after.json`: `_ground`, `_coda` and `_schema`.
+- DESIGN.md, README.md, `src/canvases.js` and `tools/station.py`: the portrait stands at the end of the road, not past
+  it. README.md says where the walk on its own stops.
+- `docs/the-end.jpg`: shot again from where the walk on its own stops. The old frame still had the crows.
+
+**How it was verified.** Headless Chrome, `?at=11&painted`, in frames from:
+
+- the last of the field, 50 m and 35 m before the tick;
+- where `?at=11` starts, and the tick;
+- where the walk on its own comes to rest, with the end card up;
+- 45 m from the canvas;
+- 9 m from the canvas, near the walk's limit, looking down at the road's end;
+- 12 m out, looking up at him, and 8 m out, looking back down the road;
+- past the tick, looking back at the field.
+
+What they showed:
+
+- From the field the road runs on into the blank. Once you are on the bare canvas the easel paints itself in at its
+  end.
+- From the tick and from where the walk stops, it runs to the foot of the easel. There it ends under the canvas,
+  between the front legs, with the grass going round the end.
+- Looking back, it winds away to the field.
+- The end card over the road, at 1920 × 1080: the name, the dates and the button read clearly. The small line above
+  the name crosses the grass at both its ends.
+- Stations 1, 6, 7 and 10, from HEAD and from this change, at the same place with the clock frozen. Station 1 is the
+  same to within one level. In 6, 7 and 10 his line from the letters is at a different point of fading in, and in 10
+  the road now carries on at the horizon. Nothing else differs.
+- The coda's easel is 1,263 marks, from 1,358: the line was 95 dashes. The easel stands where it stood.
+- `tools/station.py` exits 0. No exceptions, errors or warnings.
+
+**Still visible.**
+
+- **The road is there before the easel is.** The line came with the easel. The road is the ground's, so coming out of
+  the field it leads into the blank for a while, until the easel paints itself in at its end.
+- **The walk on its own stops where it did**, 84 m from the canvas, with the whole canvas in view. The last 77 m of
+  the road are walked by hand.
+- **From the tick, 110 m off, the road's far end is pale in the station's haze.** The portrait keeps a haze of its own
+  and is not.
+- **Measured headless on this machine only.** A phone was not checked, and the frame rate was not measured.

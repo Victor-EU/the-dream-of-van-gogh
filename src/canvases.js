@@ -185,7 +185,7 @@ export class Paintings {
     const k = lerp(0.62, 0.92, this.U.uNight.value) * (it.e.gain || 1);
     it.u.uKey.value.setRGB(1.0 * k, 0.88 * k, 0.7 * k);
   }
-  // The coda: his portrait past the end of the road, on the easel scenes.js builds for it. None of it is there
+  // The coda: his portrait at the end of the road, on the easel scenes.js builds for it. None of it is there
   // until you are on the bare canvas past the last field. Then the easel paints itself in, the canvas comes up
   // primed and is held, and he paints himself on it. All of it goes faster the nearer you are: from where it
   // begins it keeps its own time, and at its foot it runs `approach` times as fast, so that walking up to it

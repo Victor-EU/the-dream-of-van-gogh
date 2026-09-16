@@ -49,7 +49,8 @@ const TERRAIN_FRAG = /* glsl */`
     float s = vS;
     float d = roadDist(p), rw = ROADW(s);
     vec3 c = vBase;
-    if (d < rw && WATER(s) * step(0.5, (roadX(p.y) - 13.0) - p.x) < 0.5) c = mix(ROAD(s), ROADEDGE(s), smoothstep(rw * 0.5, rw, d));
+    float road = d < rw && WATER(s) * step(0.5, (roadX(p.y) - 13.0) - p.x) < 0.5 ? 1.0 : 0.0;
+    if (road > 0.5) c = mix(ROAD(s), ROADEDGE(s), smoothstep(rw * 0.5, rw, d));
     float n = vnoise(p * 1.3) * 0.5 + vnoise(p * 0.37 + 7.0) * 0.5;
     c *= 0.84 + 0.26 * n;
     vec2 rel = p - uCam.xz; float rr = length(rel);
@@ -57,7 +58,8 @@ const TERRAIN_FRAG = /* glsl */`
       float sweep = vnoise(vec2(atan(rel.y, rel.x) * 70.0, log(rr + 1.0) * 10.0)) * 0.6 + vnoise(vec2(atan(rel.y, rel.x) * 150.0, log(rr + 1.0) * 23.0)) * 0.4;
       c *= mix(1.0, 0.72 + 0.56 * sweep, smoothstep(22.0, 70.0, rr));
     }
-    c = mix(c, LINEN, BARE(s));
+    // the bare canvas past the last field is bare but for the road, which goes on across it to his portrait
+    c = mix(c, LINEN, BARE(s) * (1.0 - road));
     if (uIntro < 1.0) c = mix(c, LINEN * (0.94 + 0.08 * n), smoothstep(pow(uIntro, 1.6) * 460.0 - 18.0, pow(uIntro, 1.6) * 460.0, rr));
     vec3 V = normalize(uCam - vP);
     vec3 col = paintShade(c, normalize(vN), V, vP, 0.0);
@@ -103,7 +105,9 @@ const BLADE_VERT = /* glsl */`
     }
     float cob = plaza * COBBLE(s);
     if (cob > 0.35) kind = -1.0;
-    if (fract(h.w * 13.7) < BARE(s)) kind = -1.0;
+    // on the bare canvas nothing grows but a fringe of grass along the road
+    float fringe = 1.0 - smoothstep(rw + 0.24, rw + 0.6, d);
+    if (fract(h.w * 13.7) < BARE(s) * (1.0 - 0.7 * fringe)) kind = -1.0;
     if (unrevealed(p, cam, h.w)) kind = -1.0;
     if (kind < 0.0 || fade < 0.01) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     float r2 = fract(h.w * 7.31 + h.x * 3.7), r3 = fract(h.y * 5.3 + h.z * 1.9);
@@ -169,8 +173,10 @@ const FLAT_VERT = /* glsl */`
     if (uInner > 0.0) fade *= smoothstep(uInner * 0.75, uInner, cheb);
     float s = stationAt(p.y);
     float d = roadDist(p), rw = ROADW(s);
-    float bare = BARE(s);
-    if (fract(h.w * 17.3) < bare * 0.9 || fade < 0.01 || unrevealed(p, cam, h.z)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    // on the bare canvas the marks are the canvas's own, few and the colour of the linen, and none lies across the
+    // road, whose marks are the road's
+    float bare = BARE(s) * step(rw, d), edge = 1.0 - step(rw + 0.42 * uScale, d);
+    if (fract(h.w * 17.3) < bare * (0.9 + 0.1 * edge) || fade < 0.01 || unrevealed(p, cam, h.z)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     vec4 crop = crops(p, s);
     float plaza = plazaMask(p, s), river = riverMask(p, s);
     vec2 dir; vec3 c; float emit = 0.0;
@@ -234,7 +240,9 @@ const FLAT_VERT = /* glsl */`
     vP = vec3(q.x, y, q.y);
     vT3 = vec3(dir.x, 0.0, dir.y); vB3 = vec3(side.x, 0.0, side.y);
     vST = aUV; vRow = floor(h.w * 7.99);
-    vCol = c; vCol2 = mix(c, C2(s) * 1.2, 0.35); vEmit = emit;
+    // the second colour in a mark is the station's; the bare canvas's is the linen, so the road's there is its verge's
+    vec3 c2 = mix(C2(s), ROADEDGE(s), BARE(s) * step(d, rw));
+    vCol = c; vCol2 = mix(c, c2 * 1.2, 0.35); vEmit = emit;
     gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.0);
   }
 `;

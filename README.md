@@ -24,7 +24,7 @@ with three.js from a CDN and no build step.
   <img src="docs/opening.jpg" width="49%" alt="The opening: The Starry Night painting itself on a primed canvas, above the title Van Gogh's Universe.">
   <img src="docs/painting-itself.jpg" width="49%" alt="Sunflowers on its easel by the Yellow House, partway through painting itself: its first strokes laid over bare linen.">
   <img src="docs/red-vineyard.jpg" width="49%" alt="The red vineyard: red rows on either side of a violet road with puddles of yellow light, under a low sun in a yellow sky, with his canvas on an easel.">
-  <img src="docs/the-end.jpg" width="49%" alt="The end: his Self-Portrait as a Painter on a giant easel past the end of the road, above the words Vincent van Gogh, 1853 to 1890.">
+  <img src="docs/the-end.jpg" width="49%" alt="The end: his Self-Portrait as a Painter on a giant easel at the end of the road, above the words Vincent van Gogh, 1853 to 1890.">
 </p>
 
 ## Run it
@@ -65,8 +65,8 @@ gets a smaller budget and two-thumb controls, but no real phone has been measure
 | Full screen | F | the full-screen button |
 
 The walk on its own keeps to the road: drag to look around and it walks on regardless. ← → steer it off the
-road, and once let go it finds the road again. It slows at every place and stops where the road ends. The last
-eighty metres, up to the portrait, are for a hand.
+road, and once let go it finds the road again. It slows at every place and stops eighty metres short of the portrait,
+with the whole of it in view. The rest of the road, up to it, is for a hand.
 
 The 1× button in the corner, or X, sets the walking speed. Every way of walking, the walk on its own included,
 goes one and a half, two or three times as fast, and turning does not. On its own the whole road takes about seven
@@ -89,7 +89,7 @@ from his letters is up for eight of its twelve seconds.
 | 8 | Saint-Rémy: the cypress and the village under *The Starry Night*, olive trees, irises | May–November 1889 | *Irises*, *The Starry Night*, *Olive Grove* | 782, to Theo |
 | 9 | Auvers-sur-Oise: thatch, gardens, the church | May–July 1890 | *The Church at Auvers*, *Thatched Cottages at Cordeville*, *Daubigny's Garden*, *Stairway at Auvers*, *Wheatfield under Thunderclouds* | 879, to Willemien |
 | 10 | The wheatfield above the village, in the wind, with crows | July 1890 | *Wheatfield with Crows* | 898, to Theo and Jo |
-| 11 | After: bare primed canvas, and past the end of the road his portrait | | *Self-Portrait as a Painter*, 36 m tall | |
+| 11 | After: bare primed canvas, and the road across it to his portrait | | *Self-Portrait as a Painter*, 36 m tall | |
 
 Seven canvases stand at a place outside their own dates. The *Sunflowers* at the Yellow House is the Van Gogh
 Museum's version of January 1889, for example, and *Wheatfield with a Reaper* is Saint-Rémy's. Each has a note in its

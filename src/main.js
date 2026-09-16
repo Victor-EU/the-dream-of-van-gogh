@@ -56,7 +56,7 @@ async function boot() {
     uLampPos: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) },
     uLampCol: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) },
     uBrush: { value: makeBrushAtlas() }, uBiome: { value: J.makeBiomeTexture() },
-    uNight: { value: 0 }, uIntro: { value: 0 },
+    uNight: { value: 0 }, uIntro: { value: 0 }, uRoadEnd: { value: J.ZEND },
   };
 
   const stations = await J.loadStations();
@@ -70,10 +70,11 @@ async function boot() {
   world.add(props.group);
   const paintings = new Paintings(U, stations, props.easels);
   world.add(paintings.group);
-  // the road ends 34 m past the last station, and the walk on its own stops there; his portrait stands beyond it,
-  // and a hand can take you up to it
+  // the walk on its own stops 30 m past the last station, and the road goes on from there to his portrait, where a
+  // hand can take you
   const coda = props.easels.find(e => e.coda);
   const zLast = coda ? coda.z + coda.coda.foot : J.ZEND + 4;
+  if (coda) U.uRoadEnd.value = coda.coda.road;
   const controls = new Controls(cv);
   const sound = new Sound(stations);
 

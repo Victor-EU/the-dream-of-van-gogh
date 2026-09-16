@@ -83,7 +83,7 @@ def main():
             print(f"  overlaps the station before it by {months(lo, prevhi) * 30.44:.0f} days"
                   f" -- the date on the band steps back here")
         prev, prevhi = lo, hi
-        # After M9 station 11 carries the coda: a canvas past the end of the road, with no share of tau and so no
+        # After M9 station 11 carries the coda: a canvas at the end of the road, with no share of tau and so no
         # span to be inside, but with a blob that has to be there and a count that has to be its blob's.
         coda = sn.get("coda")
         if coda:

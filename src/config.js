@@ -213,10 +213,10 @@ export const STATIONS = [
     fog: '#e2dccc', fogDen: 0.01, fogStart: 10,
     ground: { c0: '#d6d0c0', c1: '#e0dacb', c2: '#e8e2d4',
       wheat: 0, wheatA: '#d0c8b8', wheatB: '#c8c0b0', tip: '#e0d8c8', wheatH: 0.3,
-      grass: 0, grassA: '#c8c0b0', grassB: '#d0c8b8', grassH: 0.2,
+      grass: 0, grassA: '#5a6436', grassB: '#707440', grassH: 0.16,
       furrow: 0, furrowA: '#d0c8b8', furrowB: '#d8d0c0',
       flower: 0, flowerA: '#d0c8b8', flowerB: '#d8d0c0',
-      road: '#2a2826', roadEdge: '#d0cabc', roadW: 0.06,
+      road: '#86705a', roadEdge: '#6a6448', roadW: 1.1,
       bare: 1, wind: 0, hill: 0, valley: 0, plaza: 6 },
     audio: { wind: 0.02 } },
 ];

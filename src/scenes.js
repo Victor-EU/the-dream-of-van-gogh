@@ -2,7 +2,7 @@
 // in blossom, haystacks, the Yellow House, the café terrace and the gaslit
 // Rhône, the red vineyard, the cypress under the Starry Night, the church at
 // Auvers -- and at each station an easel, where his painting of the place will
-// paint itself. Past the end of the road there is one more easel, as tall as a
+// paint itself. At the end of the road there is one more easel, as tall as a
 // church tower, for his portrait.
 import * as THREE from 'three';
 import { StrokeBuilder, CoreBuilder } from './strokes.js';
@@ -323,10 +323,10 @@ function easelsAt(c, list) {
 }
 
 // ------------------------------------------------------------------ the coda --
-// His portrait at the end of the road. It stands past where the road runs out, beyond the bare canvas of the last
-// station, on the easel every station has, grown to hold a canvas as tall as a church tower. It is turned to face
-// the place where the walk on its own stops, and its timbers are the ochres of the easel in the portrait. It is a
-// mesh of its own, not the station's, because canvases.js says when it is there.
+// His portrait at the end of the road. It stands where the road ends, across the bare canvas of the last station, on
+// the easel every station has, grown to hold a canvas as tall as a church tower. It is turned to face the place where
+// the walk on its own stops, and its timbers are the ochres of the easel in the portrait. It is a mesh of its own,
+// not the station's, because canvases.js says when it is there.
 const EASEL = P(['#b8904e', '#a8844e', '#c8a060', '#9c7c4a', '#b89660', '#d0b078', '#8a6a40']);
 const EASEL_LIT = P(['#e0c488', '#e8d4a0', '#d8bc7c']), EASEL_CORE = lin('#6a5032');
 
@@ -356,8 +356,8 @@ function coda(c, cv) {
   const R = c.R, slug = cv.blob.split('/').pop().replace('-canvas.bin', '');
   const [rw, rh] = SIZES[slug] || [0.4945, 0.651];
   const H = cv.height, W = H * rw / rh, k = H / 2.3, ledge = 4, hw = 0.55;
-  // where the walk on its own stops, and which way it is looking there
-  const zv = J.ZEND + 4, xv = c.rx(zv), yv = Math.atan2(-J.roadSlope(zv), 1);
+  // where the walk on its own stops, and which way it is looking there: the way the road goes on, straight
+  const zv = J.ZSTRAIGHT, xv = c.rx(zv), yv = Math.atan2(-J.roadSlope(zv), 1);
   const z = zv - cv.beyond, x = xv + Math.tan(yv) * cv.beyond, yaw = Math.atan2(xv - x, zv - z);
   const cy = Math.cos(yaw), sy = Math.sin(yaw), nrm = [sy, 0, cy], right = [cy, 0, -sy];
   const b = c.gy(x, z), top = ledge + H + 0.3 * k;
@@ -375,26 +375,12 @@ function coda(c, cv) {
     const p = at(u, 0, v);
     c.colliders.push({ x: p[0], z: p[2], r: hw + 0.5 });
   }
-  // The line to him. The piece began on bare canvas with one charcoal line going forward, and the road dwindles to
-  // nothing coming onto this canvas; from where it does, the line goes on, along the road's own way to where the
-  // road ends and then straight to the foot of the easel, in short dashes laid by hand. It is the easel's, so it
-  // is there when the easel is, and it draws itself out towards him while the timbers stand up.
-  const foot = [x + nrm[0] * 7, z + nrm[2] * 7], way = [];
-  for (let zz = c.z0 - 2; zz > zv; zz -= 0.85) way.push([c.rx(zz), zz]);
-  const L = Math.hypot(foot[0] - xv, foot[1] - zv);
-  for (let t = 0; t < L; t += 0.85) way.push([xv + (foot[0] - xv) * t / L, zv + (foot[1] - zv) * t / L]);
-  const ink = P(['#3a3532', '#46403c', '#2e2a28']);
-  way.forEach(([px, pz], i) => {
-    if (i + 1 >= way.length || R() < 0.14) return;
-    const [qx, qz] = way[i + 1], d = norm3([qx - px, 0, qz - pz]), side = R.range(-0.05, 0.05);
-    const m = [(px + qx) / 2 - d[2] * side, c.gy((px + qx) / 2, (pz + qz) / 2) + 0.03, (pz + qz) / 2 + d[0] * side];
-    st.S.add(m, d, [0, 1, 0], R.range(0.45, 0.6), R.range(0.1, 0.13), jitter(R.pick(ink), R, 0.06),
-      { bend: R.range(-0.12, 0.12), order: 0.04 + 0.6 * i / way.length + R() * 0.02 });
-  });
   c.stand = st;
+  // the road runs on to it, straight, and ends under the canvas (the ground draws it; see journey.js)
   c.easels.push({ slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'), title: cv.title, date: cv.date,
     collection: cv.collection, key: `${c.i}-coda`, x, y: b + ledge + H / 2, z, yaw, w: W, h: H, station: c.i,
-    lift: 40, edge: k, grain: 0, gain: 1.1, stand: st, coda: { hold: cv.hold, paint: cv.paint, approach: cv.approach ?? 1, easel: 6, haze: 0.12, foot: 7 } });
+    lift: 40, edge: k, grain: 0, gain: 1.1, stand: st,
+    coda: { hold: cv.hold, paint: cv.paint, approach: cv.approach ?? 1, easel: 6, haze: 0.12, foot: 7, road: z } });
 }
 
 function haystack(c, x, z, R0 = 2.2, H = 3.2, o = {}) {

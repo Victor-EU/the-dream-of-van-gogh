@@ -13,8 +13,14 @@ export const NST = STATIONS.length;
 export const stationZ = i => Z1 - i * SPAN;
 export const ZEND = stationZ(NST - 1) - 34;
 
-export const roadX = z => 3.0 * Math.sin(z * 0.021) + 1.6 * Math.sin(z * 0.057 + 1.3);
-export const roadSlope = z => 0.063 * Math.cos(z * 0.021) + 0.0912 * Math.cos(z * 0.057 + 1.3);
+// the road winds, and from where the walk on its own stops it goes straight on along its own line, to the foot of
+// his portrait; the ground draws it as far as uRoadEnd
+export const ZSTRAIGHT = ZEND + 4;
+const windX = z => 3.0 * Math.sin(z * 0.021) + 1.6 * Math.sin(z * 0.057 + 1.3);
+const windSlope = z => 0.063 * Math.cos(z * 0.021) + 0.0912 * Math.cos(z * 0.057 + 1.3);
+const XS = windX(ZSTRAIGHT), SS = windSlope(ZSTRAIGHT);
+export const roadX = z => (z > ZSTRAIGHT ? windX(z) : XS + SS * (z - ZSTRAIGHT));
+export const roadSlope = z => (z > ZSTRAIGHT ? windSlope(z) : SS);
 // the red vineyard's canal, on the right of the road from 16 to 27 m out, wherever
 // a station's ground asks for one: its bed, and where its water lies
 export const CANAL = [16, 27];
@@ -72,6 +78,7 @@ const macros = ROWS.map(([ck, nk], r) =>
 
 export const TERRAIN = /* glsl */`
   uniform sampler2D uBiome;
+  uniform float uRoadEnd;
   #define Z1 ${Z1.toFixed(1)}
   #define SPAN ${SPAN.toFixed(1)}
   #define NSTI ${NST}
@@ -80,8 +87,9 @@ export const TERRAIN = /* glsl */`
     return mix(texelFetch(uBiome, ivec2(a, row), 0), texelFetch(uBiome, ivec2(b, row), 0), s - float(a));
   }
   ${macros}
-  float roadX(float z) { return 3.0 * sin(z * 0.021) + 1.6 * sin(z * 0.057 + 1.3); }
-  float roadSlope(float z) { return 0.063 * cos(z * 0.021) + 0.0912 * cos(z * 0.057 + 1.3); }
+  #define ZSTRAIGHT ${ZSTRAIGHT.toFixed(1)}
+  float roadX(float z) { return z > ZSTRAIGHT ? 3.0 * sin(z * 0.021) + 1.6 * sin(z * 0.057 + 1.3) : (${XS.toFixed(6)}) + (${SS.toFixed(7)}) * (z - ZSTRAIGHT); }
+  float roadSlope(float z) { return z > ZSTRAIGHT ? 0.063 * cos(z * 0.021) + 0.0912 * cos(z * 0.057 + 1.3) : (${SS.toFixed(7)}); }
   float canalBed(float u) { return smoothstep(${(CANAL[0] - 1.2).toFixed(1)}, ${CANAL[0].toFixed(1)}, u) * (1.0 - smoothstep(${CANAL[1].toFixed(1)}, ${(CANAL[1] + 1.2).toFixed(1)}, u)); }
   float stationAt(float z) {
     float s = (Z1 - z) / SPAN;
@@ -103,7 +111,8 @@ export const TERRAIN = /* glsl */`
     float hz = terrainH(p + vec2(0.0, e)) - terrainH(p - vec2(0.0, e));
     return normalize(vec3(-hx, 2.0 * e, -hz));
   }
-  float roadDist(vec2 p) { return abs(p.x - roadX(p.y)); }
+  // across the road; past its end, from the end, so that it stops in a round end
+  float roadDist(vec2 p) { return p.y < uRoadEnd ? length(vec2(p.x - roadX(uRoadEnd), p.y - uRoadEnd)) : abs(p.x - roadX(p.y)); }
   float plazaMask(vec2 p, float s) {
     float si = clamp(floor((Z1 - p.y) / SPAN + 0.5), 0.0, float(NSTI - 1));
     float zc = Z1 - si * SPAN;
