@@ -3486,3 +3486,67 @@ over CDP, read `vgu.state()`, and sampled positions on the page's own frames.
   slower it keeps all twelve.
 - **The speed is not kept.** A reload walks at 1×.
 - **A phone was not checked**, only an emulated one.
+
+### After M9 — The scripts a browser keeps
+
+**What was asked.** On the live site, after the speed button's deploy, neither a click on 1× nor X did anything. Then
+the fix, committed, pushed and deployed.
+
+**What was wrong.** The host sends the page, `.json` and `.md` with `max-age=0, must-revalidate`, `.bin` with
+`max-age=14400`, and `.js`, `.png` and `.jpg` with `max-age=31536000, immutable`. So a browser that had been to the
+site before got the new page, with the button in the corner and X on the card of keys, and ran the scripts it already
+held without asking for them again: the old `controls.js` has no X, and the old `ui.js` gives the button nothing to
+do. A reload did the same; only a hard reload fetched the new scripts. The check on the live site after that deploy
+passed because it ran in a new browser profile, with nothing cached. Under these headers, every deploy that changed a
+script since the site went up has reached only browsers new to it.
+
+**What was decided.**
+
+- **The deployed page asks for each script by its content.** `tools/deploy.py` exports the commit and stamps the
+  export's `index.html`: every script in `src/` is asked for as `src/<name>.js?v=<the first 10 hex of its sha1>`, on
+  the two script tags and through the import map, so the imports inside `src/` keep their plain relative names. The
+  veil's worker starts from the veil script's own address, and so carries its stamp.
+- **A script that has not changed keeps its address**, and its copy in a browser's cache. One stamp for the whole
+  commit would have sent all sixteen again after every deploy.
+- **Only the export is stamped.** The repository's page is as it was and runs from a local server as before. There is
+  still no build step, only a deploy that changes three lines of one file.
+- **Addresses, not headers.** Telbase documents no way to set a header, and a header would not reach a browser that
+  already holds a copy for a year, since that browser never asks again. An address it has never seen, it asks for.
+- **The underlayers and stroke records are left as they are.** `.png` is kept a year too and `.bin` four hours, but
+  none has changed since they were committed on 11 Sep, before the site went up. A canvas solved again would need the
+  same.
+- **The deploy checks what it stamps**, and stops before uploading otherwise: each script tag and the import map must
+  be found exactly once, and every relative import in `src/` must name a file in `src/`, which the import map reaches.
+
+**What changed.**
+
+- `tools/deploy.py`: new. Exports a commit without what the page never loads (`.claude`, `tools`, `ref`,
+  `strokes/golden`), stamps `index.html`, copies the Telbase project link in, and deploys. `--dry-run --out` stops
+  after the stamp; `--rev` deploys another commit.
+- `README.md`: *Run it* says what such a host does and what the deploy does about it; the layout names the deploy.
+
+**How it was verified.** Headless Chrome, and a local server sending the live host's `cache-control` for each kind of
+file. One browser profile opened one copy of the site and closed; the server switched to the next copy; the same
+profile came back. The server's own log counted the scripts it sent.
+
+| The copy before → the copy after | scripts sent on the way back | X | a click on 1× |
+|---|---|---|---|
+| 89d6b39 → 6108273, as deployed until now | 0 of 16 | stays 1× | stays 1× |
+| 89d6b39 → 6108273 stamped | 16 of 16 | 1.5× | 2× |
+| 89d6b39 stamped → 6108273 stamped | 4: `main`, `controls`, `audio`, `ui` | 1.5× | 2× |
+
+- **As deployed until now**, a reload also sent none and did nothing, and the copy of `controls.js` the browser held
+  had no X. A hard reload sent all sixteen, and the button and X worked.
+- **Stamped**, a reload and a later visit sent none and worked, from the stamped copies.
+- **The four sent in the last row** are the four scripts the speed button changed.
+- **The stamp itself**, `--dry-run` on 6108273: the export differs from `git archive` only in `index.html`'s two
+  script tags and its import map, which parses, with sixteen entries. The import check finds all 31 relative imports
+  in `src/`, and stops on `../x.js`, `./sub/y.js` and a file that is not there.
+- No exceptions.
+
+**Still visible.**
+
+- **A deploy that does not go through `tools/deploy.py`** brings it back for the next script that changes.
+- **The underlayers and stroke records are not stamped**, as above.
+- **Only Chrome was run.** Safari and Firefox also keep an `immutable` copy without asking, and read import maps the
+  same way, but neither was measured.

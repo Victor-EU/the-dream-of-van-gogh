@@ -36,7 +36,10 @@ WebGL 2:
 python3 -m http.server 8710
 ```
 
-Then visit <http://127.0.0.1:8710/>. Any static host works the same way.
+Then visit <http://127.0.0.1:8710/>. Any static host works the same way, with one catch: a host that keeps `.js`
+files as immutable, as the one this is deployed to does, gives a browser that has been there before the new page and
+its old scripts. `tools/deploy.py` deploys a commit with every script asked for by its content, so a changed script
+is fetched again and an unchanged one stays in the cache.
 
 The page draws each canvas from its stroke record, `strokes/sNN/<slug>-canvas.bin`, with an underlayer image
 beside it. The records for all thirty-one canvases are in the repository and come to 12 MB. The 1.7 GB of museum
@@ -224,7 +227,7 @@ letters/              the quotations, how to check them, and their licence
 paintings/CREDITS.md  every canvas, its collection, and the scan its strokes came from
 params/               the extraction parameters for each canvas
 tools/                the offline pipeline: gathering the scans, extracting and ordering the strokes, packing
-                      the records, and the audits
+                      the records, and the audits; and deploy.py, which puts a commit on the live site
 strokes/golden/       the pipeline's regression images
 strokes/sNN/          the stroke records the page loads, each with its underlayer
 ref/                  not in the repository: the museum scans
