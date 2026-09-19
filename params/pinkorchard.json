@@ -1,0 +1,24 @@
+{
+ "slug": "pinkorchard",
+ "source": "ref/originals/s03-the-pink-orchard_VGM_s0026V1962_6759x5362.jpg",
+ "canvas_cm": [
+  81.0,
+  65.0
+ ],
+ "tiles": {
+  "paint": [
+   4061,
+   1523,
+   3072,
+   3072
+  ],
+  "thin": [
+   6091,
+   4568,
+   3072,
+   3072
+  ]
+ },
+ "tile": "paint",
+ "_tile": "The Pink Orchard, added after M9 on the author's word as the door into a world of its own. Stitched from the museum's tiles at 6759 x 5362 (83 px/cm). Rectangles by tools/tiles.py: paint is the blossom of the middle tree against the sky, thin the grass at the bottom right; paint carries 5.0x thin's energy."
+}

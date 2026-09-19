@@ -33,3 +33,6 @@ strokes/s07/berceuse-*
 # without asking the edition again. letters/letters.json is the record; this is
 # only the cache behind it.
 letters/.cache/
+
+# Local deploy-tool marker, tied to whichever project this folder was last deployed as.
+.telbase/

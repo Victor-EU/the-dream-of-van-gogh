@@ -1,16 +1,20 @@
-// The road. Walking it is the only control: every metre is a few days of his
-// life, the stations stand along it in the order he painted them, and the land
-// between two stations is painted with both, the way a palette carries one
-// canvas's colours into the next.
+// The road. Walking it is the only control. Ten worlds stand along it in the
+// order you enter them, each through his canvas of it, which stands across the
+// road at the boundary with the world before. The road's shape belongs to the
+// road; everything painted on it belongs to the world you are in (uWorldA,
+// uWorldB, uWipe), and goes over from one to the next behind a front that
+// spreads out from where you crossed.
 import * as THREE from 'three';
 import { STATIONS, GROUND_DEFAULTS } from './config.js';
 import { clamp, lerp, smoothstep, lin } from './util.js';
 
-export const SPAN = 90;                 // metres of road from one station to the next
-export const Z1 = -30;                  // where station 1 stands
-export const ZSTART = 14;               // where the walk begins
+export const SPAN = 36;                 // metres of road from one world's door to the next: eight seconds at a walk
+export const Z1 = -30;                  // where world 1 is centred
+export const ZSTART = -20;              // where the walk begins, under the veil
 export const NST = STATIONS.length;
 export const stationZ = i => Z1 - i * SPAN;
+// the door into world i stands at the boundary with world i - 1, across the road
+export const doorZ = i => stationZ(i) + SPAN / 2;
 export const ZEND = stationZ(NST - 1) - 34;
 
 // the road winds, and from where the walk on its own stops it goes straight on along its own line, to the foot of
@@ -30,6 +34,8 @@ export function stationAt(z) {
   return clamp(Math.floor(s) + smoothstep(0.3, 0.7, f), 0, NST - 1);
 }
 export const nearestStation = z => clamp(Math.round((Z1 - z) / SPAN), 0, NST - 1);
+// which world's stretch of road z is on: the boundaries are the doors
+export const regionAt = nearestStation;
 export const tauAt = z => clamp((ZSTART - z) / (ZSTART - ZEND), 0, 1);
 export const zAtTau = t => ZSTART - t * (ZSTART - ZEND);
 
@@ -79,6 +85,8 @@ const macros = ROWS.map(([ck, nk], r) =>
 export const TERRAIN = /* glsl */`
   uniform sampler2D uBiome;
   uniform float uRoadEnd;
+  uniform float uWorldA, uWorldB, uWipe;
+  uniform vec2 uWipeC;
   #define Z1 ${Z1.toFixed(1)}
   #define SPAN ${SPAN.toFixed(1)}
   #define NSTI ${NST}
@@ -91,9 +99,17 @@ export const TERRAIN = /* glsl */`
   float roadX(float z) { return z > ZSTRAIGHT ? 3.0 * sin(z * 0.021) + 1.6 * sin(z * 0.057 + 1.3) : (${XS.toFixed(6)}) + (${SS.toFixed(7)}) * (z - ZSTRAIGHT); }
   float roadSlope(float z) { return z > ZSTRAIGHT ? 0.063 * cos(z * 0.021) + 0.0912 * cos(z * 0.057 + 1.3) : (${SS.toFixed(7)}); }
   float canalBed(float u) { return smoothstep(${(CANAL[0] - 1.2).toFixed(1)}, ${CANAL[0].toFixed(1)}, u) * (1.0 - smoothstep(${CANAL[1].toFixed(1)}, ${(CANAL[1] + 1.2).toFixed(1)}, u)); }
+  // the road's own stretch: its shape, and what lies in it (the vineyard's canal, a square)
   float stationAt(float z) {
     float s = (Z1 - z) / SPAN;
     return clamp(floor(s) + smoothstep(0.3, 0.7, fract(s)), 0.0, float(NSTI - 1));
+  }
+  // the world you are in: the old one outside a front that spreads from where you crossed, the new one inside
+  float worldAt(vec2 p) {
+    if (uWipe >= 1.0) return uWorldB;
+    float d = length(p - uWipeC) + (fbm(p * 0.06) - 0.5) * 16.0;
+    float R = pow(uWipe, 2.0) * 560.0;
+    return mix(uWorldA, uWorldB, 1.0 - smoothstep(R - 6.0, R + 2.0, d));
   }
   float terrainH(vec2 p) {
     float s = stationAt(p.y);
@@ -145,20 +161,4 @@ export async function loadStations() {
     const json = await r.json();
     return { ...cfg, json, index: i, z: stationZ(i) };
   }));
-}
-
-// a date for every metre of the road: station midpoints, linearly between
-export function makeCalendar(stations) {
-  const mids = stations.map(s => {
-    const sp = s.json.span || [];
-    const a = Date.parse(sp[0] || '1890-07-29'), b = Date.parse(sp[1] || sp[0] || '1890-07-29');
-    return (a + b) / 2;
-  });
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  return z => {
-    const s = clamp((Z1 - z) / SPAN, 0, NST - 1), i = Math.floor(s), j = Math.min(i + 1, NST - 1);
-    const t = lerp(mids[i], mids[j], s - i);
-    const d = new Date(t);
-    return { ms: t, text: `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`, year: d.getUTCFullYear() };
-  };
 }

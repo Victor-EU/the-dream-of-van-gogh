@@ -1,4 +1,4 @@
-// Van Gogh's Universe. One road through the world he painted, 1885 to 1890.
+// The World of Van Gogh. One road through fourteen of his paintings, each the door into its own world.
 import * as THREE from 'three';
 import { makeBrushAtlas } from './brush.js';
 import * as J from './journey.js';
@@ -43,7 +43,7 @@ async function boot() {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const cv = renderer.domElement;
   cv.tabIndex = 0;
-  cv.setAttribute('aria-label', 'Van Gogh’s Universe. The arrow keys walk and turn; drag to look around; space walks on its own.');
+  cv.setAttribute('aria-label', 'The World of Van Gogh. The arrow keys walk and turn; drag to look around; space walks on its own.');
   document.getElementById('stage').appendChild(cv);
   const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.08, 4000);
   camera.rotation.order = 'YXZ';
@@ -57,10 +57,11 @@ async function boot() {
     uLampCol: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) },
     uBrush: { value: makeBrushAtlas() }, uBiome: { value: J.makeBiomeTexture() },
     uNight: { value: 0 }, uIntro: { value: 0 }, uRoadEnd: { value: J.ZEND },
+    // the world you are in, the one you have left, and how far the change has spread from where you crossed
+    uWorldA: { value: 0 }, uWorldB: { value: 0 }, uWipe: { value: 1 }, uWipeC: { value: new THREE.Vector2() },
   };
 
   const stations = await J.loadStations();
-  const calendar = J.makeCalendar(stations);
   const post = new Post(renderer);
   const sky = new Sky(U, stations);
   const world = new THREE.Scene();
@@ -84,12 +85,29 @@ async function boot() {
   // seconds since a hand last dragged to look: the walk on its own turns the eye back to the road only after a pause
   let lookAgo = 9;
   let pace = 1;
+  // a hand the harness holds: a forward key it can press and not let go
+  const virt = { f: 0 };
   const startIdx = has('at') ? clamp(parseInt(Q.get('at'), 10) || 1, 1, J.NST) - 1 : -1;
-  if (startIdx >= 0) body.z = J.stationZ(startIdx) + 18;
+  if (startIdx >= 0) body.z = J.stationZ(startIdx) + 12;
   body.x = J.roadX(body.z);
   body.yaw = roadYaw(body.z);
+  // ------------------------------------------------------------- the world --
+  // where you are: cur is the world you are in, prev the one you came through the last door from, and wipe how
+  // far the change has run, 0 at the door and 1 once the new world is all there is. Crossing a door is the
+  // only way from one to the next; a jump lands in a world whole.
+  const W = { cur: Math.max(startIdx, 0), prev: Math.max(startIdx, 0), wipe: 1, dir: new THREE.Vector3(0, 0, -1) };
+  U.uWorldA.value = U.uWorldB.value = W.cur;
+  function enter(i) {
+    W.prev = W.cur; W.cur = i; W.wipe = 0;
+    U.uWipeC.value.set(body.x, body.z);
+    W.dir.set(Math.sin(body.yaw), 0, -Math.cos(body.yaw));
+  }
+  function land(i) {
+    W.prev = W.cur = i; W.wipe = 1;
+    props.reset(i);
+  }
   let begun = false, awake = false, ready = false, hush = false, time = 0, frozen = has('t') ? parseFloat(Q.get('t')) : null;
-  let jump = null, black = 0, fps = 60, frames = 0, sNow = 0;
+  let jump = null, black = 0, fps = 60, frames = 0, sNow = 0, wipeHold = null;
   // the opening: the veil's Starry Night paints itself while all this is built; once it is finished the world
   // paints itself outward from where you stand, from bare primed canvas, and the veil lifts into it
   let intro = has('notitle') || startIdx >= 0 ? 1 : 0, introT = 0, held = 0;
@@ -128,7 +146,8 @@ async function boot() {
   const hand = () => { if (!ready) return false; wake(); return true; };
   function jumpTo(i) {
     wake();
-    jump = { t: 0, z: J.stationZ(clamp(i, 0, J.NST - 1)) + 18, done: false };
+    i = clamp(i, 0, J.NST - 1);
+    jump = { t: 0, i, z: J.stationZ(i) + 12, done: false };
     body.auto = false;
     ui.setAuto(false);
   }
@@ -153,9 +172,10 @@ async function boot() {
   for (const ev of ['keydown', 'pointerup', 'touchend'])
     addEventListener(ev, () => { if (sound.on && sound.ctx && sound.ctx.state === 'suspended') sound.ctx.resume(); }, true);
 
+  // the walk on its own slows a little over the last metres to a door, and goes on at its pace once through
   const autoSpeed = () => {
-    const d = Math.abs(body.z - J.stationZ(J.nearestStation(body.z)));
-    return 3.6 * (0.4 + 0.6 * smoothstep(6, 28, d));
+    const d = W.cur < J.NST - 1 ? body.z - J.doorZ(W.cur + 1) : 99;
+    return 3.6 * (0.6 + 0.4 * smoothstep(1.5, 8, d));
   };
 
   function step(dt) {
@@ -165,7 +185,7 @@ async function boot() {
       if (inp.dy) { body.pitch = clamp(body.pitch - inp.dy * LOOK, -1.25, 1.45); body.pitchT = null; }
       lookAgo = inp.dx || inp.dy ? 0 : lookAgo + dt;
       body.wheelV = clamp(body.wheelV - inp.wheel * 0.027, -RUN, RUN);
-      const f = clamp(controls.forward, -1, 1), st = clamp(controls.strafe, -1, 1), tr = controls.turn;
+      const f = clamp(controls.forward + virt.f, -1, 1), st = clamp(controls.strafe, -1, 1), tr = controls.turn;
       // walking forward or back takes over from the walk on its own; turning and stepping sideways steer it
       if (Math.abs(f) > 0.3 && body.auto) { body.auto = false; ui.setAuto(false); }
       if ((f || st) && body.lieT) { body.lieT = 0; body.pitchT = 0.02; }
@@ -211,11 +231,15 @@ async function boot() {
       for (let i = 0; i < n; i++) {
         nx += sx; nz += sz;
         for (const c of props.colliders) {
+          if (c.w !== W.cur) continue;
           const dx = nx - c.x, dz = nz - c.z, d = Math.hypot(dx, dz);
           if (d < c.r && d > 1e-4) { nx = c.x + dx / d * c.r; nz = c.z + dz / d * c.r; }
         }
       }
       body.x = nx; body.z = nz;
+      // through a door, either way: half a metre past it, so that standing in it does not flicker between worlds
+      while (W.cur < J.NST - 1 && body.z < J.doorZ(W.cur + 1) - 0.5) enter(W.cur + 1);
+      while (W.cur > 0 && body.z > J.doorZ(W.cur) + 0.5) enter(W.cur - 1);
     }
     if (body.pitchT !== null) {
       body.pitch += (body.pitchT - body.pitch) * (1 - Math.exp(-dt * 2.2));
@@ -228,6 +252,7 @@ async function boot() {
       if (jump.t >= 0.35 && !jump.done) {
         body.z = jump.z; body.x = J.roadX(body.z); body.yaw = roadYaw(body.z);
         body.pitch = 0.02; body.v = body.vs = body.wheelV = 0; body.lie = body.lieT = 0; jump.done = true;
+        land(jump.i);
       }
       if (jump.t > 0.35) black = 1 - smoothstep(0.5, 1.2, jump.t);
       if (jump.t > 1.2) { jump = null; black = 0; }
@@ -271,7 +296,7 @@ async function boot() {
   resize();
 
   ui.loading('Laying the ground');
-  sky.update(J.stationAt(body.z));
+  sky.update(W.cur, W.cur, 0);
   await new Promise(r => setTimeout(r, 30));
   renderer.compile(sky.scene, camera);
   renderer.compile(world, camera);
@@ -310,21 +335,23 @@ async function boot() {
     camera.updateMatrixWorld();
     U.uCam.value.copy(camera.position);
 
-    sNow = J.stationAt(body.z);
+    // the change spreads for 3.2 s: the ground behind its front, the sky stroke by stroke from the way you were
+    // walking, the light and the sound over the first two seconds
+    W.wipe = wipeHold ?? Math.min(1, W.wipe + dt / 3.2);
+    U.uWorldA.value = W.prev; U.uWorldB.value = W.cur; U.uWipe.value = W.wipe;
+    sNow = lerp(W.prev, W.cur, smoothstep(0, 0.7, W.wipe));
     const night = light(sNow);
-    sky.update(sNow);
+    sky.update(W.prev, W.cur, smoothstep(0, 0.9, W.wipe), W.dir);
     ground.update(camera.position);
-    props.update(camera.position, time, dt, intro);
-    const lamps = props.lampsNear(camera.position);
+    props.update(camera.position, time, dt, intro, W);
+    const lamps = props.lampsNear(camera.position, W.cur);
     for (let i = 0; i < 4; i++) {
       const L = lamps[i];
       if (L) { U.uLampPos.value[i].set(L.x, L.y, L.z, L.r); U.uLampCol.value[i].set(L.c[0], L.c[1], L.c[2], L.k * night); }
       else U.uLampCol.value[i].set(0, 0, 0, 0);
     }
-    const near = paintings.update(camera, time, dt, begun, sNow);
-    const ns = J.nearestStation(body.z);
-    ui.update({ tau: J.tauAt(body.z), date: calendar(body.z).text, station: ns,
-                stationDist: Math.abs(body.z - J.stationZ(ns)), begun, near, done: paintings.done });
+    const near = paintings.update(camera, time, dt, begun, sNow, W);
+    ui.update({ tau: J.tauAt(body.z), station: W.cur, begun, near, done: paintings.done });
     sound.update({ s: sNow, v: body.v, cam: camera.position, dt, time, stations, painting: paintings.painting, coda: paintings.codaOn });
 
     grade.time = time;
@@ -333,7 +360,7 @@ async function boot() {
 
     if (++frames === 6) { ready = true; window.vgu.ready = true; ui.loading(''); }
     if (dbg && frames % 15 === 0)
-      dbg.textContent = `${fps.toFixed(0)} fps\nz ${body.z.toFixed(1)}  x ${body.x.toFixed(1)}\ns ${sNow.toFixed(2)}  τ ${J.tauAt(body.z).toFixed(3)}`;
+      dbg.textContent = `${fps.toFixed(0)} fps\nz ${body.z.toFixed(1)}  x ${body.x.toFixed(1)}\nworld ${W.cur + 1}  wipe ${W.wipe.toFixed(2)}  s ${sNow.toFixed(2)}`;
     requestAnimationFrame(frame);
   }
   const dbg = has('debug') ? document.getElementById('debug') : null;
@@ -343,10 +370,10 @@ async function boot() {
   window.vgu = {
     ready: false,
     state: () => ({ x: body.x, z: body.z, y: camera.position.y, yaw: body.yaw, pitch: body.pitch, s: sNow,
-                    station: J.nearestStation(body.z) + 1, tau: J.tauAt(body.z), fps: Math.round(fps),
-                    begun, awake, auto: body.auto, pace, lie: body.lie, v: body.v, date: calendar(body.z).text }),
+                    station: W.cur + 1, world: W.cur + 1, from: W.prev + 1, wipe: +W.wipe.toFixed(3), tau: J.tauAt(body.z), fps: Math.round(fps),
+                    begun, awake, auto: body.auto, pace, lie: body.lie, v: body.v }),
     go: o => {
-      if (o.station) { body.z = J.stationZ(o.station - 1) + (o.dz ?? 18); body.x = J.roadX(body.z) + (o.dx ?? 0); body.yaw = roadYaw(body.z); }
+      if (o.station) { body.z = J.stationZ(o.station - 1) + (o.dz ?? 12); body.x = J.roadX(body.z) + (o.dx ?? 0); body.yaw = roadYaw(body.z); land(o.station - 1); }
       if (o.x != null) body.x = o.x;
       if (o.z != null) body.z = o.z;
       if (o.yaw != null) body.yaw = o.yaw;
@@ -356,11 +383,27 @@ async function boot() {
     },
     // straight into the world, as ?notitle does
     begin: () => { begin(true); wake(false); idle = 0; },
+    // for the harness: hold the forward key (f from -1 to 1), and the walk on its own
+    forward: f => { virt.f = f; if (f) wake(false); },
+    // for the harness: go through the door into world i (from 1) from where you stand, and hold the change at t
+    enter: i => enter(clamp(i - 1, 0, J.NST - 1)),
+    wipe: t => { wipeHold = t; if (t != null) W.wipe = t; },
+    where: () => ({ ...W, dir: undefined }),
+    auto: on => { if (!begun) begin(true); wake(false); body.auto = !!on; ui.setAuto(body.auto); },
     freeze: t => { frozen = t; }, jump: i => jumpTo(i - 1),
     // for the harness: everything painted at once, and a place to stand in front of any easel
     paint: () => {
-      props.st.forEach(s => { s.started = true; s.progress = 1.05; });
+      props.st.forEach((s, i) => { if (i === W.cur) { s.started = true; s.progress = 1.05; } });
       paintings.items.forEach(it => { it.started = true; it.progress = 1.02; });
+    },
+    // the door into world i (from 1), painted or not, and where you stand: in front of it, d metres off
+    door: (i, d = 6) => {
+      const e = props.easels.find(e => e.door && e.station === i - 1);
+      if (!e) return false;
+      const nx = Math.sin(e.yaw), nz = Math.cos(e.yaw);
+      body.x = e.x + nx * d; body.z = e.z + nz * d; body.yaw = Math.atan2(-nx, nz); body.pitch = 0; body.pitchT = null; body.v = body.vs = 0;
+      land(i - 2);
+      return true;
     },
     world: () => props,
     coda: () => paintings.codaState(),
@@ -371,7 +414,7 @@ async function boot() {
       if ('ground' in o) ground.group.visible = o.ground;
       return 1;
     },
-    easels: () => props.easels.map((e, i) => ({ i, station: e.station + 1, slug: e.slug, title: e.title })),
+    easels: () => props.easels.map((e, i) => ({ i, station: e.station + 1, slug: e.slug, title: e.title, door: !!e.door, x: +e.x.toFixed(2), z: +e.z.toFixed(2) })),
     easel: (i, d = 4.2) => {
       const e = props.easels[i], nx = Math.sin(e.yaw), nz = Math.cos(e.yaw);
       body.x = e.x + nx * d; body.z = e.z + nz * d; body.yaw = Math.atan2(-nx, nz); body.pitch = 0.0; body.pitchT = null; body.v = body.vs = 0;

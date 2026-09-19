@@ -1,14 +1,17 @@
-// What stands in the land: poplars at Nuenen, a windmill over Paris, orchards
-// in blossom, haystacks, the Yellow House, the café terrace and the gaslit
-// Rhône, the red vineyard, the cypress under the Starry Night, the church at
-// Auvers -- and at each station an easel, where his painting of the place will
-// paint itself. At the end of the road there is one more easel, as tall as a
-// church tower, for his portrait.
+// What stands in each world: the cypress under the Starry Night, the red
+// vineyard, orchards in blossom, haystacks, the Yellow House, the pink orchard,
+// the olives under the Alpilles, the café terrace, the gaslights on the Rhône,
+// olives and irises by day, a field of sunflowers, the church at Auvers, the
+// wheat -- and at the
+// boundary into each world its door: his canvas of it, across the road, which
+// paints itself as you come. A world's things paint themselves in from its door
+// outward when you go through, and out again when you leave. At the end of the
+// road there is one more easel, as tall as a church tower, for his portrait.
 import * as THREE from 'three';
 import { StrokeBuilder, CoreBuilder } from './strokes.js';
 import * as J from './journey.js';
 import { SIZES } from './sizes.js';
-import { rng, lin, mixc, scalec, jitter, norm3, cross3, dot3, add3, sub3, mul3, clamp, lerp } from './util.js';
+import { rng, lin, mixc, scalec, jitter, norm3, cross3, dot3, add3, sub3, mul3, clamp, lerp, smoothstep } from './util.js';
 
 const UP = [0, 1, 0];
 const P = a => a.map(lin);
@@ -21,15 +24,16 @@ class Ctx {
   constructor(i, st) {
     this.i = i; this.st = st;
     this.z0 = J.stationZ(i); this.x0 = J.roadX(this.z0);
-    this.R = rng(4200 + (st.id - 1) * 97);   // by the station's own number, so it keeps its look wherever it stands
+    this.zd = J.doorZ(i); this.xd = J.roadX(this.zd);   // the door in, where a world begins
+    this.R = rng(4200 + i * 97);
     this.S = new StrokeBuilder(); this.C = new CoreBuilder();
     this.easels = []; this.lamps = []; this.colliders = []; this.movers = [];
     this.base = 0;
   }
   gy(x, z) { return J.terrainH(x, z); }
   rx(z) { return J.roadX(z); }
-  // nearer the easel, sooner: a station paints itself outward from where he stood
-  at(x, z) { this.base = clamp(Math.hypot(x - this.x0, (z - this.z0) * 0.8) / 90, 0, 1) * 0.62; return this.base; }
+  // nearer the door, sooner: a world paints itself outward from where you come into it
+  at(x, z) { this.base = clamp(Math.hypot(x - this.xd, (z - this.zd) * 0.8) / 90, 0, 1) * 0.62; return this.base; }
   ord(f) { return this.base + clamp(f, 0, 1) * 0.3 + this.R() * 0.03; }
   add(p, d, n, len, wid, col, o = {}) { this.S.add(p, d, n, len, wid, col, o); }
   line(a, b, n, wid, cols, o = {}) {
@@ -63,28 +67,6 @@ function cypress(c, x, z, H = 13, R0 = 1.6, o = {}) {
       { col2: R() < 0.35 ? R.pick(hi) : col, bend: R.range(-0.3, 0.3), sway: 1, phase: x * 0.3 + z * 0.2, base: b, order: c.ord(t) });
   }
   c.colliders.push({ x, z, r: R0 * 0.75 + 0.4 });
-}
-
-function poplar(c, x, z, o = {}) {
-  const R = c.R; c.at(x, z);
-  const b = c.gy(x, z) - 0.1, H = o.H ?? 14, R0 = o.R0 ?? 1.1, th = H * 0.16;
-  const leaves = P(o.cols || ['#b8802a', '#d09a38', '#8a5a20', '#6a4a22', '#e0b050', '#5a4a2a']);
-  const bark = P(['#2a2018', '#3a2c20', '#1c1a1e']);
-  for (let i = 0; i < 16; i++) {
-    const a = R() * 6.28, n = [Math.cos(a), 0, Math.sin(a)];
-    c.add([x + n[0] * 0.13, b + R() * (th + 1), z + n[2] * 0.13], UP, n, 0.32, 0.05, R.pick(bark), { order: c.ord(0) });
-  }
-  c.C.lathe(x, b + th, z, t => R0 * 0.72 * spindle(t), H - th, scalec(leaves[3], 0.8), c.ord(0.1), 10, 10);
-  const n = Math.round(H * R0 * 72);
-  for (let i = 0; i < n; i++) {
-    const t = R(), a = R() * Math.PI * 2, r = R0 * spindle(t) * (0.9 + 0.2 * R());
-    const nrm = norm3([Math.cos(a), 0.12, Math.sin(a)]);
-    const d = proj(add3(UP, mul3([-Math.sin(a), 0, Math.cos(a)], R.range(-0.45, 0.45))), nrm);
-    const col = jitter(R.pick(leaves), R, 0.1);
-    c.add([x + Math.cos(a) * r, b + th + t * (H - th), z + Math.sin(a) * r], d, nrm, R.range(0.2, 0.36), R.range(0.07, 0.1), col,
-      { bend: R.range(-0.3, 0.3), sway: 1, phase: x * 0.2 + z * 0.3, base: b, order: c.ord(t) });
-  }
-  c.colliders.push({ x, z, r: 0.55 });
 }
 
 function tree(c, x, z, o = {}) {
@@ -232,11 +214,6 @@ function boxStrokes(c, x, y, z, hx, hy, hz, yaw, cols, dens = 12) {
   }
 }
 
-function tower(c, x, z) {
-  house(c, { x, z, w: 5, d: 5, h: 15, roofH: 7, wall: ['#4a4a4a', '#5a5550', '#3a3a3a', '#4a4440'], roof: ['#2a2a2a', '#3a3530', '#1e1e22'],
-    density: 7, roofDensity: 7, windows: [{ face: 0, u: 0, v: 12, w: 1, h: 2, col: '#141414' }] });
-}
-
 function spire(c, x, z) {
   house(c, { x, z, w: 3, d: 3, h: 9, roofH: 8, wall: ['#1a2440', '#243050', '#1e2a48'], roof: ['#141c30', '#1c2438'], density: 9, roofDensity: 10 });
 }
@@ -258,6 +235,24 @@ function church(c, x, z, yaw) {
     windows: [-5.5, -2, 2, 5.5].map(u => ({ face: 0, u, v: 4.2, w: 1.3, h: 3.2, col: win, frame: '#c07030' })) });
   house(c, { x, z, yaw, w: 4.6, d: 4.6, h: 17, roofH: 5, wall, roof: ['#4a4a7a', '#3a3a6a'], density: 12,
     windows: [{ face: 0, u: 0, v: 14, w: 1.2, h: 1.8, col: win, frame: '#c07030' }, { face: 3, u: 0, v: 14, w: 1.2, h: 1.8, col: win, frame: '#c07030' }] });
+}
+
+// --------------------------------------------------------- little things --
+
+// ------------------------------------------------------------------ the door --
+// His canvas of a world, across the road at its boundary with the world before, turned to face you as you come,
+// with its foot on the ground and no easel: 2.6 m tall for a landscape and 3 m for a portrait, so that an eye at
+// 1.65 m goes through the paint. canvases.js paints it as you approach and takes it away once you are through.
+// World 1 has no door here: the opening's veil is its door.
+function door(c) {
+  const k = c.st.door, cv = c.st.json.canvases?.[k];
+  if (c.i === 0 || k == null || !cv) return;
+  const slug = cv.blob.split('/').pop().replace('-canvas.bin', '');
+  const [rw, rh] = SIZES[slug] || [0.9, 0.73];
+  const z = c.zd, x = c.rx(z), yaw = -Math.atan2(-J.roadSlope(z), 1);
+  const h = rw > rh ? 2.6 : 3.0, w = h * rw / rh, b = c.gy(x, z);
+  c.easels.push({ slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'), title: cv.title, date: cv.date,
+    collection: cv.collection, k, key: `${c.i}-door`, x, y: b + 0.12 + h / 2, z, yaw, w, h, station: c.i, door: true, edge: 1.6 });
 }
 
 // --------------------------------------------------------- little things --
@@ -285,41 +280,49 @@ function lampHead(c, x, z, y, o = {}) {
 }
 
 // a gaslight's column on the water, laid toward the road
-function reflection(c, x, z) {
+function reflection(c, x, z, L = 40) {
   const R = c.R, cols = P(['#f0b040', '#f8d070', '#e89030']);
-  for (let t = 1.2; t < 40; t += R.range(0.45, 0.95)) {
-    const k = 1 - t / 40;
+  for (let t = 1.2; t < L; t += R.range(0.45, 0.95)) {
+    const k = 1 - t / L;
     c.add([x + t, -0.33, z + R.range(-0.3, 0.3) * (1 + t * 0.03)], [0, 0, 1], UP, R.range(0.35, 0.9) * (0.45 + k), 0.1, R.pick(cols), { emit: 1.5 * k + 0.3, order: c.ord(0.6) });
   }
 }
 
-function easel(c, x, z, yaw, cv) {
+// the café on the Place du Forum: the lit front, the awning over the terrace, its tables, and its lamp
+function cafe(c, x, z, yaw) {
+  const R = c.R;
+  house(c, { x, z, yaw, w: 11, d: 7, h: 8.5, roofH: 1.2, wall: ['#2a3a5a', '#34466a', '#22304a', '#3a4a70'], roof: ['#1a2030', '#222a3a'], density: 11,
+    windows: [...[-3.6, -1.2, 1.2, 3.6].map(u => ({ face: 0, u, v: 5.2, w: 0.9, h: 1.3, col: R() < 0.5 ? '#e8a040' : '#1a2438', k: 1.2, frame: '#141c2c' })),
+              ...[-3.6, -1.2, 1.2, 3.6].map(u => ({ face: 0, u, v: 7.3, w: 0.9, h: 1.0, col: R() < 0.3 ? '#e8a040' : '#1a2438', k: 1.2, frame: '#141c2c' })),
+              { face: 0, u: 0, v: 1.5, w: 9.6, h: 2.6, col: '#f0b040', k: 1.0, frame: '#6a4a20' }] });
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), b = c.gy(x, z);
+  const W = (lx, ly, lz) => [x + lx * cy + lz * sy, b + ly, z - lx * sy + lz * cy];
+  const Wd = (dx, dy, dz) => [dx * cy + dz * sy, dy, -dx * sy + dz * cy];
   c.at(x, z);
-  const b = c.gy(x, z);
-  const [rw, rh] = SIZES[cv.slug] || [0.9, 0.73];
-  const ch = clamp(rh * 2.6, 1.45, 2.3), s = ch / rh, cw = rw * s, bottom = 0.78;
-  const cy = Math.cos(yaw), sy = Math.sin(yaw), nrm = [sy, 0, cy], right = [cy, 0, -sy];
-  const wood = P(['#6a4a2a', '#8a5a30', '#5a3a20', '#7a5a3a', '#9a6a3a']);
-  const at = (u, y, v) => [x + right[0] * u + nrm[0] * v, b + y, z + right[2] * u + nrm[2] * v];
-  const top = bottom + ch + 0.3;
-  for (const u of [-1, 1]) c.line(at(u * cw * 0.36, 0, 0.12), at(u * 0.07, top, -0.1), nrm, 0.045, wood, { seg: 0.3 });
-  c.line(at(0, 0, -1.05), at(0, top - 0.1, -0.12), right, 0.045, wood, { seg: 0.3 });
-  c.line(at(-cw * 0.5 - 0.1, bottom - 0.04, 0.06), at(cw * 0.5 + 0.1, bottom - 0.04, 0.06), nrm, 0.05, wood, { seg: 0.25 });
-  c.line(at(-0.2, bottom + ch + 0.06, 0.03), at(0.2, bottom + ch + 0.06, 0.03), nrm, 0.04, wood, { seg: 0.2 });
-  const p = at(0, 0, 0.09);
-  c.easels.push({ ...cv, x: p[0], y: b + bottom + ch / 2, z: p[2], yaw, w: cw, h: ch, station: c.i });
-  c.colliders.push({ x, z, r: Math.max(0.9, cw * 0.42) });
-}
-
-function easelsAt(c, list) {
-  for (const [k, s, dz, off = 3.4, yaw = -s * 0.42] of list) {
-    const cv = c.st.json.canvases?.[k];
-    if (!cv) continue;
-    const slug = cv.blob.split('/').pop().replace('-canvas.bin', '');
-    const z = c.z0 + dz;
-    easel(c, c.rx(z) + s * off, z, yaw, { slug, blob: cv.blob, under: cv.blob.replace('.bin', '-under.png'),
-      title: cv.title, date: cv.date, collection: cv.collection, k, key: `${c.i}-${k}` });
+  // the awning: pitched steeply enough to be seen from the road as an awning, not edge-on as a line, with a
+  // valance hanging from its outer edge
+  const aw = P(['#f0b030', '#e89a20', '#f8c848', '#e0a028']);
+  const n = norm3(Wd(0, 3.4, 1.5));
+  for (let i = 0; i < 900; i++) {
+    const lu = (R() - 0.5) * 8.6, f = R();
+    const p = W(lu, 3.9 - f * 1.5, 3.5 + f * 3.4);
+    c.add(p, norm3(Wd(R.range(-0.3, 0.3), -0.44, 1)), n, R.range(0.14, 0.24), R.range(0.06, 0.1), jitter(R.pick(aw), R, 0.08), { emit: 0.5, order: c.ord(0.6 + f * 0.2) });
   }
+  for (let i = 0; i < 260; i++) {
+    const lu = (R() - 0.5) * 8.6, v = R() * 0.55;
+    c.add(W(lu, 2.4 - v, 6.92), norm3(Wd(R.range(-0.2, 0.2), 1, 0)), Wd(0, 0, 1), R.range(0.08, 0.14), R.range(0.05, 0.08), jitter(R.pick(aw), R, 0.08), { emit: 0.45, order: c.ord(0.8) });
+  }
+  c.C.quad(W(-4.3, 3.9, 3.5), W(4.3, 3.9, 3.5), W(4.3, 2.4, 6.9), W(-4.3, 2.4, 6.9), scalec(aw[0], 0.7), c.ord(0.55));
+  c.C.quad(W(-4.3, 2.4, 6.88), W(4.3, 2.4, 6.88), W(4.3, 1.85, 6.88), W(-4.3, 1.85, 6.88), scalec(aw[1], 0.7), c.ord(0.55));
+  const tables = P(['#d8c890', '#e8d8a0', '#c8b880']);
+  for (let k = 0; k < 7; k++) {
+    const lu = -4 + (k % 4) * 2.6 + R.range(-0.3, 0.3), lz = 4.6 + Math.floor(k / 4) * 1.7;
+    const cp = W(lu, 0.78, lz);
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * 6.28; c.add([cp[0] + Math.cos(a) * 0.32, cp[1], cp[2] + Math.sin(a) * 0.32], [-Math.sin(a), 0, Math.cos(a)], UP, 0.08, 0.05, R.pick(tables), { emit: 0.3, order: c.ord(0.8) }); }
+    c.line(W(lu, 0, lz), W(lu, 0.76, lz), Wd(1, 0, 0), 0.03, P(['#2a2220']));
+  }
+  const lp = W(-5.2, 0, 4.2);
+  lamp(c, lp[0], lp[2], { h: 3.1, k: 3.2, r: 10, light: '#ffb040' });
 }
 
 // ------------------------------------------------------------------ the coda --
@@ -419,37 +422,6 @@ function cart(c, x, z, yaw) {
   c.colliders.push({ x, z, r: 1.6 });
 }
 
-function windmill(c, x, z, o = {}) {
-  const R = c.R; c.at(x, z);
-  const b = c.gy(x, z) - 0.1, H = o.H ?? 8, r0 = 2.2, r1 = 1.4;
-  const cols = P(['#8a7a6a', '#a08a70', '#6a5a4a', '#b0a088']);
-  const prof = t => lerp(r0, r1, t);
-  c.C.lathe(x, b, z, prof, H, scalec(avgc(cols), 0.8), c.ord(0.02), 12, 6);
-  for (let i = 0; i < Math.round(H * r0 * 60); i++) {
-    const t = R(), a = R() * 6.28, r = prof(t), nrm = norm3([Math.cos(a), (r0 - r1) / H, Math.sin(a)]);
-    c.add([x + Math.cos(a) * r, b + t * H, z + Math.sin(a) * r], proj(add3(UP, mul3([-Math.sin(a), 0, Math.cos(a)], R.range(-0.3, 0.3))), nrm), nrm,
-      R.range(0.16, 0.28), R.range(0.07, 0.1), jitter(R.pick(cols), R, 0.08), { order: c.ord(t * 0.8) });
-  }
-  const capC = P(['#5a4030', '#6a4a36', '#4a3428']);
-  c.C.lathe(x, b + H, z, t => r1 * 1.15 * (1 - t), 2.0, capC[0], c.ord(0.3), 12, 3);
-  for (let i = 0; i < 160; i++) {
-    const t = R(), a = R() * 6.28, r = r1 * 1.15 * (1 - t), nrm = norm3([Math.cos(a), 0.6, Math.sin(a)]);
-    c.add([x + Math.cos(a) * r, b + H + t * 2, z + Math.sin(a) * r], proj(UP, nrm), nrm, 0.2, 0.08, jitter(R.pick(capC), R, 0.08), { order: c.ord(0.85) });
-  }
-  const S = new StrokeBuilder(), sail = P(['#d8d0b8', '#c8c0a8', '#e8e0c8', '#b8b098']), spar = P(['#4a3a2a', '#5a4632']);
-  for (let k = 0; k < 4; k++) {
-    const ang = k * Math.PI / 2, dir = [Math.cos(ang), Math.sin(ang), 0], side = [-dir[1], dir[0], 0];
-    for (let j = 0; j < 10; j++) S.add(mul3(dir, (j + 0.5) * 0.66), dir, [0, 0, 1], 0.36, 0.05, R.pick(spar), { order: c.ord(0.9) });
-    for (let j = 0; j < 80; j++) {
-      const t = R.range(1.2, 6.5), sv = R.range(0.1, 1.3);
-      S.add(add3(mul3(dir, t), mul3(side, sv)), R() < 0.5 ? dir : side, [0, 0, 1], R.range(0.12, 0.22), 0.045, jitter(R.pick(sail), R, 0.06), { order: c.ord(0.95) });
-    }
-  }
-  const face = o.face ?? 0, fn = [Math.sin(face), 0, Math.cos(face)];
-  c.movers.push({ S, pos: [x + fn[0] * (r1 + 0.5), b + H + 0.7, z + fn[2] * (r1 + 0.5)], yaw: face, spin: 0.35 });
-  c.colliders.push({ x, z, r: r0 + 0.3 });
-}
-
 function sunflower(c, x, z, o = {}) {
   const R = c.R; c.at(x, z);
   const b = c.gy(x, z), H = o.H ?? R.range(1.3, 2.1);
@@ -546,69 +518,34 @@ function vine(c, x, z, o) {
   }
 }
 
-function cafe(c, x, z, yaw) {
-  const R = c.R;
-  house(c, { x, z, yaw, w: 11, d: 7, h: 8.5, roofH: 1.2, wall: ['#2a3a5a', '#34466a', '#22304a', '#3a4a70'], roof: ['#1a2030', '#222a3a'], density: 11,
-    windows: [...[-3.6, -1.2, 1.2, 3.6].map(u => ({ face: 0, u, v: 5.2, w: 0.9, h: 1.3, col: R() < 0.5 ? '#e8a040' : '#1a2438', k: 1.2, frame: '#141c2c' })),
-              ...[-3.6, -1.2, 1.2, 3.6].map(u => ({ face: 0, u, v: 7.3, w: 0.9, h: 1.0, col: R() < 0.3 ? '#e8a040' : '#1a2438', k: 1.2, frame: '#141c2c' })),
-              { face: 0, u: 0, v: 1.5, w: 9.6, h: 2.6, col: '#f0b040', k: 1.0, frame: '#6a4a20' }] });
-  const cy = Math.cos(yaw), sy = Math.sin(yaw), b = c.gy(x, z);
-  const W = (lx, ly, lz) => [x + lx * cy + lz * sy, b + ly, z - lx * sy + lz * cy];
-  const Wd = (dx, dy, dz) => [dx * cy + dz * sy, dy, -dx * sy + dz * cy];
-  c.at(x, z);
-  // the awning: pitched steeply enough to be seen from the road as an awning,
-  // not edge-on as a line, with a valance hanging from its outer edge
-  const aw = P(['#f0b030', '#e89a20', '#f8c848', '#e0a028']);
-  const n = norm3(Wd(0, 3.4, 1.5));
-  for (let i = 0; i < 900; i++) {
-    const lu = (R() - 0.5) * 8.6, f = R();
-    const p = W(lu, 3.9 - f * 1.5, 3.5 + f * 3.4);
-    c.add(p, norm3(Wd(R.range(-0.3, 0.3), -0.44, 1)), n, R.range(0.14, 0.24), R.range(0.06, 0.1), jitter(R.pick(aw), R, 0.08), { emit: 0.5, order: c.ord(0.6 + f * 0.2) });
-  }
-  for (let i = 0; i < 260; i++) {
-    const lu = (R() - 0.5) * 8.6, v = R() * 0.55;
-    c.add(W(lu, 2.4 - v, 6.92), norm3(Wd(R.range(-0.2, 0.2), 1, 0)), Wd(0, 0, 1), R.range(0.08, 0.14), R.range(0.05, 0.08), jitter(R.pick(aw), R, 0.08), { emit: 0.45, order: c.ord(0.8) });
-  }
-  c.C.quad(W(-4.3, 3.9, 3.5), W(4.3, 3.9, 3.5), W(4.3, 2.4, 6.9), W(-4.3, 2.4, 6.9), scalec(aw[0], 0.7), c.ord(0.55));
-  c.C.quad(W(-4.3, 2.4, 6.88), W(4.3, 2.4, 6.88), W(4.3, 1.85, 6.88), W(-4.3, 1.85, 6.88), scalec(aw[1], 0.7), c.ord(0.55));
-  const tables = P(['#d8c890', '#e8d8a0', '#c8b880']);
-  for (let k = 0; k < 7; k++) {
-    const lu = -4 + (k % 4) * 2.6 + R.range(-0.3, 0.3), lz = 4.6 + Math.floor(k / 4) * 1.7;
-    const cp = W(lu, 0.78, lz);
-    for (let i = 0; i < 14; i++) { const a = (i / 14) * 6.28; c.add([cp[0] + Math.cos(a) * 0.32, cp[1], cp[2] + Math.sin(a) * 0.32], [-Math.sin(a), 0, Math.cos(a)], UP, 0.08, 0.05, R.pick(tables), { emit: 0.3, order: c.ord(0.8) }); }
-    c.line(W(lu, 0, lz), W(lu, 0.76, lz), Wd(1, 0, 0), 0.03, P(['#2a2220']));
-  }
-  const lp = W(-5.2, 0, 4.2);
-  lamp(c, lp[0], lp[2], { h: 3.1, k: 3.2, r: 10, light: '#ffb040' });
-}
-
 // ------------------------------------------------------------------ crows --
 class Crows {
-  constructor(U) {
+  constructor(U, stations) {
     const R = rng(777);
     this.birds = [];
-    // birds by place on the road, from 0: none over the vineyard, and none past the wheatfield. The nine that
-    // circled the bare canvas, and then his portrait, were taken out on the author's word: over him they were
-    // an omen, not a tribute. Past the last field the sky is empty.
-    const plan = { 2: 2, 3: 2, 4: 1, 5: 2, 7: 2, 8: 2, 9: 16 };
-    for (const [si, n] of Object.entries(plan)) {
-      const z0 = J.stationZ(+si), x0 = J.roadX(z0);
+    // birds by world: a few over the day worlds, sixteen over the wheat, none over the night, the vineyard or the
+    // bare canvas. The nine that circled the bare canvas, and then his portrait, were taken out on the author's
+    // word: over him they were an omen, not a tribute. Each bird is its world's, and flies only while you are in it.
+    const plan = { orchards: 2, harvest: 1, yellowhouse: 2, pinkorchard: 2, olivetrees: 2, auvers: 2, wheatfield: 16 };
+    stations.forEach((st, si) => {
+      const n = plan[st.build] ?? (st.build === 'saintremy' && st.day ? 2 : 0);
+      const z0 = J.stationZ(si), x0 = J.roadX(z0);
       for (let k = 0; k < n; k++)
-        this.birds.push({ cx: x0 + R.range(-26, 26), cy: R.range(9, 22), cz: z0 - R.range(-6, 42), R: R.range(6, 18),
-                          w: R.range(0.12, 0.3) * R.sign(), ph: R() * 6.28, fl: R.range(6, 9), s: R.range(1.0, 1.5) });
-    }
+        this.birds.push({ w: si, cx: x0 + R.range(-26, 26), cy: R.range(9, 22), cz: z0 - R.range(-24, 24), R: R.range(6, 18),
+                          v: R.range(0.12, 0.3) * R.sign(), ph: R() * 6.28, fl: R.range(6, 9), s: R.range(1.0, 1.5) });
+    });
     const ink = lin('#0b0c12'), S = new StrokeBuilder();
     for (let i = 0; i < this.birds.length * 3; i++) S.add([0, -99, 0], [1, 0, 0], [0, 1, 0], 0.3, 0.07, ink, { order: 0 });
     this.mesh = S.build(U, { uProgress: { value: 1 } });
     this.A = this.mesh.geometry.attributes;
   }
-  update(t) {
+  update(t, cur) {
     const { birds, A } = this;
     const P2 = A.iPos.array, D = A.iDir.array, N = A.iNrm.array, S = A.iShape.array;
     birds.forEach((b, i) => {
-      const a = b.ph + b.w * t;
-      const p = [b.cx + b.R * Math.cos(a), b.cy + 1.4 * Math.sin(a * 0.7 + b.ph), b.cz + b.R * 0.6 * Math.sin(a)];
-      const hd = norm3([-b.R * Math.sin(a) * b.w, 0.98 * Math.cos(a * 0.7 + b.ph) * b.w, b.R * 0.6 * Math.cos(a) * b.w]);
+      const a = b.ph + b.v * t;
+      const p = b.w === cur ? [b.cx + b.R * Math.cos(a), b.cy + 1.4 * Math.sin(a * 0.7 + b.ph), b.cz + b.R * 0.6 * Math.sin(a)] : [0, -99, 0];
+      const hd = norm3([-b.R * Math.sin(a) * b.v, 0.98 * Math.cos(a * 0.7 + b.ph) * b.v, b.R * 0.6 * Math.cos(a) * b.v]);
       const right = norm3(cross3(hd, UP)), flap = Math.sin(t * b.fl + b.ph * 3) * 0.55;
       const wl = norm3(add3(mul3(right, -Math.cos(flap)), mul3(UP, Math.sin(flap))));
       const wr = norm3(add3(mul3(right, Math.cos(flap)), mul3(UP, Math.sin(flap))));
@@ -621,104 +558,27 @@ class Crows {
   }
 }
 
-// -------------------------------------------------------------- stations --
-const BUILDERS = [
-  c => {                                             // 1 Nuenen, 1885: the poplar avenue at sunset
-    const R = c.R, z0 = c.z0;
-    for (let z = 26; z > z0 - 62; z -= 7.5)
-      for (const s of [-1, 1]) {
-        if (s < 0 && z < z0 + 9 && z > z0 - 17) continue;
-        poplar(c, c.rx(z) + s * R.range(5.4, 6.4), z + R.range(-1.2, 1.2), { H: R.range(12, 16.5), R0: R.range(0.95, 1.3) });
-      }
-    const hz = z0 - 5, hx = c.rx(hz) - 12;
-    house(c, { x: hx, z: hz, yaw: Math.PI / 2, w: 9, d: 5.5, h: 2.5, roofH: 3.4, thatch: true,
-      wall: ['#5a4a3a', '#6a5a44', '#4a3e30', '#7a6a50'], roof: ['#4a3a22', '#5a4a2a', '#6a5a30', '#3a2e1c', '#7a6636'],
-      windows: [{ face: 0, u: -2.2, v: 1.25, w: 0.9, h: 0.8, col: '#f2b040', k: 1.7, frame: '#2a2018' },
-                { face: 0, u: 1.3, v: 0.95, w: 1.0, h: 1.9, col: '#e89a30', k: 1.4, frame: '#2a2018' }] });
-    c.lamps.push({ x: hx + 3.6, y: 1.3, z: hz - 1.3, r: 6.5, c: lin('#ffa040'), k: 1.8 });
-    easelsAt(c, [[0, -1, 6, 3.6]]);
-    tower(c, c.rx(z0 - 80) + 58, z0 - 80);
-    const peat = { cols: ['#6a5020', '#8a6a2a', '#5a4418', '#a0803a'] };
-    haystack(c, c.rx(z0 - 22) + 16, z0 - 22, 1.5, 2.0, peat);
-    haystack(c, c.rx(z0 - 31) + 22, z0 - 31, 1.3, 1.8, peat);
+// ---------------------------------------------------------------- worlds --
+// Each is built round its own stretch of the road, z0, and may spread past it either way: a world's things are
+// there only while you are in it. The road itself stays clear.
+const BUILDERS = {
+  saintremy: c => {                                  // Saint-Rémy: the cypress and the village, by night under the Starry Night, or by day
+    const R = c.R, z0 = c.z0, day = !!c.st.day;
+    const cyp = day ? { cols: ['#1f3a2a', '#2a4a30', '#3a6040', '#2f5a3a', '#4a6a46', '#1a3028'], hi: ['#7a9a5a', '#9aaa6a', '#5f8a52'] }
+                    : { cols: ['#1f3a3a', '#2a4a3a', '#35604a', '#2a4050', '#4a6a4a', '#1a3040', '#3a5a3a', '#26485a'], hi: ['#6a8a6a', '#8a9a7a', '#5a7a8a', '#a0a070'] };
+    cypress(c, c.rx(z0 - 7) - 8.5, z0 - 7, 17, 2.3, cyp);
+    cypress(c, c.rx(z0 - 16) - 13, z0 - 16, 12, 1.6, cyp);
+    cypress(c, c.rx(z0 + 14) + 12, z0 + 14, 10, 1.4, cyp);
+    cypress(c, c.rx(z0 - 38) + 15, z0 - 38, 13, 1.7, cyp);
+    const ol = day ? { leaves: ['#8aa888', '#a8c0a0', '#6a8a78', '#c8d8b0', '#7a9aa0', '#5f7f70'], top: '#e0e8c8', bark: ['#7a6a60', '#9a8070', '#6a6a78'] }
+                   : { leaves: ['#7a9a90', '#9ab0a8', '#5a7a78', '#b8c8b0', '#6a8aa0', '#4f6f70'], top: '#d0dcc0', bark: ['#6a5a60', '#8a7068', '#5a5a70'] };
+    for (let i = 0; i < 16; i++) { const z = z0 + R.range(-32, 24); olive(c, c.rx(z) + R.range(8, 34), z, { H: R.range(3.6, 4.8), crown: R.range(1.9, 2.5), ...ol }); }
+    village(c, c.rx(z0 - 70) + 78, z0 - 70, 22, 34, day ? { wall: ['#e8e0cc', '#d8ccb0', '#f0e8d8', '#c8bca0'], roof: ['#c8703a', '#b86030', '#d8804a'] } : {});
+    spire(c, c.rx(z0 - 76) + 72, z0 - 76);
+    for (let i = 0; i < (day ? 90 : 36); i++) { const z = z0 + R.range(-14, 16); iris(c, c.rx(z) - R.range(2.5, day ? 12 : 8), z); }
+    if (day) for (let i = 0; i < 30; i++) { const z = z0 + R.range(-20, 20); iris(c, c.rx(z) + R.range(2.6, 6), z); }
   },
-  c => {                                             // 2 Paris, 1886-87: the corridor, the windmills of Montmartre
-    const R = c.R, z0 = c.z0;
-    easelsAt(c, [[0, -1, 16, 3.2], [1, 1, 9, 3.2], [2, -1, 2, 3.2], [3, 1, -5, 3.2], [4, -1, -12, 3.2], [5, 1, -19, 3.2]]);
-    windmill(c, c.rx(z0 - 34) + 24, z0 - 34, { H: 8, face: -Math.PI / 2 + 0.5 });
-    windmill(c, c.rx(z0 - 70) - 30, z0 - 70, { H: 7, face: Math.PI / 2 - 0.5 });
-    for (let i = 0; i < 12; i++) {
-      const z = z0 + R.range(-45, 35), s = R.sign();
-      tree(c, c.rx(z) + s * R.range(9, 26), z, { H: R.range(4.5, 7), crown: R.range(1.7, 2.6), leaves: ['#4a7a3a', '#6a9a44', '#8ab050', '#3a6a3a'], top: '#c8d890' });
-    }
-    for (let i = 0; i < 16; i++) sunflower(c, c.rx(z0 - 26) + 6 + R.range(-2, 2), z0 - 26 + R.range(-3, 3));
-    for (let z = z0 + 30; z > z0 - 40; z -= 13) lamp(c, c.rx(z) + 2.6, z, { h: 3.4, col: '#e8d8a0', emit: 0.35, k: 0.6 });
-  },
-  c => {                                             // 3 Arles, spring 1888: orchards in blossom
-    const R = c.R, z0 = c.z0;
-    const bark = ['#4a3a30', '#3a2e2a', '#5a4638'];
-    const white = { leaves: ['#f4f0e0', '#e8ecd8', '#fff8f0', '#dfe8c8', '#c8d8b0'], top: '#ffffff', blossom: true, bark };
-    const pink = { leaves: ['#f4c8d0', '#f0b0c0', '#fad8e0', '#e8a0b0', '#dfe8c8'], top: '#ffe8f0', blossom: true, bark };
-    for (let row = 0; row < 3; row++)
-      for (let i = 0; i < 9; i++)
-        for (const s of [-1, 1]) {
-          const z = z0 + 34 - i * 7.5 + R.range(-1, 1) + (row % 2) * 3.7;
-          if (row === 0 && Math.abs(z - z0) < 16) continue;
-          tree(c, c.rx(z) + s * (7 + row * 6.5 + R.range(-0.8, 0.8)), z,
-            { H: R.range(3.4, 4.6), crown: R.range(1.4, 1.9), trunkH: R.range(1.1, 1.5), trunkR: 0.14, lobes: 4, ...(s < 0 ? white : pink) });
-        }
-    for (let z = z0 + 40; z > z0 - 50; z -= 3.6) cypress(c, c.rx(z) + 36 + R.range(-0.5, 0.5), z, R.range(7, 9.5), R.range(0.9, 1.2));
-    house(c, { x: c.rx(z0 - 28) - 34, z: z0 - 28, yaw: Math.PI / 2, w: 8, d: 6, h: 4, roofH: 1.6, wall: ['#e8dcc0', '#f0e8d0', '#d8ccb0'],
-      roof: ['#c8703a', '#d8804a', '#b86030'], windows: [{ face: 0, u: -2, v: 2, w: 0.8, h: 1.1, col: '#3a5a6a' }, { face: 0, u: 2, v: 2, w: 0.8, h: 1.1, col: '#3a5a6a' },
-      { face: 0, u: 0, v: 1.1, w: 1.0, h: 2.0, col: '#4a6a4a' }] });
-    easelsAt(c, [[0, -1, 10, 3.4], [1, 1, 3, 3.4], [2, -1, -4, 3.4], [3, 1, -11, 3.4]]);
-  },
-  c => {                                             // 4 La Crau, June 1888: the harvest
-    const R = c.R, z0 = c.z0;
-    for (const [dx, dz] of [[14, 10], [-18, -6], [26, -22], [-30, -30], [40, 8], [-12, -48], [18, -60]])
-      haystack(c, c.rx(z0 + dz) + dx, z0 + dz, R.range(1.8, 2.6), R.range(2.6, 3.6));
-    cart(c, c.rx(z0 - 14) + 6.5, z0 - 14, 0.3);
-    const farm = { wall: ['#e8d8b0', '#f0e0c0', '#d8c8a0'], roof: ['#c8603a', '#b8502a', '#d8704a'] };
-    house(c, { x: c.rx(z0 - 60) + 55, z: z0 - 60, yaw: -Math.PI / 2, w: 10, d: 6, h: 4.5, roofH: 2, ...farm });
-    house(c, { x: c.rx(z0 - 85) - 48, z: z0 - 85, yaw: Math.PI / 2, w: 8, d: 6, h: 4, roofH: 1.8, ...farm });
-    easelsAt(c, [[0, 1, 8, 3.4], [1, -1, 0, 3.4], [2, 1, -8, 3.4]]);
-  },
-  c => {                                             // 5 Arles, autumn 1888: the Yellow House
-    const R = c.R, z0 = c.z0, yx = c.rx(z0 - 4) + 12;
-    const green = '#3f7a4a', frame = '#2f5a3a';
-    house(c, { x: yx, z: z0 - 4, yaw: -Math.PI / 2, w: 10, d: 7, h: 7.2, roofH: 1.5, trim: green, density: 16,
-      wall: ['#e8b830', '#f0c848', '#d8a828', '#f4d060', '#e0b038'], roof: ['#c86a3a', '#d8804a', '#b05a30'],
-      windows: [...[-3, -1, 1, 3].map(u => ({ face: 0, u, v: 5.3, w: 0.9, h: 1.3, col: green, frame })),
-                ...[-3, 1, 3].map(u => ({ face: 0, u, v: 2.0, w: 0.9, h: 1.4, col: green, frame })),
-                { face: 0, u: -1, v: 1.2, w: 1.1, h: 2.3, col: '#4a8a50', frame }] });
-    house(c, { x: yx, z: z0 + 7.5, yaw: -Math.PI / 2, w: 7, d: 7, h: 5.2, roofH: 1.4, wall: ['#d88a7a', '#e0a090', '#c87a6a'], roof: ['#b05a3a', '#c06a40'],
-      windows: [{ face: 0, u: 0, v: 1.4, w: 3.8, h: 2.2, col: '#f0d8a0', k: 0.2, frame: '#6a3a2a' }] });
-    for (let z = z0 + 34; z > z0 - 44; z -= 9)
-      tree(c, c.rx(z) - 6.5, z, { H: R.range(8, 10), crown: R.range(2.8, 3.4), trunkR: 0.28, leaves: ['#2f6a2a', '#3f7a30', '#5a8a3a', '#2a5a3a'], top: '#8ab040' });
-    for (let i = 0; i < 22; i++) sunflower(c, c.rx(z0 + 1) - R.range(4.8, 9), z0 + R.range(-6, 8));
-    const bz = z0 - 44, bx = c.rx(bz);
-    for (let k = -5; k <= 5; k++) if (k) boxStrokes(c, bx + k * 9, c.gy(bx + k * 9, bz) - 0.2, bz, 0.7, 3.8, 1.2, 0, ['#7a7090', '#8a80a0', '#6a6080', '#9a90a8'], 8);
-    boxStrokes(c, bx, 7.6, bz, 50, 0.3, 1.1, 0, ['#7a7090', '#8a80a0', '#6a6080'], 6);
-    easelsAt(c, [[0, -1, 12, 3.4], [1, 1, 3, 3.4], [2, 1, -3, 3.4], [3, 1, -9, 3.4]]);
-  },
-  c => {                                             // 6 Arles, September 1888: the café terrace, the Rhône
-    const R = c.R, z0 = c.z0;
-    cafe(c, c.rx(z0 - 6) + 12, z0 - 6, -Math.PI / 2);
-    house(c, { x: c.rx(z0 + 12) + 11, z: z0 + 12, yaw: -Math.PI / 2, w: 8, d: 7, h: 5.5, roofH: 1.4, wall: ['#2a2a3a', '#343448', '#22222e'], roof: ['#1a1a24', '#24242e'], density: 10,
-      windows: [{ face: 0, u: 0, v: 1.4, w: 2.4, h: 2.6, col: '#d04a20', k: 1.4, frame: '#1a1210' }, { face: 0, u: -2.8, v: 1.8, w: 1.2, h: 1.4, col: '#e8a030', k: 1.3, frame: '#1a1210' },
-                { face: 0, u: 2.8, v: 1.8, w: 1.2, h: 1.4, col: '#3a8a4a', k: 0.7, frame: '#1a1210' }] });
-    c.lamps.push({ x: c.rx(z0 + 12) + 6.8, y: 1.6, z: z0 + 12, r: 7, c: lin('#ff7040'), k: 1.6 });
-    for (let z = z0 + 36; z > z0 - 50; z -= 11) lamp(c, c.rx(z) - 12.2, z, { h: 3.6, k: 2.4, r: 8 });
-    for (let z = z0 + 60; z > z0 - 90; z -= R.range(5, 9)) {
-      const x = c.rx(z) - R.range(62, 72);
-      c.at(x, z);
-      lampHead(c, x, z, -0.35 + R.range(2.5, 4.5));
-      reflection(c, x, z);
-    }
-    village(c, c.rx(z0) - 82, z0 - 12, 20, 26);
-    easelsAt(c, [[0, 1, 10, 3.6], [1, 1, -2, 3.6], [2, -1, -9, 3.4]]);
-  },
-  c => {                                             // 7 Arles, November 1888: the red vineyard
+  vineyard: c => {                                   // Arles, November 1888: the red vineyard
     const R = c.R, z0 = c.z0;
     const leaf = {
       cols: P(['#b02a22', '#c23a26', '#962226', '#cc4a2a', '#7e1c24', '#b8362c', '#d45a2e', '#8a2a3a']),
@@ -726,19 +586,17 @@ const BUILDERS = [
       low: P(['#6a1a26', '#5a2a3a', '#4a2a5a', '#3f452b']),
       cane: P(['#8a8a2e', '#6a7a2a', '#a09040', '#c8a030']),
       stake: P(['#2a1a16', '#3a2418', '#1e1a24']), stock: P(['#3a2a20', '#4a3226', '#2a2024']) };
-    // rows of vines either side of the road, stopping short of the canal on the right.
-    // The easel stands among them turned back up the road, so that from in front of it
-    // the sun is just past its right edge and the canal is behind it.
-    const ez = z0 + 6, ex = c.rx(ez) + 3.4, cz = z0 - 34, cx = c.rx(cz) + 8.5;
+    // rows of vines either side of the road, stopping short of the canal on the right
+    const cz = z0 - 24, cx = c.rx(cz) + 8.5;
     for (let z = z0 + 38; z > z0 - 40; z -= 1.6)
       for (const [u0, du, k] of [[-3.4, -1.9, 8], [3.4, 1.9, 6]])
         for (let j = 0; j < k; j++) {
           const zz = z + R.range(-0.22, 0.22), x = c.rx(zz) + u0 + du * j + R.range(-0.2, 0.2);
-          if (Math.hypot(x - ex, zz - ez) < 2.4 || Math.hypot(x - cx, zz - cz) < 2.8) continue;
+          if (Math.hypot(x - cx, zz - cz) < 2.8) continue;
           vine(c, x, zz, leaf);
         }
     cart(c, cx, cz, 0.35);
-    // the farm on his horizon, left of the sun: far enough out that the road to Saint-Rémy passes it at a distance
+    // the farm on his horizon, left of the sun
     house(c, { x: c.rx(z0 - 58) + 34, z: z0 - 58, yaw: -Math.PI / 2 + 0.35, w: 8, d: 5.5, h: 4.2, roofH: 1.8,
       wall: ['#f0dcc4', '#e8ccb0', '#f4e4d0', '#dcbca0'], roof: ['#d0643a', '#c0502e', '#e07848'] });
     tree(c, c.rx(z0 - 62) + 41, z0 - 62, { H: 6, crown: 2.4, leaves: ['#3a6a50', '#4a7a58', '#2a5a4a'], top: '#9ab870' });
@@ -760,22 +618,125 @@ const BUILDERS = [
           jitter(R.pick(wet), R, 0.08), { emit: R.range(0.3, 0.8), order: c.ord(0.2) });
       }
     }
-    easelsAt(c, [[0, 1, 6, 3.4, -0.17]]);
   },
-  c => {                                             // 8 Saint-Rémy, 1889: the cypress under the Starry Night
+  orchards: c => {                                   // Arles, spring 1888: orchards in blossom
     const R = c.R, z0 = c.z0;
-    const night = { cols: ['#1f3a3a', '#2a4a3a', '#35604a', '#2a4050', '#4a6a4a', '#1a3040', '#3a5a3a', '#26485a'], hi: ['#6a8a6a', '#8a9a7a', '#5a7a8a', '#a0a070'] };
-    cypress(c, c.rx(z0 - 7) - 8.5, z0 - 7, 17, 2.3, night);
-    cypress(c, c.rx(z0 - 16) - 13, z0 - 16, 12, 1.6, night);
-    cypress(c, c.rx(z0 + 14) + 12, z0 + 14, 10, 1.4, night);
-    cypress(c, c.rx(z0 - 38) + 15, z0 - 38, 13, 1.7, night);
-    for (let i = 0; i < 16; i++) { const z = z0 + R.range(-32, 24); olive(c, c.rx(z) + R.range(8, 34), z, { H: R.range(3.6, 4.8), crown: R.range(1.9, 2.5), leaves: ['#7a9a90', '#9ab0a8', '#5a7a78', '#b8c8b0', '#6a8aa0', '#4f6f70'], top: '#d0dcc0', bark: ['#6a5a60', '#8a7068', '#5a5a70'] }); }
-    village(c, c.rx(z0 - 70) + 78, z0 - 70, 22, 34);
-    spire(c, c.rx(z0 - 76) + 72, z0 - 76);
-    for (let i = 0; i < 36; i++) { const z = z0 + R.range(-4, 12); iris(c, c.rx(z) - R.range(2.5, 8), z); }
-    easelsAt(c, [[0, -1, 8, 3.4], [1, 1, 2, 3.6], [2, 1, -6, 3.6]]);
+    const bark = ['#4a3a30', '#3a2e2a', '#5a4638'];
+    const white = { leaves: ['#f4f0e0', '#e8ecd8', '#fff8f0', '#dfe8c8', '#c8d8b0'], top: '#ffffff', blossom: true, bark };
+    const pink = { leaves: ['#f4c8d0', '#f0b0c0', '#fad8e0', '#e8a0b0', '#dfe8c8'], top: '#ffe8f0', blossom: true, bark };
+    for (let row = 0; row < 3; row++)
+      for (let i = 0; i < 9; i++)
+        for (const s of [-1, 1]) {
+          const z = z0 + 34 - i * 7.5 + R.range(-1, 1) + (row % 2) * 3.7;
+          tree(c, c.rx(z) + s * (5.5 + row * 6.5 + R.range(-0.8, 0.8)), z,
+            { H: R.range(3.4, 4.6), crown: R.range(1.4, 1.9), trunkH: R.range(1.1, 1.5), trunkR: 0.14, lobes: 4, ...(s < 0 ? white : pink) });
+        }
+    for (let z = z0 + 40; z > z0 - 50; z -= 3.6) cypress(c, c.rx(z) + 36 + R.range(-0.5, 0.5), z, R.range(7, 9.5), R.range(0.9, 1.2));
+    house(c, { x: c.rx(z0 - 28) - 34, z: z0 - 28, yaw: Math.PI / 2, w: 8, d: 6, h: 4, roofH: 1.6, wall: ['#e8dcc0', '#f0e8d0', '#d8ccb0'],
+      roof: ['#c8703a', '#d8804a', '#b86030'], windows: [{ face: 0, u: -2, v: 2, w: 0.8, h: 1.1, col: '#3a5a6a' }, { face: 0, u: 2, v: 2, w: 0.8, h: 1.1, col: '#3a5a6a' },
+      { face: 0, u: 0, v: 1.1, w: 1.0, h: 2.0, col: '#4a6a4a' }] });
   },
-  c => {                                             // 9 Auvers, 1890: thatch, the garden, the church
+  harvest: c => {                                    // La Crau, June 1888: the harvest
+    const R = c.R, z0 = c.z0;
+    for (const [dx, dz] of [[14, 10], [-18, -6], [26, -22], [-30, -30], [40, 8], [-12, -48], [18, -60], [-9, 22], [11, -14]])
+      haystack(c, c.rx(z0 + dz) + dx, z0 + dz, R.range(1.8, 2.6), R.range(2.6, 3.6));
+    cart(c, c.rx(z0 - 14) + 6.5, z0 - 14, 0.3);
+    const farm = { wall: ['#e8d8b0', '#f0e0c0', '#d8c8a0'], roof: ['#c8603a', '#b8502a', '#d8704a'] };
+    house(c, { x: c.rx(z0 - 60) + 55, z: z0 - 60, yaw: -Math.PI / 2, w: 10, d: 6, h: 4.5, roofH: 2, ...farm });
+    house(c, { x: c.rx(z0 - 85) - 48, z: z0 - 85, yaw: Math.PI / 2, w: 8, d: 6, h: 4, roofH: 1.8, ...farm });
+  },
+  yellowhouse: c => {                                // Arles, autumn 1888: the Yellow House
+    const R = c.R, z0 = c.z0, yx = c.rx(z0 - 4) + 12;
+    const green = '#3f7a4a', frame = '#2f5a3a';
+    house(c, { x: yx, z: z0 - 4, yaw: -Math.PI / 2, w: 10, d: 7, h: 7.2, roofH: 1.5, trim: green, density: 16,
+      wall: ['#e8b830', '#f0c848', '#d8a828', '#f4d060', '#e0b038'], roof: ['#c86a3a', '#d8804a', '#b05a30'],
+      windows: [...[-3, -1, 1, 3].map(u => ({ face: 0, u, v: 5.3, w: 0.9, h: 1.3, col: green, frame })),
+                ...[-3, 1, 3].map(u => ({ face: 0, u, v: 2.0, w: 0.9, h: 1.4, col: green, frame })),
+                { face: 0, u: -1, v: 1.2, w: 1.1, h: 2.3, col: '#4a8a50', frame }] });
+    house(c, { x: yx, z: z0 + 7.5, yaw: -Math.PI / 2, w: 7, d: 7, h: 5.2, roofH: 1.4, wall: ['#d88a7a', '#e0a090', '#c87a6a'], roof: ['#b05a3a', '#c06a40'],
+      windows: [{ face: 0, u: 0, v: 1.4, w: 3.8, h: 2.2, col: '#f0d8a0', k: 0.2, frame: '#6a3a2a' }] });
+    for (let z = z0 + 34; z > z0 - 44; z -= 9)
+      tree(c, c.rx(z) - 6.5, z, { H: R.range(8, 10), crown: R.range(2.8, 3.4), trunkR: 0.28, leaves: ['#2f6a2a', '#3f7a30', '#5a8a3a', '#2a5a3a'], top: '#8ab040' });
+    for (let i = 0; i < 22; i++) sunflower(c, c.rx(z0 + 1) - R.range(4.8, 9), z0 + R.range(-6, 8));
+    const bz = z0 - 44, bx = c.rx(bz);
+    for (let k = -5; k <= 5; k++) if (k) boxStrokes(c, bx + k * 9, c.gy(bx + k * 9, bz) - 0.2, bz, 0.7, 3.8, 1.2, 0, ['#7a7090', '#8a80a0', '#6a6080', '#9a90a8'], 8);
+    boxStrokes(c, bx, 7.6, bz, 50, 0.3, 1.1, 0, ['#7a7090', '#8a80a0', '#6a6080'], 6);
+  },
+  sunflowers: c => {                                 // a field of sunflowers, which he did not paint: the vase's yellows, out of doors
+    const R = c.R, z0 = c.z0;
+    // rows either side of the road, thinning with distance
+    for (let z = z0 + 42; z > z0 - 46; z -= 1.25)
+      for (const s of [-1, 1])
+        for (let u = 3.0; u < 36; u += 1.15 * (1 + u / 22)) {
+          const zz = z + R.range(-0.4, 0.4), x = c.rx(zz) + s * (u + R.range(-0.35, 0.35));
+          sunflower(c, x, zz, { H: R.range(1.15, 1.85) * (1 - 0.12 * smoothstep(20, 36, u)) });
+        }
+    const farm = { wall: ['#f0e4c8', '#e8d8b8', '#f6ecd8'], roof: ['#c86a3a', '#d8804a', '#b85a30'] };
+    house(c, { x: c.rx(z0 - 64) - 46, z: z0 - 64, yaw: Math.PI / 2 - 0.3, w: 9, d: 6, h: 4.2, roofH: 2, ...farm });
+    for (let i = 0; i < 6; i++) {
+      const z = z0 - 40 - i * 7, x = c.rx(z) + 44 + R.range(-3, 3);
+      tree(c, x, z, { H: R.range(6, 8.5), crown: R.range(2.2, 3), leaves: ['#3a7a3a', '#4a8a40', '#6aa048', '#2f6a3a'], top: '#a0c860' });
+    }
+    for (let z = z0 + 40; z > z0 - 40; z -= 6.5) cypress(c, c.rx(z) - 40 + R.range(-0.8, 0.8), z, R.range(6.5, 9), R.range(0.85, 1.1));
+  },
+  pinkorchard: c => {                                // Arles, April 1888: the pink orchard -- apricot trees in blossom, a reed fence behind
+    const R = c.R, z0 = c.z0;
+    const bark = ['#4a3a34', '#5a4a40', '#3a3030', '#6a5a50'];
+    const pinks = [
+      { leaves: ['#f4c8d0', '#f8dce0', '#e8a8b8', '#fff0f0', '#e0b8c8'], top: '#fff4f4', blossom: true, bark },
+      { leaves: ['#f0d0d8', '#f8e4e8', '#e8b8c0', '#fbf0e8', '#d8c0d0'], top: '#ffffff', blossom: true, bark },
+      { leaves: ['#f6d4d0', '#f0c0b8', '#ffe8e0', '#e8a8a0', '#f8dcd8'], top: '#fff0e8', blossom: true, bark }];
+    // trees in loose rows either side, nearer the road than the orchards' and smaller, and more of them
+    for (let row = 0; row < 4; row++)
+      for (let i = 0; i < 12; i++)
+        for (const s of [-1, 1]) {
+          const z = z0 + 38 - i * 6.4 + R.range(-1.4, 1.4) + (row % 2) * 3.1;
+          tree(c, c.rx(z) + s * (4.5 + row * 5.2 + R.range(-1.2, 1.2)), z,
+            { H: R.range(2.8, 4.2), crown: R.range(1.3, 1.9), trunkH: R.range(0.9, 1.4), trunkR: 0.13, lobes: 5, ...R.pick(pinks) });
+        }
+    // the reed fence across the back of his orchard, either side
+    const reed = ['#c8b078', '#b89a60', '#d8c088', '#a88a50'];
+    for (const s of [-1, 1]) {
+      const fz = z0 - 32, fx = c.rx(fz) + s * 17;
+      boxStrokes(c, fx, c.gy(fx, fz) - 0.05, fz, 12, 0.65, 0.1, 0, reed, 10);
+    }
+  },
+  olivetrees: c => {                                 // Saint-Rémy, June 1889: the olive trees, the Alpilles behind them (the sky's hills)
+    const R = c.R, z0 = c.z0;
+    const ol = { leaves: ['#5a8a68', '#7aa080', '#4a7a5a', '#98b890', '#6a90a0', '#3f6a58', '#b0c8a0'], top: '#d0e0b8', bark: ['#3a3a50', '#5a5060', '#2a2a40', '#6a6070'] };
+    for (let i = 0; i < 46; i++) {
+      const z = z0 + R.range(-42, 40), s = R.sign();
+      olive(c, c.rx(z) + s * R.range(3.5, 40), z, { H: R.range(3.2, 5.0), crown: R.range(2.0, 3.0), ...ol });
+    }
+  },
+  cafe: c => {                                       // Arles, September 1888: the café terrace on the Place du Forum
+    const R = c.R, z0 = c.z0;
+    cafe(c, c.rx(z0 - 6) + 12, z0 - 6, -Math.PI / 2);
+    // the dark houses round the square, a lit window here and there
+    const dark = { wall: ['#2a2a3a', '#343448', '#22222e', '#3a3a52'], roof: ['#1a1a24', '#24242e'], density: 10 };
+    for (const [dz, dx, w] of [[12, 11, 8], [-2, -12, 7], [-14, -13, 9], [-28, 12, 8], [-40, -11, 8], [24, -11, 7], [-52, 12, 9]])
+      house(c, { x: c.rx(z0 + dz) + dx, z: z0 + dz, yaw: dx > 0 ? -Math.PI / 2 : Math.PI / 2, w, d: 7, h: R.range(5, 6.5), roofH: 1.4, ...dark,
+        windows: [{ face: 0, u: R.range(-2, 2), v: 1.6, w: 1.2, h: 1.4, col: R.pick(['#d04a20', '#e8a030', '#3a8a4a', '#e8a030']), k: 1.2, frame: '#1a1210' }] });
+    for (let z = z0 + 36; z > z0 - 50; z -= 11) lamp(c, c.rx(z) - 6.5, z, { h: 3.6, k: 2.4, r: 8 });
+    village(c, c.rx(z0 - 80) + 30, z0 - 80, 16, 24);
+  },
+  arlesnight: c => {                                 // Arles, September 1888: the Rhône, the gaslights on the water, the Dipper over it
+    const R = c.R, z0 = c.z0;
+    for (let z = z0 + 36; z > z0 - 50; z -= 11) lamp(c, c.rx(z) - 12.2, z, { h: 3.6, k: 2.4, r: 8 });
+    // the far bank's, nearer than the town behind them, each laid on the water as far as the near bank
+    for (let z = z0 + 60; z > z0 - 90; z -= R.range(5, 9)) {
+      const x = c.rx(z) - R.range(44, 52);
+      c.at(x, z);
+      lampHead(c, x, z, -0.35 + R.range(2.5, 4.5));
+      reflection(c, x, z, c.rx(z) - 14 - x);
+    }
+    village(c, c.rx(z0) - 66, z0 - 12, 20, 22);
+    // the town behind you on the near bank
+    for (const [dz, dx] of [[14, 12], [2, 14], [-12, 13], [-26, 12], [-40, 14]])
+      house(c, { x: c.rx(z0 + dz) + dx, z: z0 + dz, yaw: -Math.PI / 2, w: 8, d: 7, h: R.range(5, 6.5), roofH: 1.4, wall: ['#1f2c4a', '#2a3a5a', '#34466a'], roof: ['#28304a', '#3a3a5a'], density: 9,
+        windows: [{ face: 0, u: R.range(-2, 2), v: 1.8, w: 1.0, h: 1.2, col: '#f2c04a', k: 1.6, frame: '#141a2a' }] });
+  },
+  auvers: c => {                                     // Auvers, 1890: thatch, the garden, the church
     const R = c.R, z0 = c.z0;
     church(c, c.rx(z0 - 26) + 15, z0 - 26, -Math.PI / 2 + 0.35);
     const cot = { thatch: true, wall: ['#e8e0c8', '#f0ead8', '#d8d0b8', '#c8c0a8'], roof: ['#6a7a4a', '#8a8a5a', '#5a6a3a', '#7a8a50', '#9a9a60'], roofH: 3.2 };
@@ -791,13 +752,10 @@ const BUILDERS = [
       const z = z0 + R.range(-45, 35), s = R.sign();
       tree(c, c.rx(z) + s * R.range(22, 40), z, { H: R.range(6, 9), crown: R.range(2.4, 3.2), leaves: ['#2f5a3a', '#3f6a3a', '#5a8a4a', '#2a4a3a'], top: '#8ab060' });
     }
-    easelsAt(c, [[0, 1, 4, 3.4], [1, -1, -1, 3.4], [2, 1, -6, 3.4], [3, -1, -11, 3.4], [4, 1, -16, 3.4]]);
   },
-  c => {                                             // 10 Auvers, July 1890: the wheatfield
-    easelsAt(c, [[0, 1, 4, 3.6]]);
-  },
-  c => { if (c.st.json.coda) coda(c, c.st.json.coda); },   // 11 after; past it, his portrait
-];
+  wheatfield: () => {},                              // Auvers, July 1890: the wheatfield -- the ground is all of it
+  after: c => { if (c.st.json.coda) coda(c, c.st.json.coda); },   // after; past it, his portrait
+};
 
 export class World {
   constructor(U, stations) {
@@ -806,7 +764,10 @@ export class World {
     this.easels = []; this.lamps = []; this.colliders = []; this.st = [];
     stations.forEach((st, i) => {
       const c = new Ctx(i, st);
-      (BUILDERS[i] || (() => {}))(c);
+      (BUILDERS[st.build] || (() => {}))(c);
+      door(c);
+      for (const k of c.colliders) k.w = i;
+      for (const L of c.lamps) L.w = i;
       const g = new THREE.Group();
       const u = { uProgress: { value: 0 } };
       if (c.S.n) g.add(c.S.build(U, u));
@@ -830,24 +791,29 @@ export class World {
       this.easels.push(...c.easels); this.lamps.push(...c.lamps); this.colliders.push(...c.colliders);
       this.st.push({ g, u, z0: c.z0, progress: 0, started: false, movers: c.movers, strokes: c.S.n });
     });
-    this.crows = new Crows(U);
+    this.crows = new Crows(U, stations);
     this.group.add(this.crows.mesh);
     this._near = [];
   }
-  update(cam, time, dt, intro = 1) {
-    for (const s of this.st) {
-      const dz = Math.abs(cam.z - s.z0);
-      s.g.visible = dz < 235;
-      if (dz < 125) s.started = true;
+  // W is where you are: the world you are in paints itself in over four seconds, from its door outward; the one
+  // you have left paints itself out over three, nearest you first, since its order ran outward from its own door
+  update(cam, time, dt, intro = 1, W = { cur: 0 }) {
+    this.st.forEach((s, i) => {
+      const on = i === W.cur;
+      if (on) s.started = true;
       // during the opening, nothing stands up before the ground under it is painted
-      if (s.started && s.progress < 1.05) s.progress = Math.min(1.05, s.progress + dt / 5.5, intro < 1 ? Math.max(0, intro * 1.25 - 0.18) : 9);
+      if (on && s.progress < 1.05) s.progress = Math.min(1.05, s.progress + dt / 4, intro < 1 ? Math.max(0, intro * 1.25 - 0.18) : 9);
+      else if (!on && s.progress > 0) s.progress = Math.max(0, s.progress - dt / 3);
+      s.g.visible = s.progress > 0;
       s.u.uProgress.value = s.progress;
       if (s.g.visible) for (const m of s.movers) m.spinner.rotation.z = time * m.spin;
-    }
-    this.crows.update(time);
+    });
+    this.crows.update(time, W.cur);
   }
-  lampsNear(cam) {
-    for (const L of this.lamps) L.d = (L.x - cam.x) ** 2 + (L.z - cam.z) ** 2;
+  // after a jump: the world you land in paints itself in, and no other is there
+  reset(i) { this.st.forEach((s, j) => { s.progress = 0; s.started = j === i; }); }
+  lampsNear(cam, w) {
+    for (const L of this.lamps) L.d = L.w === w ? (L.x - cam.x) ** 2 + (L.z - cam.z) ** 2 : Infinity;
     return this.lamps.filter(L => L.d < 3600).sort((a, b) => a.d - b.d).slice(0, 4);
   }
 }

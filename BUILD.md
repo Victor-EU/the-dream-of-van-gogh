@@ -3631,3 +3631,220 @@ What they showed:
 - **From the tick, 110 m off, the road's far end is pale in the station's haze.** The portrait keeps a haze of its own
   and is not.
 - **Measured headless on this machine only.** A phone was not checked, and the frame rate was not measured.
+
+### After M9 — The portals: a painting, then its world
+
+**What was asked.** To build the piece again around one gesture. You stand in front of *The Starry Night*; you go
+into it, and the world becomes that night. You walk a little, not long, and there is another painting, the red
+vineyard; you go into it and the world becomes the vineyard. Then Saint-Rémy, then *Sunflowers* and a field of them,
+then Auvers, then the wheatfield, and at the end his self-portrait, and no more world. Asked what else stayed, the
+author kept the orchards, the harvest and the Yellow House, with the same transformation, and dropped the
+chronology, the letters, the dates and every canvas but the one you enter by. The walk between two paintings is to be
+no more than ten seconds. Entering is walking through, "like magically entering a painting". The end is as it was
+built: the field goes to nothing, and the portrait stands alone on bare canvas, the one painting you cannot enter.
+
+**What was decided.**
+
+- **Ten worlds on one road, 36 m apart**, in the author's order, with the three kept places set between the vineyard
+  and Saint-Rémy, which the author left to me: *The Starry Night* (Saint-Rémy at night), *The Red Vineyard*, the
+  orchards (*Almond Blossom*), the harvest (*The Harvest*), the Yellow House (*The Bedroom*), Saint-Rémy by day
+  (*Irises*), a field of sunflowers (*Sunflowers*), Auvers (*The Church at Auvers*), the wheatfield (*Wheatfield with
+  Crows*), and after it the bare canvas with his portrait. 36 m is eight seconds at a walk and ten on its own. The
+  order is one list in `config.js`.
+- **A door is a canvas across the road.** It stands at the boundary between two worlds, on the road, turned to face
+  you, 2.6 m tall for a landscape and 3 m for a portrait, with its foot on the ground, so that an eye at 1.65 m goes
+  through the paint. No easel and no collider. From 34 m it paints itself from its stroke record in seven seconds, so
+  that at a walk its last strokes land as you reach it. Over the last nine metres it comes towards you, growing by a
+  third, until it fills the window, and then you are through.
+- **The world is a state, not a place on the road.** Until now everything was keyed by distance along the road: the
+  ground's colours, the sky, the light, the sound, all blended by `stationAt(z)`. Now the ground's shape is still the
+  road's (each world's stretch of road keeps its hills, its valley and the vineyard's canal), but everything painted
+  on it, the sky over it, the light, the things standing in it and the sound are the world you are in. Crossing a
+  door changes the world, and the change spreads out from where you stand:
+  - the ground's colours and cover go over from the old world to the new behind a front that races out from you to
+    560 m in 3.2 s, ragged with noise, the way the opening reveals the first world from linen;
+  - the sky is repainted stroke by stroke from the direction you were walking outward;
+  - the light and the fog cross over in the first two seconds;
+  - the things of the new world paint themselves in over four seconds, nearest the door first, and the old world's
+    paint themselves out over three, nearest you first;
+  - the chord changes key.
+  Behind you the old world is gone too. That is what "the world becomes the painting" means, and it is why the state
+  cannot be a function of z.
+- **Each world keeps its own stretch of road but not its own end.** Things stand where the builders put them, and they
+  spread past the 36 m of a world's road on both sides; that is fine, because a world's things are shown only while
+  you are in it, and a door stands in the world you are leaving.
+- **The opening is the first door.** The veil paints *The Starry Night* and lifts into the Saint-Rémy night, whose
+  sky is that canvas; the world paints itself outward from linen under it as it did.
+- **The end has no door.** Past the wheatfield's 36 m an invisible boundary does what a canvas does elsewhere: the
+  wheat goes to linen around you, and the portrait stands 80 m past the road's end, painting itself as you come, as
+  built. Nothing else changes there.
+- **Two new worlds.** Saint-Rémy by day is the night station's cypresses, olives, irises and village under a day sky
+  taken from *Irises* and *Olive Grove*. The field of sunflowers is his, not a canvas: rows of the sunflowers the Yellow
+  House already grew, either side of the road under an Arles summer sky, and the ground the yellows of the vase.
+- **What goes.** The date along the bottom and the calendar; the letters; every easel but the doors; Nuenen, Paris and
+  the night of Arles; the crows over the places that are no longer there. The line along the bottom keeps a tick per
+  world, and a name in place of the date. The keys 1 to 0 reach the ten worlds.
+- **Walking back** through a door takes you back: the world goes over the same way in the other direction, and the
+  door is there again, painted.
+
+**What changed.**
+
+- `src/config.js`: the ten worlds, in order, each with its `door` (the index of its canvas in its station file),
+  `title`, `when`, `where` and `build`; two new palettes, Saint-Rémy by day (from *Irises* and *Olive Grove*) and the
+  field of sunflowers (the vase's yellows under an Arles summer sky); Nuenen, Paris and the night of Arles are gone
+  from the list, and their station files stay.
+- `src/journey.js`: `SPAN` 36 m; `doorZ(i)`, the boundary where world i's door stands; `regionAt`; in the GLSL,
+  `worldAt(p)`, the world a point is painted with, from `uWorldA`, `uWorldB`, `uWipe` and `uWipeC`, and
+  `stationAt(z)` kept for the road's shape. The calendar is gone.
+- `src/ground.js`: the terrain's colours, the crops, the road's width and the bare canvas are `worldAt`'s; the
+  masks that follow the land's shape (the canal, a square) are `stationAt`'s.
+- `src/sky.js`: `update(a, b, f, dir)`; a stroke's turn to go over is by its angle from `dir`, with a little chance.
+- `src/scenes.js`: `door()`; the builders keyed by world (`saintremy` with a `day` option, `vineyard`, `orchards`,
+  `harvest`, `yellowhouse`, `sunflowers`, `auvers`, `wheatfield`, `after`); a world's order runs from its door;
+  colliders, lamps and crows belong to a world; `World.update` paints a world in and out by state, `reset` for a
+  jump. The easels, the poplars, the windmills, the café, the lamps and the gaslight on the Rhône are gone.
+- `src/canvases.js`: a door is there in front of you and until you are through it; it paints in seven seconds from
+  34 m, and comes towards you over the last nine.
+- `src/main.js`: the world state `W`, `enter()` at a door (half a metre past it, either way), `land()` after a jump;
+  the change's uniforms; the light, the sky, the sound and the coda follow the state; only the world you are in
+  collides; the walk on its own slows a little to a door. For the harness: `vgu.door(i, d)`, `vgu.enter(i)`,
+  `vgu.wipe(t)`, `vgu.where()`, `vgu.auto(on)`, `vgu.forward(f)`.
+- `src/ui.js`: a tick per painting; the painting's name in place of the date; the card as a world comes up; no
+  letters. `index.html`: the letter is gone, and the line's label.
+- `src/audio.js`: the chords in the new order.
+- DESIGN.md, README.md: the new shape.
+
+**How it was verified.** In the desktop app's browser pane, on this machine, from `?notitle` and from the veil:
+
+- **The opening.** The veil paints *The Starry Night* and lifts into the Saint-Rémy night, and the vineyard's door is
+  standing at the end of the road, 28 m off, painting itself.
+- **A crossing, on the walk on its own**, with frames at 4, 6.5, 7.5, 8.5 and 11 s: the door at 14 m; the door
+  filling the window from 4.5 m, with its plaque; through it, the sky still the night's and the first of the
+  vineyard under foot; 2.5 s later the vineyard under a yellow sky with its rows either side, the puddles on the
+  road, and the next door, bare, at the end of it. The walk reached the door 7.5 s after it started.
+- **The front, held.** With the change held at 0.25 by `vgu.wipe`, the new ground within 35 m and the old beyond,
+  looking ahead and looking back; the sky gone over only near the way you walked. At 0.55, the sky gone over
+  ahead, the old one at the edges. This was run backwards through the vineyard's door, from the vineyard to the
+  night, which is what walking back does.
+- **Every world from inside**, whole: the night, the vineyard, the orchards, the harvest, the Yellow House with its
+  bridge, Saint-Rémy by day with its irises either side of the road, the sunflowers to the horizon, Auvers with
+  the church on the right, the wheat with its crows, and the bare canvas with the portrait's easel painting itself
+  in at the road's end. The doors of the church (3 m, a portrait) and the sunflowers (2.5 m off, filling the window).
+- **The end.** Walking on out of the wheat, the wheat goes to linen from under your feet outward; the portrait's
+  sequence is unchanged.
+- **A jump**, from a tick on the line and from the 9 key: black, then the world whole, painting itself in.
+- **The frame rate**, standing in each of the nine painted worlds at 1× on this machine: 79 to 93 fps.
+- No exceptions, errors or warnings in the console in any run.
+
+**Still visible.**
+
+- **Every world is built at the start**, as the stations were, so the first paint carries the sunflowers' 110,000
+  strokes with the rest; the longest task was not measured again.
+- **A door's back is its strokes.** The cloth is one-sided, so through it, looking back within a third of a metre,
+  the paint is there and the cloth is not; past that the door is gone.
+- **The road's shape stays the road's** behind you: the vineyard's canal bed keeps its cut when the orchards are
+  painted over it. Nobody has seen it, because it is behind.
+- **The dome goes over evenly** while the strokes over it go over from the way you walked.
+- **Measured in the desktop app's browser on this machine only.** A phone was not checked, and the veil's brush
+  was not timed again.
+
+### After M9 — Four more worlds, and the title
+
+**What was asked.** The author, on the fourteen-world chain as it stood after the portals: retitle the opening *The
+World of Van Gogh*; bring back the café and the night of Arles as two worlds of their own; add two paintings that were
+not in the repository, *Olive Trees with the Alpilles in the Background* and *The Pink Orchard*, at the best
+resolution to be had, and build their worlds; and put the four in this order: the pink orchard, the olive trees, the
+café, the night of Arles.
+
+**What was decided.**
+
+- **Where the four stand.** The author gave the order of the four and not their place in the chain. They go between
+  the Yellow House and Saint-Rémy by day: the opening (*The Starry Night*, then the vineyard) and the ending (the
+  sunflowers, Auvers, the wheat, the portrait) that the author described stay as they were, and the two nights on the
+  Rhône end at the morning in the asylum garden. Moving them is a cut and paste in `src/config.js`.
+- **The café is at Arles.** The author called it the café in Paris; the only café canvases in the repository are
+  *Café Terrace at Night* and *The Night Café*, both Arles, September 1888, and the terrace is the one you can stand
+  in front of. Its card says Arles. If a Paris café was meant, *Terrace of a Café on Montmartre* is on Commons and
+  would go through the same pipeline; nothing here is fetched for it.
+- **The night of Arles is *Starry Night Over the Rhône***, the third canvas of the old station 6, whose world is the
+  quay: the river to the left of the road, the far bank's gaslights laid on the water as far as the near bank, the
+  Dipper overhead. The old station's café and lamps come back from git as the terrace world's.
+- **The two scans.** *The Pink Orchard* is the Van Gogh Museum's own gigapixel, s0026V1962, which the museum's tile
+  server answers as before: stitched from four 4096 px tiles (`tools/micrio_stitch.py`, whose list now names it) to
+  6759 × 5362, 36 MP, 83 px/cm, in nine seconds. The Museum of Modern Art publishes no scan of the olive trees; Commons
+  holds the Google Art Project reproduction at 4043 × 3211, 44 px/cm, and eight visitors' photographs at 6000 × 4000
+  that are photographs of a painting in a room. The reproduction was taken. It is the coarsest source in the set after
+  the Church at Auvers, and the strokes are coarser for it. The object number, 581.1998, is Wikidata's copy of MoMA's:
+  MoMA's pages answer a script with a bot wall. Both rows are in `tools/sources.tsv` and `paintings/CREDITS.md`.
+- **The system Python cannot fetch.** Its `urllib` fails every TLS handshake on this machine (no certificate store);
+  `.venv/bin/python` can, so the tools were run from the venv, as the README's recipe has them, and the Commons
+  search was done with `curl`. `tools/commons_resolve.py` reports *nothing over 4 MP* for every query under the system
+  interpreter, which is that failure and not a fact about Commons.
+- **The Alpilles are the sky's hills**, not props: the dome's ridge, at eleven degrees and broken (`h: 11, f: 2.4`),
+  which is about the third of the canvas they take. The olives are the `olive()` of Saint-Rémy, forty-six of them,
+  on a ground that swirls (`swirl: 0.9`).
+- **Chords.** A with the ninth for the pink orchard, C for the olives, E flat for the terrace, and the Rhône takes the
+  night's B flat, the Starry Night's own.
+
+**What changed.**
+
+- `index.html`, `src/main.js`: the title and the canvas's label.
+- `src/config.js`: fourteen worlds; the four new ones after the Yellow House, with their palettes. The two new
+  canvases are entries 4 and 3 of stations 3 and 8; the terrace and the Rhône are entries 1 and 2 of station 6.
+- `src/scenes.js`: `lamp`, `lampHead`, `reflection` (now with a length) and `cafe` back from the M9 tree; builders
+  `pinkorchard`, `olivetrees`, `cafe`, `arlesnight`; two crows over each of the two day worlds.
+- `src/audio.js`: four chords. `src/sizes.js`: the two canvases' sizes, from the holders' heights and the scans'
+  aspects. `stations/s03-…json`, `stations/s08-…json`: one canvas each, with a note that it is a door and not the
+  station's. `params/pinkorchard.json`, `params/alpilles.json`: the two builds, rectangles by `tools/tiles.py`.
+  `strokes/s03/pinkorchard-*`, `strokes/s08/alpilles-*`, and their goldens.
+- `README.md`, `DESIGN.md`, `paintings/CREDITS.md`, `tools/sources.tsv`, `tools/micrio_stitch.py`.
+
+**How it was verified.** In the desktop app's browser, the page served from this directory.
+
+- **The opening**, titled *The World of Van Gogh* under the Starry Night laying its ground.
+- **Each new world from inside**, painted: the pink orchard's rows either side of the road under a streaked sky; the
+  olives with the Alpilles blue across the horizon and the cloud over them; the terrace with its awning, its lamp,
+  the dark houses and the lit windows round the square; the Rhône -- from the road a street of dark houses, and
+  looking left the quay's lamps, the river, the far bank's lights laid across the water and the town behind them.
+  The first look at the Rhône had the far bank at 62 to 72 m, beyond the fog, and the water read as a field: it is
+  at 44 to 52 m now, and the reflections stop at the near bank instead of running 40 m onto it.
+- **Four crossings on the walk on its own**: the Yellow House into the pink orchard, its door painted from its own
+  strokes and the card *Arles · April 1888* up as the orchard comes in; the terrace into the Rhône, the door lit gold
+  by the lamps as it paints; the Rhône into Saint-Rémy by day, the card up while the sky is still the night's, then
+  the irises. The pink orchard into the olive trees, below, once its blob was built.
+- **The reconstructions.** The pink orchard's flat at 1200 px is the painting: 8,471 strokes, held-out order 51.9%
+  against the habits' 47.3%, lifted with a horizon at v 0.578. The olive trees' numbers are below.
+- **A first screenshot of each world six seconds after `?at=`** showed empty ground, and that was the frame, not
+  the world: the page takes a few seconds to load and a world paints itself in over four more. Every later look was
+  after that, or after `vgu.paint()`.
+- `node --check` on every module; `tools/station.py` and `tools/make.py --check`, below.
+- **The olive trees' door**, from the pink orchard on the walk on its own: the canvas filling the window with the
+  Alpilles and the cloud across it, then the olives either side of the road. The reconstruction at 1200 px is the
+  painting: 13,529 strokes, held-out order 50.7% against the habits' 45.9%, lifted with a horizon at v 0.398, 91%
+  covered -- from a 44 px/cm source, which shows in the width of the finest marks and nowhere else.
+- **The Alpilles were not there** the first time. The dome's ridge at eleven degrees was drawn, and the sky's eleven
+  thousand strokes covered it, as they cover every world's hills; in the night worlds that reads as a dark band
+  and in this one it read as nothing. So a sky whose hills say `paint: true` colours the strokes under the ridge
+  with the ridge's own colours, by the dome's profile line for line, and the range stands across the horizon in his
+  marks. Only this world asks for it; the others look as they did.
+- **The browser's cache kept the old `sky.js`** through two reloads -- a module served with a last-modified date
+  and no cache header is revalidated at the browser's discretion -- so the first look at the fix showed no fix.
+  `fetch(url, { cache: 'reload' })` on each changed module, then a reload, is what it took; every frame above was
+  taken after that, with the cached copy checked for the new code.
+- **Frame rate.** With the browser pane shown: 111 fps in the Rhône, 113 in the olive trees, 93 in the Rhône
+  painted, all at 1× on this machine. The pane was hidden for the last pass, and a hidden page reads a flat 60 and
+  paints its worlds slowly; the two night worlds' late frames above were taken that way, and their empty roads are
+  the throttling, not the worlds.
+- `node --check` on every module; `tools/station.py` exits 0 with the two counts synced (8,471 and 13,529);
+  `tools/make.py --check` passes every params file, with the same three M2 blobs older than their tools as before.
+- No new console errors: the 404s in the log are the olive trees' blob asked for before it was built.
+
+**Still visible.**
+
+- **The café's card says Arles.** If the author meant a Paris café, that is a new canvas through the pipeline, not
+  a relabelling.
+- **The digit keys reach ten worlds**; the line along the bottom reaches all fourteen.
+- **Fourteen worlds are built at the start**, about 190,000 more strokes than ten; the first paint was not timed.
+- **The olive trees' source is 44 px/cm.** If MoMA ever publishes a scan, `params/alpilles.json` is the one line to
+  change, and the golden will say what moved.
+- **Measured in the desktop app's browser on this machine only.** A phone was not checked.

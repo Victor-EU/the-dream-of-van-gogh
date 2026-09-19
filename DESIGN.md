@@ -32,6 +32,30 @@
 > road, across station 11's bare canvas, his portrait stands 36 m tall on the easel every station has, scaled to hold
 > it. It paints itself from its own stroke record once you are there, and the end card waits for it. `BUILD.md`
 > records it.
+>
+> **The portals, on the author's word.** Then, on 19 September 2026, the author asked for the piece to be built again
+> around one gesture: you stand in front of a painting, you walk into it, and the world becomes that painting. The
+> road is now a chain of ten worlds, each entered through his canvas of it, in an order the author chose and that
+> disregards the chronology: *The Starry Night*, *The Red Vineyard*, the orchards through *Almond Blossom*, the
+> harvest through *The Harvest*, the Yellow House through *The Bedroom*, Saint-Rémy by day through *Irises*, a field
+> of sunflowers through *Sunflowers* (a world he never painted, made from the still life's yellows under the licence of
+> §1's third fact), Auvers through *The Church at Auvers*, and the wheatfield through *Wheatfield with Crows*. Each
+> world is short, under ten seconds of walking, and its next canvas stands across the road at its end, painting itself
+> as you come. Walking through it is the only way on: there is no button. At the end the wheatfield thins to nothing
+> and his portrait stands alone on the bare canvas, the one painting you cannot enter. The time axis, the dates along
+> the bottom, the lines from his letters and the other canvases on their easels are gone; each world has one canvas,
+> its door. Nuenen, Paris and the night of Arles are no longer on the road. `BUILD.md` records it after M9, and §7's
+> table stays as the record of the road that was.
+>
+> **Four more worlds, on the author's word.** Later the same day the author asked for the night of Arles and the
+> café back, and for two canvases that were not in the repository: *The Pink Orchard* and *Olive Trees with the
+> Alpilles in the Background*, fetched at the best resolution there is and taken apart into strokes like the rest.
+> Their order is the author's: the pink orchard, the olive trees, the café, the night of Arles; where the four stand
+> in the chain is the builder's choice, after the Yellow House and before Saint-Rémy by day, so that the night on the
+> Rhône gives way to the morning at Saint-Paul and the opening and the ending the author described are untouched.
+> The café is *Café Terrace at Night*, which the author called the café in Paris; it is on the Place du Forum at Arles
+> and the piece says so on its card. The night of Arles is *Starry Night Over the Rhône*. Fourteen worlds now, and the
+> opening's title is *The World of Van Gogh*.
 
 A single web page. You begin on bare primed canvas — white, woven, nothing on it but a charcoal line going forward.
 You drag one control, and the world starts being painted around you: strokes arriving in order, in his direction, at

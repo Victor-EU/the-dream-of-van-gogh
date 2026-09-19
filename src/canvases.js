@@ -1,7 +1,9 @@
-// His paintings, on their easels. Each is his own strokes -- read from the
-// stroke records the pipeline extracted from the museum scans -- laid on a
-// primed canvas in the order he laid them, as you walk up to it. Past the end
-// of the road there is one more, giant: his portrait, the coda.
+// His paintings: the doors. Each is his own strokes -- read from the stroke
+// records the pipeline extracted from the museum scans -- laid on a primed
+// canvas in the order he laid them, as you walk up to it across the road. Over
+// the last metres it comes towards you, and then you are through it and in its
+// world. Past the end of the road there is one more, giant: his portrait, the
+// coda, the one you cannot enter.
 import * as THREE from 'three';
 import { NOISE, BRUSH, LIGHT } from './brush.js';
 import { ribbon } from './sky.js';
@@ -155,7 +157,8 @@ export class Paintings {
       it.state = 'failed';
     }
   }
-  update(camera, time, dt, begun, s = 0) {
+  // W is where you are: a door is there while you are in the world before it, and until you are through it
+  update(camera, time, dt, begun, s = 0, W = null) {
     const cam = camera.position;
     let near = null;
     this.painting = 0;
@@ -164,15 +167,20 @@ export class Paintings {
       if (it.state === 'idle' && d < (e.coda ? 600 : 180)) this.load(it);
       if (e.coda) { this.coda(it, d, dt, s); continue; }
       if (it.state !== 'ready') continue;
-      it.grp.visible = d < 240;
-      if (d < 34 && begun) it.started = true;
+      // how far in front of the canvas you stand; through it, the world before is gone and so is the door
+      const along = (cam.x - e.x) * Math.sin(e.yaw) + (cam.z - e.z) * Math.cos(e.yaw);
+      const cur = W ? W.cur : e.station - 1;
+      it.grp.visible = d < 240 && along > -0.3 && (cur === e.station - 1 || cur === e.station);
+      if (along > 0 && d < 34 && begun) it.started = true;
       if (it.started && it.progress < 1.02) {
-        it.progress = Math.min(1.02, it.progress + dt / 13);
-        if (it.progress < 1) this.painting = Math.max(this.painting, 1 - d / 34);
+        it.progress = Math.min(1.02, it.progress + dt / 7);
+        if (it.progress < 1 && it.grp.visible) this.painting = Math.max(this.painting, 1 - d / 34);
       }
       it.u.uProgress.value = it.progress;
+      // over the last nine metres it comes towards you, by a third, until it fills the window
+      it.grp.scale.setScalar(1 + 0.35 * smoothstep(9, 1.2, Math.max(along, 0)));
       this.key(it);
-      if (d < 9 && (!near || d < near.dist))
+      if (it.grp.visible && along > 0 && d < 9 && (!near || d < near.dist))
         near = { key: e.key, title: e.title, sub: [e.date, e.collection].filter(Boolean).join(' · '), dist: d };
     }
     // his portrait's plaque is up while you are on the bare canvas with it, however far off it stands

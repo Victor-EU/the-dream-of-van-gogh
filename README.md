@@ -1,27 +1,28 @@
-# Van Gogh's Universe
+# The World of Van Gogh
 
 <p align="center">
   <img src="docs/saint-remy.jpg" width="100%" alt="Saint-Rémy at night: a sky of long blue strokes with the stars and moon of The Starry Night, a black cypress, a road through irises, and his Irises and The Starry Night on easels beside it.">
 </p>
 
-A walk through the world Vincent van Gogh painted, 1885 to 1890, in which his canvases paint themselves stroke by
-stroke.
+A walk into the paintings of Vincent van Gogh, one after another, in which each canvas paints itself stroke by
+stroke and then becomes the world around you.
 
-One road runs from the cottage at Nuenen where he painted *The Potato Eaters*, in April 1885, to the wheatfield above
-Auvers-sur-Oise, in July 1890, and every metre of it is a few days of his life. Eleven places stand along it in the
-order he painted them. The land at each is painted in the colours of his canvases of that place and month, and his
-canvases stand beside the road on easels: thirty-one of them. Each is made of its own brushstrokes, extracted from a
-museum's photograph, and as you walk up they are laid down again in the order he laid them. At ten of the places
-there is a line from his letters.
-
-It opens on *The Starry Night* painting itself. It ends past the last field, on bare primed canvas, where
-*Self-Portrait as a Painter*, thirty-six metres tall on an easel at the end of the road, paints itself last.
+You stand in front of *The Starry Night*. It paints itself, you go into it, and you are standing in that night at
+Saint-Rémy. You walk a little way down the road and there is another canvas across it, *The Red Vineyard*, painting
+itself as you come; you walk through it, and the world goes over to the vineyard from where you stand outward.
+Thirteen paintings stand along the road this way, each the door into its own world: the night, the vineyard, the
+orchards, the harvest, the Yellow House, the pink orchard, the olive trees under the Alpilles, the café terrace, the
+Rhône at night, Saint-Rémy by day, a field of sunflowers, Auvers and the wheatfield. Each canvas is
+made of its own brushstrokes, extracted from a museum's photograph, and laid down again in the order he laid them.
+The land at each is painted in the colours of that canvas. Then the wheat goes to nothing, and on bare primed canvas
+at the end of the road *Self-Portrait as a Painter*, thirty-six metres tall on an easel, paints itself last: the one
+painting you cannot enter.
 
 The subject is not his places but the act of painting them. The piece is one HTML page and a folder of ES modules,
 with three.js from a CDN and no build step.
 
 <p align="center">
-  <img src="docs/opening.jpg" width="49%" alt="The opening: The Starry Night painting itself on a primed canvas, above the title Van Gogh's Universe.">
+  <img src="docs/opening.jpg" width="49%" alt="The opening: The Starry Night painting itself on a primed canvas, above the title The World of Van Gogh.">
   <img src="docs/painting-itself.jpg" width="49%" alt="Sunflowers on its easel by the Yellow House, partway through painting itself: its first strokes laid over bare linen.">
   <img src="docs/red-vineyard.jpg" width="49%" alt="The red vineyard: red rows on either side of a violet road with puddles of yellow light, under a low sun in a yellow sky, with his canvas on an easel.">
   <img src="docs/the-end.jpg" width="49%" alt="The end: his Self-Portrait as a Painter on a giant easel at the end of the road, above the words Vincent van Gogh, 1853 to 1890.">
@@ -59,42 +60,45 @@ gets a smaller budget and two-thumb controls, but no real phone has been measure
 | Walk on its own | Space; ← → steer it off the road, ↑ ↓ take over | |
 | Walk faster | X, or the 1× button: 1.5×, 2×, 3× and back | the 1× button |
 | Lie down and look up | Z | |
-| Go to a place | 1 to 9, and 0 for the tenth; or click the line along the bottom, which reaches all eleven | tap the line |
+| Go to a painting | 1 to 9, and 0 for the tenth; the line along the bottom reaches all fourteen | tap the line |
 | Sound | M, or the speaker button | the speaker button |
 | The keys | H or ? | the keyboard button |
 | Full screen | F | the full-screen button |
 
-The walk on its own keeps to the road: drag to look around and it walks on regardless. ← → steer it off the
-road, and once let go it finds the road again. It slows at every place and stops eighty metres short of the portrait,
-with the whole of it in view. The rest of the road, up to it, is for a hand.
+Walking through a canvas is the only way from one world to the next; there is no button. Walking back through it
+takes you back. The walk on its own keeps to the road: drag to look around and it walks on regardless. ← → steer
+it off the road, and once let go it finds the road again. It slows a little at each door, and stops eighty metres
+short of the portrait, with the whole of it in view. The rest of the road, up to it, is for a hand.
 
 The 1× button in the corner, or X, sets the walking speed. Every way of walking, the walk on its own included,
-goes one and a half, two or three times as fast, and turning does not. On its own the whole road takes about seven
-minutes at 1× and under two and a half at 3×, and at any speed it comes to rest in the same place. The canvases
-keep their thirteen seconds, so the faster you go the less of each is painted as you pass it: at 1× most are
-finished as you come level with them, and at 3× a canvas is typically a little over a third laid. At 3× a line
-from his letters is up for eight of its twelve seconds.
+goes one and a half, two or three times as fast, and turning does not. Each world is 36 m of road, eight seconds at
+a walk and ten on its own; the whole road, on its own, takes about three and a half minutes at 1×. A door paints
+itself in seven seconds from 34 m, so at a walk its last strokes land as you reach it, and at 3× you go through
+it half painted.
 
 ## The walk
 
-| | Place | When | On the easels | His letter |
-|---|---|---|---|---|
-| 1 | Nuenen: a poplar avenue at sunset, a cottage with its lamp lit | April–May 1885 | *The Potato Eaters* | 499, to Theo |
-| 2 | Paris, with the windmills of Montmartre | 1886–1888 | four self-portraits lining the road, *Bank of the Seine*, *Montmartre: Behind the Moulin de la Galette* | 569, to Horace Mann Livens |
-| 3 | The orchards outside Arles, in blossom | February–April 1888 | *The White Orchard*, *The Pink Peach Tree*, *Orchard in Blossom*, *Almond Blossom* | 594, to Theo |
-| 4 | La Crau: wheat, haystacks and the blue cart | June 1888 | *The Harvest*, *The Sower*, *Wheatfield with a Reaper* | 627, to John Peter Russell |
-| 5 | The Yellow House, Place Lamartine | August–October 1888 | *Sunflowers*, and the three versions of *The Bedroom* | 705, to Theo |
-| 6 | Arles at night: the café terrace, gaslight on the Rhône | September 1888 | *The Night Café*, *Café Terrace at Night*, *Starry Night Over the Rhône* | 676, to Theo |
-| 7 | A red vineyard by a canal, after the rain | November 1888 | *The Red Vineyard* | 717, to Theo |
-| 8 | Saint-Rémy: the cypress and the village under *The Starry Night*, olive trees, irises | May–November 1889 | *Irises*, *The Starry Night*, *Olive Grove* | 782, to Theo |
-| 9 | Auvers-sur-Oise: thatch, gardens, the church | May–July 1890 | *The Church at Auvers*, *Thatched Cottages at Cordeville*, *Daubigny's Garden*, *Stairway at Auvers*, *Wheatfield under Thunderclouds* | 879, to Willemien |
-| 10 | The wheatfield above the village, in the wind, with crows | July 1890 | *Wheatfield with Crows* | 898, to Theo and Jo |
-| 11 | After: bare primed canvas, and the road across it to his portrait | | *Self-Portrait as a Painter*, 36 m tall | |
+| | The painting | Its world |
+|---|---|---|
+| 1 | *The Starry Night*, June 1889 (the opening) | Saint-Rémy at night: the cypress, the olives, the village under that sky |
+| 2 | *The Red Vineyard*, November 1888 | a red vineyard by a canal, after the rain, under a low sun |
+| 3 | *Almond Blossom*, February 1890 | the orchards outside Arles, white and pink, in blossom |
+| 4 | *The Harvest*, June 1888 | La Crau: wheat, haystacks and the blue cart |
+| 5 | *The Bedroom*, October 1888 | the Yellow House on Place Lamartine, with the railway bridge |
+| 6 | *The Pink Orchard*, April 1888 | an orchard of apricot trees in blossom, with the reed fence behind |
+| 7 | *Olive Trees with the Alpilles in the Background*, June 1889 | olives on a writhing ground, the Alpilles blue across the sky |
+| 8 | *Café Terrace at Night*, September 1888 | the Place du Forum at Arles after dark: the lit terrace, the lamps, the dark houses |
+| 9 | *Starry Night Over the Rhône*, September 1888 | the quay at Arles, the gaslights laid on the water, the Dipper overhead |
+| 10 | *Irises*, May 1889 | Saint-Rémy by day: the same cypresses and olives, irises either side of the road |
+| 11 | *Sunflowers*, January 1889 | a field of sunflowers to the horizon, which he did not paint |
+| 12 | *The Church at Auvers*, June 1890 | Auvers-sur-Oise: thatch, gardens, the church |
+| 13 | *Wheatfield with Crows*, July 1890 | the wheatfield above the village, in the wind, with crows |
+| 14 | | bare primed canvas, and the road across it to *Self-Portrait as a Painter*, 36 m tall |
 
-Seven canvases stand at a place outside their own dates. The *Sunflowers* at the Yellow House is the Van Gogh
-Museum's version of January 1889, for example, and *Wheatfield with a Reaper* is Saint-Rémy's. Each has a note in its
-station file saying why, and `tools/station.py` fails any that does so without one. The piece may put a canvas where
-the argument wants it, but not quietly.
+The order is the author's and is not the order he painted them in. The field of sunflowers is not a place he
+painted: it is made from the still life's yellows, under the licence he gave himself with colour. The café is at
+Arles, not Paris, whatever it is called in conversation. The other twenty canvases whose stroke records are in the
+repository are not on the road; the station files still list them, with the notes on where they stood.
 
 ## How it works
 
@@ -138,18 +142,21 @@ sampled from his canvases of each place and pushed the way he pushed them. `DESI
 
 The runtime (`src/`) is ES modules on three.js r180.
 
-- **The road.** One road runs 90 m from one place to the next. A ground table, a small float texture with a column
-  per place, holds each one's crops, colours, wind and water, and the shaders read it between places. The
-  height of the land is the same function in GLSL and JavaScript, line for line.
+- **The road and the worlds.** One road runs 36 m from one door to the next. A ground table, a small float texture
+  with a column per world, holds each one's crops, colours, wind and water. The shape of the land is the road's,
+  the same function in GLSL and JavaScript, line for line; everything painted on it is the world you are in.
+  Going through a door changes the world, and the change spreads from where you stand: the ground behind a ragged
+  front that runs out to 560 m in three seconds, the sky stroke by stroke from the way you were walking, the
+  light, the sound, and the things standing in the land, which paint themselves in from the door outward while the
+  old world's paint themselves out.
 - **The sky and the ground.**
   - The sky is a painted dome with 11,000 to 24,000 marks laid along a flow field and curled round turning eddies.
     *The Starry Night*'s eddies are placed from the canvas.
   - The ground carries about 191,000 marks that follow the camera and are worked out on the GPU.
-  - Everything standing is made of marks on its surface: trees, houses, windmills, the café terrace. These paint
-    themselves in, nearest first, as you arrive.
-  - One place's sky repaints into the next mark by mark.
+  - Everything standing is made of marks on its surface: trees, houses, vines, sunflowers, the church.
 - **The canvases.** Each draws its strokes as instanced ribbons with a procedural brush that has bristles, a loaded
-  start, a dry end and a height, lit by the place's light.
+  start, a dry end and a height, lit by the world's light. A door stands across the road with its foot on the
+  ground, 2.6 m tall for a landscape and 3 m for a portrait, and comes towards you over the last nine metres.
 - **Sound** is generated on the spot: wind, birds, crickets, the river, the crows, your steps, the bristles on the
   cloth while a canvas paints, and a quiet chord that changes key from place to place.
 - **The opening** is *The Starry Night* painted from its own stroke record, 13,999 strokes in 3.2 seconds, in a
@@ -157,14 +164,8 @@ The runtime (`src/`) is ES modules on three.js r180.
 
 ### His words
 
-Each line from his letters was chosen by a person and checked by `tools/letters.py` against the Van Gogh Museum and
-Huygens ING edition:
-
-- the letter, its recipient, place and date are the edition's own;
-- the words are in the named paragraph, verbatim;
-- the edition's notes say the passage is about the canvas it appears beside.
-
-`letters/README.md` shows how to check each one.
+The lines from his letters are no longer shown on the road. They stay in `letters/`, with `tools/letters.py`, which
+checked each against the Van Gogh Museum and Huygens ING edition, and `letters/README.md` says how.
 
 ## URL parameters
 
@@ -172,22 +173,25 @@ These exist for testing and for reproducing a frame.
 
 | Parameter | Effect |
 |---|---|
-| `?at=N` | start at place N, 1 to 11, without the opening |
+| `?at=N` | start in world N, 1 to 14, without the opening |
 | `?notitle` | skip the opening |
 | `?q=low`, `mid`, `high` | the resolution budget; `mid` by default, `low` on touch screens |
 | `?painted` | everything already painted |
 | `?t=seconds` | freeze the clock, so that frames repeat |
-| `?debug` | a readout of frame rate, position, place and progress along the road |
+| `?debug` | a readout of frame rate, position, the world you are in and how far the change has run |
 
 ## Debug API
 
 `window.vgu` exposes the state and a few controls for headless checks.
 
-- `vgu.state()` returns position, place, progress, frame rate, whether the walk is on its own, and the walking
-  speed (`pace`).
-- `vgu.go({ station, dz, x, z, yaw, pitch, lie })` puts you somewhere, and `vgu.jump(n)` travels to a place as the
-  line does.
-- `vgu.easels()` lists every canvas, and `vgu.easel(i, metres)` stands you in front of one.
+- `vgu.state()` returns position, the world you are in and the one before, how far the change has run, frame
+  rate, whether the walk is on its own, and the walking speed (`pace`).
+- `vgu.go({ station, dz, x, z, yaw, pitch, lie })` puts you somewhere, whole, and `vgu.jump(n)` travels to a world
+  as the line does.
+- `vgu.easels()` lists every door and the portrait; `vgu.door(n, metres)` stands you in front of the door into
+  world n, in the world before it; `vgu.enter(n)` goes through it from where you stand; `vgu.wipe(t)` holds the
+  change at t (and `vgu.wipe(null)` lets it go); `vgu.where()` is the world state.
+- `vgu.auto(on)` and `vgu.forward(f)` are a hand: the walk on its own, and the forward key held.
 - `vgu.paint()` finishes every painting, and `vgu.freeze(t)` stops the clock.
 - `vgu.layers({ sky, ground, props, paintings })` shows or hides a layer.
 - `vgu.coda()` reports the portrait at the end: where it is, and how far through painting itself.
@@ -222,8 +226,9 @@ python3 -m venv .venv
 index.html            the page: markup, CSS, the opening, and the import map for three.js
 src/                  the runtime: the road, the art direction of each place, the sky, the ground, what stands
                       in the land, the canvases, the post-processing, the sound and the interface
-stations/             one file per place: its canvases and their dates, its span, and his line
-letters/              the quotations, how to check them, and their licence
+stations/             one file per place: its canvases and their dates, its span, and his line; config.js says which
+                      of them are on the road, and which canvas is each world's door
+letters/              the quotations, how to check them, and their licence (no longer shown on the road)
 paintings/CREDITS.md  every canvas, its collection, and the scan its strokes came from
 params/               the extraction parameters for each canvas
 tools/                the offline pipeline: gathering the scans, extracting and ordering the strokes, packing

@@ -68,6 +68,20 @@
    "horizon": 0.5,
    "treatment": "sky",
    "note": "Overhead, and out of place by two years, and DESIGN 7 asks for both in one sentence: 'Almond Blossom (1890, painted at Saint-Remy but it belongs overhead here) as the ceiling; flat is fine when it is overhead.' So this is the one violation in the piece that the design itself authored. It is tipped 72 degrees rather than the Starry Night's 52, because it is a canopy and not a sky and station 8 is where the sky is. Hung by its middle, because a picture of branches against light has no horizon in it to hang by."
+  },
+  {
+   "blob": "strokes/s03/pinkorchard-canvas.bin",
+   "strokes": 8471,
+   "title": "The Pink Orchard",
+   "date": "April 1888",
+   "when": "1888-04-01",
+   "place": "Arles",
+   "collection": "Van Gogh Museum, Amsterdam",
+   "accession": "s0026V1962",
+   "yaw": 0.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "Added after M9 on the author's word, as the door into a world of its own rather than a canvas of this station's: config.js names it, and the runtime hangs a door across the road, not on an easel. The museum's own date is April 1888, inside this station's spring; 65 by 81 cm, its object number s0026V1962. The scan is the museum's own gigapixel, stitched from tiles at 6759 x 5362 (paintings/CREDITS.md). No treatment is measured or authored here: a door is a wall by definition, seen from in front and walked through."
   }
  ],
  "_ground": "An orchard is an enclosure and not the Crau, so the plane is nearer and the swell is smaller than station 4's. dome is where the sky is capped.",

@@ -1,6 +1,7 @@
 // The sky: a painted dome, and over it tens of thousands of strokes laid
-// along the wind, curled into his eddies, ringed round his stars. Each station
-// has its own sky; walking from one to the next repaints it stroke by stroke.
+// along the wind, curled into his eddies, ringed round his stars. Each world
+// has its own sky; going through a door into the next repaints it stroke by
+// stroke, from the way you were walking outward.
 import * as THREE from 'three';
 import { NOISE, BRUSH } from './brush.js';
 import { NST } from './journey.js';
@@ -23,10 +24,12 @@ const SKY_VERT = /* glsl */`
   attribute vec3 iDir, iTan;
   attribute vec4 iSize, iCol, iCol2, iAxis;
   uniform float uTime, uFade, uSide, uFlow, uIntro;
+  uniform vec3 uWipeDir;
   varying vec2 vST; varying float vRow, vEmit; varying vec3 vCol, vCol2;
   vec3 rotA(vec3 v, vec3 k, float th) { float c = cos(th), s = sin(th); return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c); }
   void main() {
-    float r = iCol2.w;
+    // a stroke's turn to go over: mostly by how far it is round from the way you were walking, a little by chance
+    float r = 0.7 * acos(clamp(dot(iDir, uWipeDir), -1.0, 1.0)) / 3.14159 + 0.3 * iCol2.w;
     if ((uSide < 0.5 && r < uFade) || (uSide > 0.5 && r >= uFade)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     if (fract(iAxis.w * 1.6180339) > uIntro * 1.12 - 0.02) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     vec3 d = iDir, t = iTan;
@@ -151,6 +154,17 @@ function buildSky(cfg, seed) {
   for (let i = 0; i < (sky.eddies || 0); i++)
     V.push({ az: R.range(-180, 180), el: R.range(10, 58), r: R.range(4.5, 9), dir: R.sign(), s: R.range(0.45, 0.85) });
   V.forEach(v => { v.c = dirAzEl(v.az, v.el); v.rr = v.r * DEG; });
+  // hills that are painted: the field's strokes under the dome's ridge take the ridge's colours, so that a range
+  // that is meant to be seen (the Alpilles) is his marks and not the dome showing through between them. The
+  // profile is the dome's own, line for line.
+  const hills = sky.hills && sky.hills.paint ? sky.hills : null;
+  const HH = hills ? [hills.h * DEG, hills.f, hills.seed ?? hills.f * 1.7] : null;
+  const hillC = hills ? lin(hills.col) : null, hillD = hills ? lin(hills.col2 || hills.col) : null;
+  const hillProf = a => {
+    const p = Math.sin(a * HH[1] + HH[2]) * 0.5 + 0.5, q = Math.sin(a * HH[1] * 2.37 + HH[2] * 1.7) * 0.5 + 0.5;
+    const r = Math.sin(a * HH[1] * 6.1 + HH[2] * 3.1) * 0.5 + 0.5;
+    return HH[0] * (0.3 + 0.45 * p + 0.3 * q * p + 0.08 * r);
+  };
 
   const flowAt = (d, az, el) => {
     const [east, north] = tangents(d);
@@ -194,7 +208,11 @@ function buildSky(cfg, seed) {
     } else if (band(d, 5.0, 23.0) > 0.66) c = mixc(c, pick(light, b1), 0.4);
     c = jitter(c, R, 0.05);
     if (bare) c = mixc(c, [0.807, 0.761, 0.644], bare * 0.7);
-    const c2 = mixc(c, pick(light, b1), 0.3);
+    let c2 = mixc(c, pick(light, b1), 0.3);
+    if (hills) {
+      const hh = hillProf(az * DEG);
+      if (el * DEG < hh) { c = jitter(mixc(hillD, hillC, clamp(el * DEG / hh, 0, 1) * 0.8 + (R() - 0.5) * 0.3), R, 0.06); c2 = mixc(c, hillD, 0.5); }
+    }
     P.push(d, t, hl, hw, R.range(-0.12, 0.12) + (best ? best.v.dir * 0.4 * bw : 0), Math.floor(R() * 8), c, 0, c2, R(), axis, R() * 6.28);
   }
 
@@ -328,6 +346,7 @@ export class Sky {
     this.stations = stations;
     this.scene = new THREE.Scene();
     this.layers = new Array(NST).fill(null);
+    this.dir = new THREE.Vector3(0, 0, -1);   // the way you were walking when you went through the last door
     this.domeU = {
       uZen0: { value: new THREE.Color() }, uMid0: { value: new THREE.Color() }, uHor0: { value: new THREE.Color() },
       uZen1: { value: new THREE.Color() }, uMid1: { value: new THREE.Color() }, uHor1: { value: new THREE.Color() },
@@ -349,7 +368,7 @@ export class Sky {
     if (this.layers[i]) return this.layers[i];
     const { P, glows } = buildSky(this.stations[i], 7001 + (this.stations[i].id - 1) * 131);
     const u = { uTime: this.U.uTime, uFade: { value: 0 }, uSide: { value: 0 }, uBrush: this.U.uBrush,
-                uFlow: { value: 1 }, uOpacity: { value: 1 }, uIntro: this.U.uIntro };
+                uFlow: { value: 1 }, uOpacity: { value: 1 }, uIntro: this.U.uIntro, uWipeDir: { value: this.dir } };
     const mesh = new THREE.Mesh(packGeometry(P), new THREE.ShaderMaterial({
       vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, uniforms: u,
       transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
@@ -376,8 +395,10 @@ export class Sky {
     return this.layers[i];
   }
 
-  update(s) {
-    const a = Math.floor(s), b = Math.min(a + 1, NST - 1), f = s - a;
+  // the sky of world a, going over to world b's by f; dir is the way you were walking through the door
+  update(a, b, f, dir) {
+    if (dir) this.dir.copy(dir);
+    if (f >= 1) { a = b; f = 0; }
     const A = this.layer(a), Bl = this.layer(b);
     this.layers.forEach((l, i) => { if (l) l.group.visible = i === a || (i === b && f > 0.001); });
     A.u.uSide.value = 0; A.u.uFade.value = f;
@@ -397,9 +418,10 @@ export class Sky {
     D.uBare.value = lerp(sa.bare || 0, sb.bare || 0, f) * 0.85;
     D.uLand.value.copy(this.U.uFogCol.value);
     // prefetch the next sky while this one is up
-    if (b + 1 < NST && !this.layers[b + 1] && !this._pending) {
+    const n = Math.max(a, b) + 1;
+    if (n < NST && !this.layers[n] && !this._pending) {
       this._pending = true;
-      setTimeout(() => { this.layer(b + 1); this._pending = false; }, 400);
+      setTimeout(() => { this.layer(n); this._pending = false; }, 400);
     }
   }
 }

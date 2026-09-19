@@ -3,20 +3,23 @@
 // steps, the bristles on the cloth while a painting paints itself, and under it
 // all a quiet chord that changes key from one place to the next.
 const CHORDS = [
-  [146.8, 220.0, 349.2, 293.7],   // Nuenen: D minor
-  [174.6, 261.6, 440.0, 349.2],   // Paris: F
-  [110.0, 164.8, 277.2, 440.0],   // Arles in blossom: A
+  [116.5, 174.6, 293.7, 523.3],   // the Starry Night: B flat, with the ninth
+  [164.8, 246.9, 415.3, 329.6],   // the red vineyard: E, the night's key by daylight
+  [110.0, 164.8, 277.2, 440.0],   // the orchards in blossom: A
   [146.8, 220.0, 370.0, 293.7],   // the harvest: D
   [98.0, 146.8, 246.9, 392.0],    // the Yellow House: G
-  [164.8, 246.9, 392.0, 329.6],   // the night of Arles: E minor
-  [164.8, 246.9, 415.3, 329.6],   // the red vineyard: E, the night's key by daylight
-  [116.5, 174.6, 293.7, 523.3],   // Saint-Remy: B flat, with the ninth
+  [110.0, 164.8, 277.2, 493.9],   // the pink orchard: A, with the ninth
+  [130.8, 196.0, 329.6, 523.3],   // the olive trees under the Alpilles: C
+  [155.6, 233.1, 392.0, 311.1],   // the café terrace: E flat
+  [116.5, 174.6, 293.7, 523.3],   // the Rhône: B flat, the night's key
+  [116.5, 174.6, 293.7, 523.3],   // Saint-Rémy by day: B flat again
+  [174.6, 261.6, 440.0, 349.2],   // the sunflowers: F
   [130.8, 196.0, 329.6, 523.3],   // Auvers: C
   [146.8, 220.0, 261.6, 349.2],   // the wheatfield: D minor seventh
   null,                           // after
 ];
-// his portrait at the end of the road brings a chord back into the silence after: F, Paris's key, where he painted it
-const CODA = CHORDS[1];
+// his portrait at the end of the road brings a chord back into the silence after: F, the key of Paris, where he painted it
+const CODA = [174.6, 261.6, 440.0, 349.2];
 
 function noiseBuffer(ctx, sec, colour) {
   const n = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, n, ctx.sampleRate);

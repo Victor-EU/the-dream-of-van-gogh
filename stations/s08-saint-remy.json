@@ -196,6 +196,20 @@
      ]
     ]
    }
+  },
+  {
+   "blob": "strokes/s08/alpilles-canvas.bin",
+   "strokes": 13529,
+   "title": "Olive Trees with the Alpilles in the Background",
+   "date": "June 1889",
+   "when": "1889-06-15",
+   "place": "Saint-Remy",
+   "collection": "Museum of Modern Art, New York",
+   "accession": "581.1998",
+   "yaw": 0.0,
+   "hfov": 50.0,
+   "treatment": null,
+   "note": "Added after M9 on the author's word, as the door into a world of its own (config.js). MoMA dates it June 1889, the month of the Starry Night beside it here, and it is 72.6 by 91.4 cm; the object number is the museum's, checked against Wikidata's copy of it, since MoMA's own pages sit behind a bot wall. MoMA publishes no scan: the source is the Google Art Project reproduction on Commons at 4043 x 3211, 44 px/cm, the lowest in the set after the Church at Auvers, and the strokes are as coarse as that implies. A door is a wall by definition, so no treatment is measured."
   }
  ],
  "_ground": "The walled garden is flat, and the swell that station 4 has is not here: a plain a mile wide has a swell in it and a garden does not. dome is where the sky is, and it is the same 260 m so that the two stations are lit and scaled the same way.",

@@ -9,6 +9,11 @@ Gathered 10 September 2026 by `tools/vgm_resolve.py`, `tools/commons_resolve.py`
 after M9, on the author's word: *The Red Vineyard*, 104 MP and 41 MB, fetched on 11 September 2026 from the Commons
 address in `tools/sources.tsv`. *Self-Portrait as a Painter* hangs twice, from the same scan and the same stroke
 record: in the corridor at station 2 and, after M9, giant at the end of the road.
+Two more on 19 September 2026, for two worlds of their own: *The Pink Orchard*, stitched from the Van Gogh Museum's
+tiles (`tools/micrio_stitch.py`) at 36 MP and 25 MB, and *Olive Trees with the Alpilles in the Background*, which the
+Museum of Modern Art does not publish a scan of -- the Google Art Project reproduction on Commons, 13 MP and 5.7 MB,
+is the best there is, and at 44 px/cm it is the coarsest source in the set after the Church at Auvers. Its object
+number is Wikidata's copy of MoMA's, since MoMA's own pages answer a script with a bot wall.
 
 ## How resolution was judged
 
@@ -81,6 +86,7 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 3 | *Orchard in Blossom* | Van Gogh Museum, Amsterdam | `s0038V1962` | museum IIIF (Micrio) | 7115 × 5599 | 40 | 93.1 × 73.2 | **76** |
 | 3 | *The Pink Peach Tree* | Van Gogh Museum, Amsterdam | `s0025V1962` | museum IIIF (Micrio) | 5336 × 7192 | 38 | 60.2 × 80.9 | **89** |
 | 3 | *The White Orchard* | Van Gogh Museum, Amsterdam | `s0024V1962` | museum IIIF (Micrio) | 12074 × 8884 | 107 | 81.0 × 60.0 | **149** |
+| 3 | *The Pink Orchard* | Van Gogh Museum, Amsterdam | `s0026V1962` | museum IIIF (Micrio), stitched | 6759 × 5362 | 36 | 81.0 × 65.0 | **83** |
 | 4 | *The Harvest (The Blue Cart)* | Van Gogh Museum, Amsterdam | `s0030V1962` | museum IIIF (Micrio) | 11382 × 9053 | 103 | 91.8 × 73.4 | **124** |
 | 4 | *The Sower* | Van Gogh Museum, Amsterdam | `s0029V1962` | museum IIIF (Micrio) | 7003 × 5625 | 39 | 40.3 × 32.5 | **174** |
 | 4 | *Wheatfield with a Reaper* | Van Gogh Museum, Amsterdam | `s0049V1962` | museum IIIF (Micrio) | 12665 × 10012 | 127 | 92.7 × 73.2 | **137** |
@@ -101,6 +107,7 @@ on Commons at roughly 46 px/cm — the weakest sources in the set. See "Known ga
 | 8 | *Irises* | J. Paul Getty Museum | `90.PA.20` | Commons | 11516 × 8801 | 101 | 94.3 × 74.3 ‡ | **122** |
 | 8 | *Irises (still life)* | Van Gogh Museum, Amsterdam | `s0050V1962` | museum IIIF (Micrio) | 13278 × 16806 | 223 | 73.9 × 92.7 | **180** |
 | 8 | *Olive Grove* | Van Gogh Museum, Amsterdam | `s0045V1962` | museum IIIF (Micrio) | 12801 × 9998 | 128 | 92.2 × 73.2 | **139** |
+| 8 | *Olive Trees with the Alpilles in the Background* | Museum of Modern Art, New York | `581.1998` | Commons · Google Art Project | 4043 × 3211 | 13 | 91.4 × 72.6 | **44** |
 | 8 | *The Garden of Saint-Paul's Hospital* | Van Gogh Museum, Amsterdam | `s0046V1962` | museum IIIF (Micrio) | 5619 × 6892 | 39 | 60.8 × 73.8 | **92** |
 | 8 | *The Starry Night* | Museum of Modern Art, New York | `472.1941` | Commons · Google Art Project | 44567 × 35291 | 1573 | 92.1 × 73.7 ‡ | **484** |
 | 8 | *Wheat Field with Cypresses* | National Gallery, London | `NG3861` | Commons | 10882 × 8653 | 94 | — † | **— †** |

@@ -1,6 +1,6 @@
-// The interface: one line that says how until a hand moves, one card of keys, the name of each place as you
-// arrive, his words, a plaque by each painting, and the road itself as a line along the bottom that you can
-// click to travel. The opening is the veil's (src/veil.js).
+// The interface: one line that says how until a hand moves, one card of keys, the name of each painting as its
+// world comes up round you, a plaque by each canvas, and the road itself as a line along the bottom that you can
+// click to travel, with a tick per painting. The opening is the veil's (src/veil.js).
 import { stationZ, tauAt } from './journey.js';
 
 const $ = id => document.getElementById(id);
@@ -14,14 +14,13 @@ export class UI {
     this.st = stations;
     this.api = api;
     this.cur = -1;
-    this.from = Infinity;
     const ticks = $('j-ticks');
     stations.forEach((s, i) => {
       const b = document.createElement('button');
       b.className = 'tick';
       b.type = 'button';
       b.style.left = (tauAt(stationZ(i)) * 100).toFixed(2) + '%';
-      const name = s.json.title || s.place, when = s.json.when || '';
+      const name = s.title || s.place, when = s.when || '';
       b.innerHTML = `<i></i><span>${esc(name)}${when ? `<em>${esc(when)}</em>` : ''}</span>`;
       b.setAttribute('aria-label', `Go to ${name}${when ? ', ' + when : ''}`);
       press(b, e => { e.stopPropagation(); api.jump(i); });
@@ -33,14 +32,13 @@ export class UI {
     press($('btn-fs'), () => api.fullscreen());
     press($('again'), () => api.jump(0));
     if (matchMedia('(pointer: coarse)').matches) {
-      $('help').innerHTML = '<div class="k">left thumb · walk and turn</div><div class="k">right thumb · look around</div><div class="k">the line below · travel</div><div class="k">1× in the corner · walk faster</div>';
+      $('help').innerHTML = '<div class="k">left thumb · walk and turn</div><div class="k">right thumb · look around</div><div class="k">the line below · jump to a painting</div><div class="k">1× in the corner · walk faster</div>';
       $('hint').textContent = 'Left thumb walks · right thumb looks';
     }
   }
   loading(text) { window.veil?.status(text); }
-  // the veil has lifted: once the world has come up, say where you stand, and after a moment how to walk
+  // the veil has lifted: after a moment, how to walk
   begin() {
-    this.from = performance.now() + 900;
     this.hintT = setTimeout(() => { if (!this.awake) $('hint').classList.add('show'); }, 2400);
   }
   // the first touch of a hand: the line goes, and the road and the corner come up
@@ -75,12 +73,8 @@ export class UI {
   update(S) {
     $('j-fill').style.width = (S.tau * 100).toFixed(3) + '%';
     $('j-dot').style.left = (S.tau * 100).toFixed(3) + '%';
-    if (S.date !== this._date) { this._date = S.date; $('j-date').textContent = S.date; }
-    // the walk begins 44 m short of the first station, so where you stand is named once, as the veil lifts
-    const here = S.stationDist < 42 || (this.cur === -1 && performance.now() > this.from);
-    if (S.begun && here && S.station !== this.cur) { this.cur = S.station; this.arrive(S.station); }
-    if (S.stationDist > 52 && this.cur === S.station) { clearTimeout(this.lT1); $('letter').classList.remove('on'); }
-    if (S.stationDist > 52 && this.cur !== -1 && S.station !== this.cur) { clearTimeout(this.lT1); $('letter').classList.remove('on'); }
+    // going through a door: the painting's name comes up as its world does
+    if (S.begun && S.station !== this.cur) { this.cur = S.station; this.arrive(S.station); }
     // at the end of the road the card waits for his portrait to be finished, and takes the plaque's place
     const end = S.tau > 0.975 && S.done !== false;
     const p = S.near;
@@ -91,27 +85,18 @@ export class UI {
     $('end').classList.toggle('on', end);
   }
   arrive(i) {
-    const s = this.st[i], j = s.json;
-    $('st-place').textContent = [s.place, j.when].filter(Boolean).join(' · ');
-    $('st-title').textContent = j.title || '';
-    $('st-sub').textContent = j.where || '';
+    const s = this.st[i], last = i === this.st.length - 1;
     const el = $('station');
     el.classList.remove('on');
-    void el.offsetWidth;
-    if (j.title && i < this.st.length - 1) el.classList.add('on');
     clearTimeout(this.stT);
+    $('j-name').textContent = last ? '' : s.title || '';
+    // the bare canvas at the end has no card: the one fading out keeps its words
+    if (last || !s.title) return;
+    $('st-place').textContent = [s.place, s.when].filter(Boolean).join(' · ');
+    $('st-title').textContent = s.title;
+    $('st-sub').textContent = s.where || '';
+    void el.offsetWidth;
+    el.classList.add('on');
     this.stT = setTimeout(() => el.classList.remove('on'), 7500);
-    clearTimeout(this.lT1); clearTimeout(this.lT2);
-    $('letter').classList.remove('on');
-    const L = j.letter;
-    if (L && L.text) {
-      this.lT1 = setTimeout(() => {
-        $('letter-q').textContent = L.text;
-        $('letter-c').textContent = `Vincent to ${L.to}, ${L.place}, ${L.date} · letter ${L.n}`;
-        $('letter').classList.add('on');
-        this.showHelp(false);
-        this.lT2 = setTimeout(() => $('letter').classList.remove('on'), 12000);
-      }, 4000);
-    }
   }
 }

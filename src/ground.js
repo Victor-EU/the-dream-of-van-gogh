@@ -2,7 +2,9 @@
 // walker -- wheat and grass standing up and bending in the wind, and marks laid
 // flat along the furrows, the road and the water. Nothing here is stored: every
 // stroke asks the ground table what grows where it stands, so the land changes
-// with the road and costs the same everywhere.
+// with the world you are in and costs the same everywhere. The shape of the
+// land, and where its water lies, is the road's (stationAt); its colours and
+// its cover are the world's (worldAt).
 import * as THREE from 'three';
 import { NOISE, BRUSH, LIGHT } from './brush.js';
 import { TERRAIN } from './journey.js';
@@ -22,10 +24,10 @@ const TERRAIN_VERT = /* glsl */`
     vec2 p = position.xz + uSnap;
     vP = vec3(p.x, terrainH(p), p.y);
     vN = terrainN(p);
-    float s = stationAt(p.y);
+    float sR = stationAt(p.y), s = worldAt(p);
     vS = s;
     vec4 crop = crops(p, s);
-    float river = riverMask(p, s), plaza = plazaMask(p, s);
+    float river = riverMask(p, sR), plaza = plazaMask(p, sR);
     vec3 c;
     if (river > 0.5) c = WATERA(s) * 0.85;
     else if (crop.x > 0.5) c = mix(C1(s), WHEATB(s), 0.55);
@@ -91,10 +93,10 @@ const BLADE_VERT = /* glsl */`
     vec2 rel = abs(p - cam); float cheb = max(rel.x, rel.y);
     float fade = 1.0 - smoothstep(uPatch * 0.34, uPatch * 0.48, cheb);
     if (uInner > 0.0) fade *= smoothstep(uInner * 0.8, uInner, cheb);
-    float s = stationAt(p.y);
+    float sR = stationAt(p.y), s = worldAt(p);
     float d = roadDist(p), rw = ROADW(s);
     vec4 crop = crops(p, s);
-    float plaza = plazaMask(p, s), river = riverMask(p, s);
+    float plaza = plazaMask(p, sR), river = riverMask(p, sR);
     float k = h.z, kind = -1.0;
     if (d > rw + 0.15 && river < 0.5) {
       float verge = 1.0 - smoothstep(rw + 0.9, rw + 1.7, d);
@@ -171,14 +173,14 @@ const FLAT_VERT = /* glsl */`
     vec2 rel = abs(p - cam); float cheb = max(rel.x, rel.y);
     float fade = 1.0 - smoothstep(uPatch * 0.36, uPatch * 0.49, cheb);
     if (uInner > 0.0) fade *= smoothstep(uInner * 0.75, uInner, cheb);
-    float s = stationAt(p.y);
+    float sR = stationAt(p.y), s = worldAt(p);
     float d = roadDist(p), rw = ROADW(s);
     // on the bare canvas the marks are the canvas's own, few and the colour of the linen, and none lies across the
     // road, whose marks are the road's
     float bare = BARE(s) * step(rw, d), edge = 1.0 - step(rw + 0.42 * uScale, d);
     if (fract(h.w * 17.3) < bare * (0.9 + 0.1 * edge) || fade < 0.01 || unrevealed(p, cam, h.z)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     vec4 crop = crops(p, s);
-    float plaza = plazaMask(p, s), river = riverMask(p, s);
+    float plaza = plazaMask(p, sR), river = riverMask(p, sR);
     vec2 dir; vec3 c; float emit = 0.0;
     float len = mix(0.2, 0.42, h.y), wid = mix(0.055, 0.095, h.x);
     if (river > 0.5) {

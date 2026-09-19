@@ -56,7 +56,7 @@ def stitch(mic, W, H, out):
 WANT = {
     "sunflowers-vgm",
     "irises-vgm-stilllife", "the-white-orchard", "wheatfield-with-a-reaper",
-    "the-harvest", "the-yellow-house", "olive-grove",
+    "the-harvest", "the-yellow-house", "olive-grove", "the-pink-orchard",
 }
 
 def main():
