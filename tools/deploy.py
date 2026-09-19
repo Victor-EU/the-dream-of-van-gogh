@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Put the committed tree on the live site, with every script at an address that changes when the script does.
 
-The site is https://van-goghs-universe.telbase.ai: Telbase, deploying to Vercel. That host revalidates the page on
+The site is https://the-world-of-van-gogh.telbase.ai: Telbase, deploying to Vercel. That host revalidates the page on
 every visit but sends each `.js` with `max-age=31536000, immutable`, so a browser that has been here before gets
 the new page and runs its last visit's scripts without asking for them again. That is how the speed button came up
 in the corner on 16 Sep 2026 and neither it nor X did anything (BUILD.md, After M9 — The scripts a browser keeps).
