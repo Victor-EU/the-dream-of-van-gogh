@@ -30,7 +30,8 @@ const VERT = /* glsl */`
   attribute vec3 iP0, iP1, iP2;
   attribute vec4 iSize, iCol, iMeta, iSpin;
   uniform vec3 uCam, uHead, uEye, uSpinC;
-  uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uWrapY, uWrapLow, uWrapHigh, uUnder, uSway;
+  uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uWrapY, uWrapLow, uWrapHigh, uUnder, uSway, uLie;
+  uniform vec3 uUp;
   varying vec2 vST; varying vec3 vCol, vP, vT, vB, vN; varying float vRow, vEmit, vBig, vUnder;
   vec3 spin(vec3 p, vec3 k, float a) {
     vec3 q = p - uSpinC;
@@ -90,12 +91,15 @@ const VERT = /* glsl */`
       }
     }
     vec3 E = normalize(uCam - pos);
-    vec3 S = normalize(cross(tan, E) + vec3(0.0, 1e-5, 0.0));
+    // the face turns to the eye about its own tangent -- or, for paint that lies on a surface (uLie), it lies
+    // there: its width runs across the tangent in the surface, and a stroke on the ground stays on the ground
+    // instead of standing up as a plate when you are near it
+    vec3 S = normalize(mix(cross(tan, E), cross(tan, uUp), uLie) + vec3(0.0, 1e-5, 0.0));
     vec3 N = cross(S, tan);
     float taper = sqrt(max(0.0, 1.0 - pow(abs(2.0 * aUV.x - 1.0), 6.0)));
     vec3 p = pos + S * aUV.y * 0.5 * wid * (aUV.z > 0.5 ? 0.62 : 1.0) * (0.3 + 0.7 * taper);
     gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
-    vBig = smoothstep(30.0, 140.0, wid * uFocalPx / max(length(uCam - pos), 1.0));
+    vBig = smoothstep(70.0, 420.0, wid * uFocalPx / max(length(uCam - pos), 1.0));
     vUnder = aUV.z;
     vST = vec2(aUV.x, aUV.y); vRow = iSize.z; vCol = iCol.rgb; vEmit = iCol.w; vP = p; vT = tan; vB = S; vN = N;
   }
@@ -109,7 +113,7 @@ const FRAG = /* glsl */`
   void main() {
     vec4 br = brush(vST, vRow);
     float soft = texture2D(uBrush, brushUV(vST, vRow), 2.5 * vBig).g;
-    float a = mix(smoothstep(0.18, 0.46, br.g), smoothstep(0.05, 0.3, soft), vBig);
+    float a = mix(smoothstep(0.18, 0.46, br.g), smoothstep(0.05, 0.3, soft), 0.6 * vBig);
     if (a < 0.02) discard;
     vec3 nt = brushNormal(vST, vRow, br.r, 2.2);
     vec3 N = normalize(vT * nt.x + vB * nt.y + vN * nt.z);
@@ -120,7 +124,7 @@ const FRAG = /* glsl */`
     float relief = dot(N, uKeyDir) - dot(normalize(vN), uKeyDir);
     vec3 H = normalize(uKeyDir + V);
     float sp = pow(max(dot(N, H), 0.0), 30.0);
-    vec3 c = alb * (1.0 + 0.5 * relief) + uKeyCol * sp * 0.05 * br.r;
+    vec3 c = alb * (1.0 + (0.5 + 0.5 * vBig) * relief) + uKeyCol * sp * 0.05 * br.r;
     c += alb * vEmit * uGlow * (0.6 + 0.8 * br.r);
     if (vUnder > 0.5) c = alb * 0.3 * (0.7 + 0.5 * br.b);
     c *= exp(-length(vP - uCam) * uDark);
@@ -138,7 +142,7 @@ export class Paint {
     add('iSpin', ex.spin || new Float32Array(ex.n * 4), 4);
     g.instanceCount = ex.n;
     this.u = { ...U, uReveal: { value: 2 }, uWrap: { value: 0 }, uWrapY: { value: 1 }, uWrapLow: { value: -1e9 }, uWrapHigh: { value: 1e9 },
-               uSpinC: { value: new THREE.Vector3() }, uSway: { value: 0 }, uTint: { value: new THREE.Vector3(1, 1, 1) },
+               uSpinC: { value: new THREE.Vector3() }, uSway: { value: 0 }, uLie: { value: 0 }, uUp: { value: new THREE.Vector3(0, 1, 0) }, uTint: { value: new THREE.Vector3(1, 1, 1) },
                uEye: { value: new THREE.Vector3(0, 30, 0) }, ...(ov || {}) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.u,
       side: THREE.DoubleSide, alphaToCoverage: true }));

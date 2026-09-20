@@ -93,27 +93,43 @@ export function ground(x, z) {
 }
 const grad = (x, z) => [(ground(x + 1, z) - ground(x - 1, z)) / 2, (ground(x, z + 1) - ground(x, z - 1)) / 2];
 
-export function makeGround({ pools, n = 60000, seed = 11, centre = [0, 40], radius = 1300 }) {
+// the flow of the ground: along the contour where there is a slope, and along a slow field where it is flat
+function groundFlow(x, z) {
+  const g = grad(x, z), gl = Math.hypot(g[0], g[1]);
+  const fa = fbm2(x * 0.0025 + 9, z * 0.0025 + 2, 2) * 6.2832 * 2;
+  const k = smoothstep(0.015, 0.08, gl);
+  let t = [(-g[1] / (gl || 1)) * k + Math.cos(fa) * (1 - k), (g[0] / (gl || 1)) * k + Math.sin(fa) * (1 - k)];
+  const tl = Math.hypot(t[0], t[1]) || 1;
+  return [t[0] / tl, t[1] / tl];
+}
+// his hills are long strokes laid along their own contours, so ours are chains: a seed, and four or five strokes
+// end to end along the flow from it, one colour a chain with a little scatter, so that from the air the ground is
+// rolling bands of paint and not dots. The strokes lie on the ground (uLie), bigger the farther they are
+export function makeGround({ pools, n = 70000, seed = 11, centre = [0, 40], radius = 1300 }) {
   const R = rng(seed), rows = new Rows(n), P = pools.hills;
-  for (let i = 0; i < n; i++) {
-    const d = radius * Math.pow(R(), 0.9), a = R() * 6.2832;
-    const x = centre[0] + d * Math.sin(a), z = centre[1] - d * Math.cos(a);
-    const h = ground(x, z);
-    const rv = riverAt(x, z);
-    if (rv.d < RIVER_W * 0.5) continue;
-    const g = grad(x, z), gl = Math.hypot(g[0], g[1]);
-    // along the contour where the ground has a slope, along a slow field where it is flat
-    const fa = fbm2(x * 0.004 + 9, z * 0.004 + 2, 2) * 6.2832 * 2;
-    let t = gl > 0.02 ? [-g[1], 0, g[0]] : [Math.cos(fa), 0, Math.sin(fa)];
-    const tl = Math.hypot(t[0], t[2]) || 1; t = [t[0] / tl, 0, t[2] / tl];
-    if (R() < 0.5) t = [-t[0], 0, -t[2]];
-    const L = (0.7 + d / 48) * (0.7 + 0.7 * R()), w = L * (0.2 + 0.14 * R());
-    // brighter with height, brighter on the slopes that face the moon, darker in the valley
-    const lit = clamp(0.5 + 0.5 * (-g[0] * 0.6 - g[1] * 0.4) / Math.max(gl, 0.05) * smoothstep(0.02, 0.2, gl), 0, 1);
-    const q = clamp(0.18 + 0.55 * smoothstep(-2, 130, h) + 0.25 * (lit - 0.5) + 0.22 * (noise3(x * 0.03, 0, z * 0.03) - 0.5) + 0.12 * (R() - 0.5), 0, 0.999);
-    const c = jit(pick(P, q, R, 0.05), R, 0.06);
-    const n0 = [0, 1, 0];
-    rows.put([x, h + 0.25 + 0.05 * R(), z], t, n0, (R() - 0.5) * 0.12, L, w, 0.008, L * 0.08, c, 0, 0.22 + 0.34 * R(), R() * 6.2832, null, 0);
+  while (rows.n < n) {
+    const d = radius * Math.pow(R(), 1.55), a = R() * 6.2832;
+    let x = centre[0] + d * Math.sin(a), z = centre[1] - d * Math.cos(a);
+    const links = 3 + Math.floor(R() * 3), sgn = R() < 0.5 ? 1 : -1;
+    // one colour a chain: brighter with height, on the slopes that face the moon, and in slow bands across the ground
+    const h0 = ground(x, z), g0 = grad(x, z), gl0 = Math.hypot(g0[0], g0[1]);
+    const lit = clamp(0.5 + 0.5 * (-g0[0] * 0.6 - g0[1] * 0.4) / Math.max(gl0, 0.05) * smoothstep(0.02, 0.2, gl0), 0, 1);
+    const band = noise3(x * 0.012 + 5, 0, z * 0.012 + 1) - 0.5;
+    const q0 = clamp(0.2 + 0.5 * smoothstep(-2, 130, h0) + 0.22 * (lit - 0.5) + 0.36 * band, 0, 0.98);
+    for (let k = 0; k < links && rows.n < n; k++) {
+      const rv = riverAt(x, z);
+      if (rv.d < RIVER_W * 0.5) break;
+      const dd = Math.hypot(x - centre[0], z - centre[1]);
+      const f = groundFlow(x, z), t = [f[0] * sgn, 0, f[1] * sgn];
+      const L = (1.4 + dd / 24) * (0.75 + 0.5 * R()), w = L * (0.26 + 0.14 * R());
+      const h = ground(x, z);
+      const c = jit(pick(P, clamp(q0 + 0.06 * (R() - 0.5), 0, 0.99), R, 0.03), R, 0.07);
+      // the bow follows the turn of the flow ahead
+      const f2 = groundFlow(x + t[0] * L, z + t[2] * L);
+      const turn = (f[0] * f2[1] - f[1] * f2[0]) * sgn;
+      rows.put([x + t[0] * L * 0.5, h + 0.12 + 0.05 * R(), z + t[2] * L * 0.5], t, [-t[2], 0, t[0]], clamp(turn * 0.5, -0.2, 0.2), L, w, 0.008, L * 0.06, c, 0, 0.22 + 0.34 * R(), R() * 6.2832, null, 0);
+      x += t[0] * L * 0.92 + (R() - 0.5) * w * 0.5; z += t[2] * L * 0.92 + (R() - 0.5) * w * 0.5;
+    }
   }
   return rows.done();
 }
@@ -413,14 +429,14 @@ export function makeVillage({ pools, seed = 51, rev = 0.45 }) {
     if (houses.some(h => Math.hypot(h.x - x, h.z - z) < h.w * 0.7 + r)) continue;
     trees.push([x, z, r]);
     const y0 = ground(x, z) + r * 0.9;
-    const cnt = Math.floor(r * r * 14);
+    const cnt = Math.floor(r * r * 40);
     for (let k = 0; k < cnt; k++) {
       const th = Math.acos(1 - 2 * rr()), ph = rr() * 6.2832;
       const d = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
       const p = [x + d[0] * r * (0.75 + 0.3 * rr()), y0 + d[1] * r * (0.75 + 0.3 * rr()), z + d[2] * r * (0.75 + 0.3 * rr())];
       const t = norm3(cross3(d, [rr() - 0.5, rr() - 0.5, rr() - 0.5]));
-      const L = 0.9 + 1.2 * rr();
-      rows.put(p, t, d, (rr() - 0.5) * 0.2, L, L * 0.32, 0.006, L * 0.1, jit(pick(pools.cypress, 0.45 + 0.5 * rr(), rr), rr, 0.1), 0, rev + 0.15 + 0.1 * rr(), rr() * 6.2832, null, 0);
+      const L = 0.45 + 0.7 * rr();
+      rows.put(p, t, d, (rr() - 0.5) * 0.2, L, L * 0.36, 0.006, L * 0.1, jit(pick(pools.cypress, 0.45 + 0.5 * rr(), rr), rr, 0.1), 0, rev + 0.15 + 0.1 * rr(), rr() * 6.2832, null, 0);
     }
     // and a trunk
     for (let k = 0; k < 4; k++) rows.put([x + (rr() - 0.5) * 0.3, ground(x, z) + 0.5 + k * 0.5, z + (rr() - 0.5) * 0.3], [0.05, 1, 0.02], [1, 0, 0], 0, 0.9, 0.35, 0.006, 0.02, pick(pools.cypress, 0.1, rr), 0, rev + 0.15, rr() * 6.2832, null, 0);

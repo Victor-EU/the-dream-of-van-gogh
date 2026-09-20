@@ -1843,12 +1843,6 @@ count of non-finite values in every instance buffer is cheap and the harness sho
 
 **Still visible.**
 
-- **The ground from the air is confetti.** Strokes lie flat on a heightfield; from 100 m up they are dots on a
-  dark plane and not a rolling hill. His hills are drawn with long strokes along the contours; ours are, but too
-  short at that distance. A number to sweep: the ground stroke's length against its distance.
-- **Up close, a stroke is a slab.** From the street a tree's strokes and the ground's are flat plates the size of a
-  door; the brush print goes soft past a hand's breadth of pixels (`vBig`), which was made for his paint seen at
-  a metre and not for ours at a footstep. Standing eyes are D6's.
 - **The village walls are a mixture.** His village colours run from near-black to warm ochre and the walls take
   the whole range house by house; at 200 m it reads as a village, at 20 m as boxes of dashes. Doors, streets and
   a square are not built.
@@ -1858,3 +1852,38 @@ count of non-finite values in every instance buffer is cheap and the harness sho
 - **The sunflowers in the air have stems**, which the author may not want on a thing that floats.
 - **The river is seen from the knoll only as a band** 330 m off; from the air it is a river. The columns of gold
   under the stars are fixed on the water and not laid from the eye, as the Rhone's were in D3.
+
+### E0.1 — The ground, aligned  *(the author's word: "align this"; the same day)*
+
+Two of E0's *still visible* were the author's to send back, and were sent back the same evening.
+
+**The ground from the air was dots.** Three causes, each fixed. (1) The strokes were laid one by one at random
+places; his hills are long strokes laid *along* the contours, end to end. Now a chain: a seed, then three to five
+strokes each placed at the end of the last along the flow of the ground (`groundFlow`: the contour where there is
+a slope, a slow field where it is flat), bowed by the turn of the flow ahead, one colour a chain so that the chain
+is a band and the bands lie in slow noise across the ground. (2) They were too small at a distance: a stroke is
+now 1.4 m plus a twenty-fourth of its distance, and the seeds are drawn toward the eye (`d = R·u^1.55`) so that
+the carpet is solid at a footstep and still covers at the horizon. (3) The plane under them was darker than the
+paint on it, so every gap was a dot; it now takes the strokes' own middle colours.
+
+**Up close a stroke was a slab**, and the cause was not the brush: every stroke turns its face to the eye about its
+own tangent, which is right for paint in the air and wrong for paint on the ground -- a stroke on the ground two
+metres from a standing eye turned up to face it and stood there as a plate. `uLie` in `src/paint.js`: a mesh may
+say its paint lies on a surface, and then its width runs across the tangent in that surface and it stays there.
+The ground and the river lie. The brush's soft mode for big strokes (`vBig`) is also moved out, from 30--140 px
+to 70--420, and only goes six tenths of the way soft, with the relief deepened as it does, so that a stroke seen
+large keeps its bristles. The trees' dabs were halved and doubled.
+
+**Measured**, on the real GPU pane, visible this time, at dpr 1.5, 347,063 strokes:
+
+| where | fps |
+|---|---|
+| the knoll, cold | 75 |
+| over the village, 95 m up | 88 |
+| standing on the slope, 12 m up | 112 |
+| from the hills, 260 m up, the whole valley | 97 |
+
+**Pictures.** `e0-standpoint`, `e0-over-the-village` and `e0-in-the-street` re-taken; `e0-from-the-hills` added.
+
+**Still visible**, as before: the village walls are a mixture; the cypress is a tower with licks; the sunflowers
+in the air have stems; the river's columns are fixed on the water; the flowers are 150 draw calls.

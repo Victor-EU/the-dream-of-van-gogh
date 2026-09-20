@@ -87,9 +87,9 @@ async function boot() {
   const his = await W.loadHisColours();
   const pools = his.pools;
   const at = (pool, q) => pool[clamp(Math.floor(q * pool.length), 0, pool.length - 1)];
-  const skyLow = at(pools.sky, 0.12), skyMid = at(pools.sky, 0.3), hillLow = at(pools.hills, 0.08), hillHigh = at(pools.hills, 0.45);
+  const skyLow = at(pools.sky, 0.12), skyMid = at(pools.sky, 0.3), hillLow = at(pools.hills, 0.2), hillHigh = at(pools.hills, 0.6);
   const domeU = { uZen: { value: new THREE.Color(...skyLow.map(c => c * 0.7)) }, uHor: { value: new THREE.Color(...skyMid.map(c => c * 0.9)) },
-                  uGround: { value: new THREE.Color(...hillLow.map(c => c * 0.8)) } };
+                  uGround: { value: new THREE.Color(...at(pools.hills, 0.08).map(c => c * 0.8)) } };
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), new THREE.ShaderMaterial({ vertexShader: DOME_VERT, fragmentShader: DOME_FRAG,
     uniforms: domeU, side: THREE.BackSide, depthTest: false, depthWrite: false }));
   dome.frustumCulled = false; dome.renderOrder = -10;
@@ -101,7 +101,7 @@ async function boot() {
   const landG = new THREE.PlaneGeometry(SIZE, SIZE, SEGS, SEGS);
   landG.rotateX(-Math.PI / 2);
   { const p = landG.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, W.ground(p.getX(i), p.getZ(i))); p.needsUpdate = true; }
-  const landU = { uLow: { value: new THREE.Color(...hillLow.map(c => c * 0.85)) }, uHigh: { value: new THREE.Color(...hillHigh.map(c => c * 0.9)) }, uCam: U.uCam, uDark: U.uDark };
+  const landU = { uLow: { value: new THREE.Color(...hillLow.map(c => c * 0.95)) }, uHigh: { value: new THREE.Color(...hillHigh.map(c => c * 0.95)) }, uCam: U.uCam, uDark: U.uDark };
   const land = new THREE.Mesh(landG, new THREE.ShaderMaterial({ vertexShader: LAND_VERT, fragmentShader: LAND_FRAG, uniforms: landU }));
   land.frustumCulled = false;
   scene.add(land);
@@ -142,9 +142,9 @@ async function boot() {
   const sky = add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
   const stars = add('stars', W.makeStars({ pools }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
   say('Laying the ground');
-  add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 60000) }), { uEye: { value: eyeAt.clone() } });
+  add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 70000) }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
   const lights = W.STARS.filter(s => s.el < 32).map(s => ({ az: s.az, s: s.s })).concat([{ az: W.MOON.az, s: 2.2, moon: true }]);
-  add('river', W.makeRiver({ pools, lights }), { uEye: { value: eyeAt.clone() } });
+  add('river', W.makeRiver({ pools, lights }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
   say('Building the village');
   const village = W.makeVillage({ pools });
   add('village', village, { uEye: { value: eyeAt.clone() } });
