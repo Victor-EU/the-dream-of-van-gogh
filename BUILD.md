@@ -316,8 +316,9 @@ ratio his canvas has. `?wet` and `?dry` go.
 
 **Scope.** `veil.js` harvested and wired: the Starry Night paints itself, the eye goes into it, and the explosion of
 DESIGN §7.1 runs from the canvas to the volume over four seconds, from the standpoint to the air. The line in the
-corner. The restart from the linen without the veil. The three remaining sound layers: wind by speed, the eddies'
-tone, the square's murmur. `H`, `M`, `F`. Touch: the two thumbs and the two taps.
+corner. The restart from the linen without the veil. ~~The three remaining sound layers: wind by speed, the eddies'
+tone, the square's murmur.~~ (Struck by the author during the milestone, with §10 and the layer D3 built.)
+`H`, ~~`M`~~, `F`. Touch: the two thumbs and the two taps.
 
 **Exit criteria.**
 
@@ -326,7 +327,19 @@ tone, the square's murmur. `H`, `M`, `F`. Touch: the two thumbs and the two taps
 | first load to flying | ≤ 4 s after the veil finishes, on a warm cache | the sibling's opening set this |
 | the explosion | the standpoint test passes at t = 0 and the volume is at its depths by t = 4 s | it is §3.1 shown, so it must start exactly on the painting |
 | the restart | flying into the linen fades over 3 to 5 s and returns you to the air over Saint-Rémy | DESIGN §7.2 |
-| sound | every layer keyed to the state it is meant for, and off by default until a gesture | |
+| ~~sound~~ | ~~every layer keyed to the state it is meant for, and off by default until a gesture~~ — **struck by the author during D5**: the water layer was listened to and the answer was *remove the background sound*. DESIGN §10 is struck, `src/audio.js` deleted, and the three layers this row asked for are not built | |
+
+**Added at the start of D5, before any of it was built.** The plan's four are what the opening must *do*; these
+are what can be measured while it does it. (a) **It starts exactly on the painting**: with the explosion held at
+nought, the standpoint test of §4.4 passes at Saint-Remy — SSIM ≥ 0.85 against the runtime's own flat and no
+32 px cell off by more than 8% — because a canvas collapsed onto its own picture plane is that canvas.
+(b) **The handoff is not seen**: the veil's last frame and the runtime's first, at the same window, agree to
+SSIM ≥ 0.80 over the canvas. (c) **The explosion arrives**: at t = 4 s every stroke is within 1 cm of the depth
+`depth/starry.json` gives it, and at t = 0 within 1 cm of the picture plane. (d) **The line waits**: nothing in
+the corner until the veil is gone, and gone itself at the first drag. (e) **The restart carries none of it**:
+into the linen, out over Saint-Remy, no veil and no second explosion, and the sound follows the new place.
+(f) ~~**Four layers, not one**, each silent where its own state is not.~~ Struck with §10, on the author's word,
+partway through the milestone; what replaced it is nothing, and the piece is silent.
 
 **The gate.** Open the page cold, touch nothing, and watch. Does the painting become the night without a word?
 
@@ -1542,3 +1555,84 @@ measured on a real graphics card — every number in this log was taken under sw
 down in the meantime. **The cone: leave it strict.** §5.1 stands as D4 wrote it and `?conedepth` stays a flag: a
 cone is his alone, the hole it cuts in the night is the price, and the standpoint test is not to be spent on the
 view from outside.
+
+---
+
+### D5 — The opening, the edge, the sound
+
+**What was built.** The opening of §7.1, which is the one thing in the piece that happens once. `veil.js` comes
+across from the sibling whole, with two changes — the record it paints from is this piece's
+(`strokes/starry-canvas.bin`) and the title under it is this piece's — and its markup and its stylesheet come
+with it. Behind it, from the first frame, **the same canvas is standing in three dimensions with the explosion
+held at nought**, which is §3.1 run backwards: every stroke slid back up its own ray until the ray crosses his
+picture plane, where the canvas is whole. When the veil has gone, what is left is the painting, and it explodes:
+four seconds down the rays to the depths `depth/starry.json` gives them, the field of view opening from the
+veil's rectangle to the flight's seventy degrees, the body going from still to three metres a second. Then one
+line in the corner. New tool: `tools/opening.py`.
+
+**Six decisions, and one of them the author's.**
+
+1. **The canvas goes back on its plane, not onto a sphere.** A stroke `l` long on a canvas is `l · d / f` long at
+   depth `d`, so one scale does the place and the size — but the depth to slide back to is the picture plane's
+   along that ray, `f / (r̂ · F̂)`, and not `f`. On a sphere the corners of a 62° frame are 26% out.
+2. **The camera is rendered off-centre.** The veil hangs its canvas above the middle of the window to leave room
+   for the title; a camera looking down the canvas's own axis puts it in the middle. So the frame is a window cut
+   out of a larger one whose middle is the veil's rectangle's middle (`camera.setViewOffset`), and the size is
+   taken from the *tangent* of the angle and not the angle. Before the off-centre fix the two were 50 px apart
+   and the handoff read 0.13; after it, 2 px and 0.33.
+3. **The camera follows the veil's own rectangle, read off the DOM each frame.** Not a second copy of the CSS
+   easing — the rectangle itself, `getBoundingClientRect` on the transformed element. Whatever the stylesheet
+   does, the runtime does.
+4. **Parting is off while the canvas is whole, and comes back over the explosion.** This is the bug that cost
+   the most: at burst nought his paint is three quarters of a metre from the eye, every stroke of it inside the
+   tube parting opens round a body in flight (§6.5), and parting threw the entire painting out of the frame —
+   a cone-shaped hole with our sky round it. It is not a special case: the body is standing still at his eye,
+   which is the same reason `?test` has parting off. It ramps back in with the burst, so that by the time you
+   are moving it is there.
+5. **The caption waits.** Reaching a standpoint prints his own line for six seconds (§9); the opening *starts*
+   at a standpoint, so it would print over the painting. It is suppressed until the explosion is done, and so is
+   the line in the corner.
+6. **The sound is gone — the author's word, taken during the milestone.** The water layer D3 built was listened
+   to and the answer was *remove the background sound, current sound is too bad*. So §10 is struck, `src/audio.js`
+   is deleted rather than left unwired, `M` stops being a key, and the three layers this milestone was to add are
+   not built. The piece is silent. What D3 measured about his water stands; it was never only about sound.
+
+**What it measures.**
+
+| | target | before | after |
+|---|---|---|---|
+| it starts on the painting | standpoint test at burst 0: SSIM ≥ 0.85 against the runtime's own flat, no cell over 8% | there was no opening | **0.998, worst cell 0.0%, 0 cells** — pass |
+| the handoff, as registered | veil's frame against the runtime's, over the canvas: SSIM ≥ 0.80 | — | **0.325 — fail** |
+| the handoff, as it turned out to mean | — | — | blurred past the paint (σ 6 px) **0.925**; the offset that would best line the two up is **2 px**; correlation 0.947 |
+| the explosion arrives | every stroke at its authored depth by t = 4 s | — | `uBurst` reaches exactly 1 at **t = 4.017 s**, and past 0.999 the shader's branch is skipped, so every stroke is at its baked depth to the float — pass |
+| the restart carries none of it | into the linen, out over Saint-Remy, no veil, no second explosion | — | flown to 3,000 m: `faded 1`, back at his eye gliding at 3 m/s, stage `null`, burst 1 — pass |
+| the line waits | nothing in the corner until the explosion is done | it showed 800 ms after load | shown at the end of the burst, and the caption with it — pass |
+| the night, untouched | counts and the standpoint test unchanged | 254,011; 0.865 / 0 cells | **254,011; 0.865 / 0 cells** — identical |
+| ~~sound~~ | ~~four layers~~ | one | **none** — struck by the author |
+
+**Why the handoff fails its own number, and what the number should have been.** SSIM between two different
+brushes painting the same strokes is about a third, whatever you do: the runtime against *the pipeline's own
+flat rendering of the same record* has read 0.48 since D0, and the veil's loaded 2D cap is a third brush again.
+The 0.80 registered at the start of D5 was a number for one renderer against itself. What the criterion was
+actually asking — does the picture jump when the veil goes? — is answered by the other two rows: blurred past
+the paint the two are the same picture at 0.925, and the offset that would line them up best is two pixels.
+The paint changes; the painting does not move.
+
+**Pictures.** `d5-veil` — the veil, the painting finished on primed linen with its plaque and the title.
+`d5-handoff` — the same instant with the veil taken away: the runtime's own canvas, in its own brush, on the
+same rectangle. `d5-burst-0`, `-1`, `-2`, `-4` — the explosion at nought, a fifth, two thirds and all of it.
+The night around the canvas in `d5-handoff` is our sky, where the veil has a gallery wall; it is kept, because
+what is glimpsed round the edges of a painting you are going into ought to be where you are going.
+
+**The gate.** *Open the page cold, touch nothing, and watch. Does the painting become the night without a word?*
+
+**Still visible.**
+
+- **The handoff's brush.** The veil paints fat and oily, the runtime paints the ribbon of §4.5. Blurred they are
+  one picture; at full size the paint changes under you during the fade. Making them one brush means the veil
+  drawing ribbons in 2D, which is a rewrite of the sibling's file and was not attempted here.
+- **The veil's clock is not the world's.** The painting takes 3.2 s and the world took 0.8 s to build on a real
+  renderer and about a minute on the headless one; whoever is slower decides. On a slow machine the painting is
+  finished and waiting, which is what the status line is for.
+- **The opening is not on a phone yet.** D6's.
+- **Silence.** The piece makes no sound at all now. If that is wrong it is one line of the author's to say so.

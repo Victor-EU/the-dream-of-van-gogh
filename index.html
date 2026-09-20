@@ -21,6 +21,50 @@
   #panel { position: fixed; right: 24px; top: 22px; font-size: 15px; line-height: 1.5; white-space: pre; opacity: 0.8; background: rgba(6, 8, 18, 0.55); padding: 10px 14px; border-radius: 4px; }
   #linen { position: fixed; inset: 0; background: #6d6350; opacity: 0; pointer-events: none; }
   #debug { position: fixed; left: 12px; top: 10px; font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre; opacity: 0.7; }
+  /* The opening (DESIGN 7.1). The Starry Night paints itself on primed linen from its own record while the world
+     is built behind it (src/veil.js). Then the eye goes into it: the canvas comes towards you until it has
+     filled the window, and src/main.js holds the same canvas behind it in three dimensions, at the same size on
+     the screen, so that what is left when the veil has gone is the painting -- which then explodes. */
+  #veil { position: fixed; inset: 0; z-index: 7; overflow: hidden; touch-action: none;
+    background: radial-gradient(90% 75% at 50% 40%, #182139 0%, #0d1222 55%, #06080f 100%);
+    transition: opacity 1.9s ease-in-out, visibility 0s linear 1.9s; }
+  #veil-art { position: absolute; inset: 0; transition: transform 2.4s cubic-bezier(.45, 0, .85, .55); }
+  #veil-canvas { position: absolute; background:
+      repeating-linear-gradient(0deg, rgba(70,56,34,.06) 0 1px, rgba(0,0,0,0) 1px 3px),
+      repeating-linear-gradient(90deg, rgba(70,56,34,.05) 0 1px, rgba(0,0,0,0) 1px 3px), #cdc3a6;
+    box-shadow: 0 26px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3); }
+  #veil-under, #veil-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #veil-under { opacity: 0; transition: opacity .5s linear; }
+  #veil .glow { position: absolute; width: 7%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; opacity: 0;
+    mix-blend-mode: screen; transform: translate(-50%, -50%) scale(.85); transition: opacity 1.8s ease;
+    background: radial-gradient(closest-side, rgba(255,242,178,.8), rgba(250,222,128,.3) 45%, rgba(250,222,128,0)); }
+  #veil .glow.moon { width: 13%; }
+  #veil.painted .glow { opacity: .7; animation: twinkle 3.4s ease-in-out infinite alternate; }
+  @keyframes twinkle { to { transform: translate(-50%, -50%) scale(1.14); } }
+  #veil.bare #veil-canvas { background: none; box-shadow: none; }
+  #veil.bare .veil-plaque { display: none; }
+  .veil-plaque { position: absolute; right: 0; top: 100%; margin: 12px 0 0; font-size: 11.5px; letter-spacing: .03em;
+    opacity: .66; white-space: nowrap; }
+  .veil-plaque b { font-style: italic; font-weight: 500; font-size: 15px; letter-spacing: 0; margin-right: 8px; }
+  .veil-title { position: absolute; left: 0; right: 0; top: 80%; padding: 0 6vw; text-align: center; opacity: 0;
+    transition: opacity 1.4s ease; }
+  #veil.type .veil-title { opacity: 1; }
+  .veil-title h1 { font-weight: 500; font-size: clamp(30px, 3.4vw, 50px); line-height: 1; margin: 0 0 12px;
+    text-shadow: 0 2px 30px rgba(0,0,0,.6); }
+  #veil-status { margin: 0; min-height: 1.6em; font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+    opacity: .72; transition: opacity .8s ease; }
+  #veil-status.off { opacity: 0; }
+  /* the lift: you go into the painting -- it comes towards you until it fills the window, and only then lets go */
+  #veil.lift { opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity 1.5s cubic-bezier(.4, 0, .6, 1) .75s, visibility 0s linear 2.25s; }
+  #veil.lift #veil-art { transform: scale(var(--fill, 1.32)); transition: transform 1.8s cubic-bezier(.55, 0, .35, 1); }
+  #veil.lift .veil-title { opacity: 0; transition-duration: .7s; }
+  @media (prefers-reduced-motion: reduce) {
+    #veil-art { transition: none; }
+    #veil.lift #veil-art { transform: none; }
+    #veil.painted .glow { animation: none; }
+  }
+  @media (max-width: 620px) { .veil-plaque { white-space: normal; width: 100%; text-align: right; } }
   [hidden] { display: none !important; }
   #fail { position: fixed; inset: 0; display: grid; place-items: center; background: #04060f; text-align: center; }
   #fail h1 { font-weight: 400; font-size: 28px; margin: 0 0 8px; }
@@ -36,6 +80,17 @@
 <div id="panel" hidden></div>
 <div id="debug" hidden></div>
 <div id="fail" hidden><div><h1 id="fail-h"></h1><p id="fail-p"></p><code id="fail-c"></code></div></div>
+<div id="veil">
+  <div id="veil-art" aria-hidden="true">
+    <div id="veil-canvas">
+      <img id="veil-under" src="strokes/starry-canvas-under.png" alt="">
+      <canvas id="veil-cv"></canvas>
+      <p class="veil-plaque"><b>The Starry Night</b>Saint-R&eacute;my, June 1889 &middot; Museum of Modern Art, New York</p>
+    </div>
+  </div>
+  <div class="veil-title"><h1>The Dream of Van Gogh</h1><p id="veil-status">Grinding the colours</p></div>
+</div>
+<script src="src/veil.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
 </script>

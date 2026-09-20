@@ -6,7 +6,6 @@ import { explode, cone, focal } from './explode.js';
 import { Strokes } from './strokes.js';
 import { Sky } from './sky.js';
 import { Water, lights, makeSea } from './water.js';
-import { Sound } from './audio.js';
 import { Flight } from './flight.js';
 import { Wind } from './wind.js';
 import { Post } from './post.js';
@@ -104,6 +103,9 @@ const WATER_FRAG = /* glsl */`
   }`;
 
 async function boot() {
+  // what the veil says while the world is built behind it (DESIGN 7.1); nothing when there is no veil
+  const say = t => { if (window.veil) window.veil.status(t); };
+  say('Reading his strokes');
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false });
   const qual = Q.get('q') || (matchMedia('(pointer: coarse)').matches ? 'low' : 'mid');
   const budget = qual === 'high' ? 5.5e6 : qual === 'low' ? 1.2e6 : 3.2e6;
@@ -128,6 +130,9 @@ async function boot() {
     // eye his pavement begins at 3.9 m and would be pushed aside by it (DESIGN 6.5, BUILD.md D4)
     uPart: { value: has('nopart') || has('test') ? 0 : PART }, uPartA: { value: PART }, uPartB: { value: 2 * PART },
     uFocalPx: { value: 800 },
+    // the opening (DESIGN 7.1): nought is his canvas whole on its own picture plane, one is the world at its
+    // depths. ?burst= holds it anywhere between the two, which is how the standpoint test is taken at nought
+    uBurst: { value: has('burst') ? +Q.get('burst') : 1 },
     uEye: { value: new THREE.Vector3() }, uWrap: { value: 0 }, uUnder: { value: has('nounder') ? 0 : 1 },
     uCeil: { value: CEIL }, uEdge: { value: EDGE }, uLinen: { value: new THREE.Color(...LINEN) },
     // the column mode of the one shader (DESIGN 4.5, 5.2): nought for a stroke that stands where it stands
@@ -244,7 +249,8 @@ async function boot() {
     L.ex = explode(L.rec, L.depth, L.eye, 0);
     // the underside stands off along this canvas's own ray, from its own eye, and his strokes are exempt from
     // his own cone and from no one else's
-    L.st = new Strokes(U, L.ex, { uEye: { value: new THREE.Vector3(L.eye.x, L.eye.y, L.eye.z) }, uMine: { value: L.i } });
+    L.st = new Strokes(U, L.ex, { uEye: { value: new THREE.Vector3(L.eye.x, L.eye.y, L.eye.z) }, uMine: { value: L.i },
+      uFocalM: { value: L.ex.f }, uFw: { value: new THREE.Vector3(...L.cone.Fw) } });
     L.st.mesh.visible = !has('noStrokes') && (!only || only.has('his') || only.has(L.slug));
     scene.add(L.st.mesh);
   }
@@ -305,6 +311,7 @@ async function boot() {
   U.uEye.value.set(wind.eye[0], wind.eye[1], wind.eye[2]);   // ours stand off the Starry Night's eye
 
   // ours, in his hand (DESIGN 4.6, 5.3). Rule 3: every measure of ours is his, from hand/*.json
+  say('Down their own rays');
   const skyHand = await (await fetch('hand/starry-sky.json')).json();
   const starHand = await (await fetch('hand/starry-star.json')).json();
   const laws0 = await (await fetch('depth/starry.json')).json();
@@ -345,6 +352,7 @@ async function boot() {
   addOurs('reflections', cols, { uColumn: { value: cols.column }, uColWidth: { value: wat.widthOverReach },
                                  uSide: { value: 1 } });
   const buildMs = Math.round(performance.now() - t0build);
+  say('The night between them');
 
   // The light the floor stands under, measured (DESIGN 5.2 as D4.6 amends it). `measureLight` renders our own
   // sky from a place -- five faces of a cube at ninety degrees, and the upper hemisphere of them -- and gives
@@ -451,15 +459,92 @@ async function boot() {
   paintNight([layers[0].eye.x, layers[0].eye.y, layers[0].eye.z]);
 
   const flight = new Flight(cv);
-  // sound (DESIGN 10): the water layer, which D3 builds; a browser makes no sound until a person has done
-  // something, so the first look starts it, and M turns it off and on again
-  const sound = new Sound({ rate: WAVE.rate });
-  if (!has('nosound')) sound.arm(cv);
-  flight.on('sound', () => sound.toggle());
   const at = has('at') || has('test') ? clamp(parseInt(Q.get('at') || Q.get('test'), 10) || 1, 1, layers.length) : 1;
   const eyeOf = n => { const e = layers[n - 1].eye; flight.go({ pos: [e.x, e.y, e.z], yaw: e.yaw, pitch: e.pitch, speed: 3 }); };
   eyeOf(at);
   if (has('test')) { hfov = layers[at - 1].eye.hfov; flight.script = { speed: 0, dx: 0, dy: 0 }; flight.speed = 0; wind.on = 0; }
+
+  // The opening (DESIGN 7.1). The veil paints The Starry Night on primed linen while the world is built; then
+  // the eye goes into it. What is new here is that the painting does not dissolve: the same canvas is standing
+  // behind the veil in three dimensions with the explosion held at nought, which is that canvas whole on its own
+  // picture plane (the standpoint test reads 0.998 there), and it is held at the size the veil's own rectangle
+  // has on the screen -- read off the DOM each frame, so the camera follows whatever easing the CSS is doing
+  // rather than a second copy of it. When the veil has gone, what is left is the painting, and it explodes:
+  // every stroke slides down its ray to its authored depth over four seconds while the field of view opens to
+  // the flight's seventy degrees and the body begins to glide at three metres a second. Once, at the start,
+  // never explained, and never again -- flying into the linen returns you to the air and not to the canvas.
+  const veil = window.veil || { up: false, painted: true, status() {}, lift() {}, skip() {} };
+  const BURST = 4.0, GLIDE = 3, PART0 = U.uPart.value;
+  const veilBox = document.getElementById('veil-canvas');
+  let opening = veil.up && !has('test') && !has('at') && !has('burst') ? 'wait' : null, openT = 0;
+  // ?hold keeps the painting up until dream.holdOpen(false), so tools/opening.py can take the veil's frame and
+  // the runtime's at one instant. A renderer as slow as a headless one is through the whole opening before its
+  // first frame is drawn, and the handoff is the one thing in D5 that cannot be looked at afterwards
+  let held = has('hold');
+  // parting off while the canvas is on its picture plane. It is not a special case: parting (DESIGN 6.5) opens a
+  // tube round a body in flight, and here the body is standing still at his eye with his paint three quarters of
+  // a metre in front of it -- every stroke of the canvas is inside the tube, and parting throws the whole
+  // painting aside. The same reason ?test has it off. It comes back over the explosion, as the body starts to move
+  if (opening) { flight.speed = flight.target = 0; U.uBurst.value = 0; U.uPart.value = 0; }
+  // His canvas put exactly on the veil's rectangle. Two things have to be right and only one of them is the
+  // size: the veil hangs its canvas above the middle of the window to leave room for the title, and a camera
+  // looking down the canvas's own axis puts it in the middle. So the frame is rendered off-centre --
+  // setViewOffset takes a window out of a larger frame, and the larger frame is the one whose middle is the
+  // veil's rectangle's middle. A rectangle twice as tall on the screen is twice the *tangent* of the angle,
+  // not twice the angle, which is the other half of getting it right
+  const toBox = () => {
+    const r = veilBox && veilBox.getBoundingClientRect();
+    if (!r || !r.height || !r.width) return false;
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const fw = 2 * Math.max(cx, innerWidth - cx), fh = 2 * Math.max(cy, innerHeight - cy);
+    const L = layers[0], Hm = L.rec.cm[1] / 100;
+    const halfV = Math.min(Math.atan((Hm / 2) / L.ex.f * (fh / r.height)), 1.35);
+    camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, innerWidth, innerHeight);
+    camera.aspect = fw / fh;
+    camera.fov = 2 * halfV / DEG;
+    camera.updateProjectionMatrix();
+    U.uFocalPx.value = (fh * renderer.getPixelRatio() / 2) / Math.tan(halfV);
+    hfov = 2 * Math.atan(Math.tan(halfV) * camera.aspect) / DEG;
+    return true;
+  };
+  function openStep(dt) {
+    // the body is held at his eye until the painting has gone off: the wind carries you a few metres a second,
+    // and at a picture plane three quarters of a metre away a few metres is another painting entirely
+    if (opening === 'wait' || opening === 'lift') {
+      const e = layers[0].eye;
+      flight.pos[0] = e.x; flight.pos[1] = e.y; flight.pos[2] = e.z;
+      flight.gaze.yaw = flight.head.yaw = e.yaw * DEG;
+      flight.gaze.pitch = flight.head.pitch = e.pitch * DEG;
+      flight.speed = flight.target = 0; flight.roll = 0;
+    }
+    // the canvas behind the veil is held at the veil's own size from the first frame, not from the lift, so
+    // that there is no instant at which the two disagree -- and so that a tool can put the two side by side
+    if (opening === 'wait' || opening === 'lift') toBox();
+    if (opening === 'wait') {
+      if (!veil.painted || held) return;
+      veil.status('');
+      veil.lift();
+      opening = 'lift'; openT = 0;
+    }
+    openT += dt;
+    if (opening === 'lift') {
+      // the veil's own transition is 1.8 s and its fade is done at 2.25; past that there is nothing to follow
+      if (!veil.up && (openT > 2.3 || !veilBox || veilBox.getBoundingClientRect().height === 0)) {
+        opening = 'burst'; openT = 0; camera.clearViewOffset(); resize();
+      }
+      return;
+    }
+    if (opening === 'burst') {
+      const t = Math.min(1, openT / BURST), e = t * t * (3 - 2 * t);
+      U.uBurst.value = e;
+      hfov = hfov + (HFOV - hfov) * Math.min(1, dt / 0.9);
+      resize();
+      flight.target = GLIDE * e;
+      U.uPart.value = PART0 * e;
+      if (t >= 1) { U.uBurst.value = 1; U.uPart.value = PART0; hfov = HFOV; resize(); flight.target = GLIDE; opening = null;
+                    if (!looked && !capT) line.classList.add('on'); }
+    }
+  }
   // the current to a standpoint (DESIGN 6.4): eight to twelve seconds, longer the farther it is
   const seen = new Set();
   const currentTo = n => {
@@ -480,7 +565,7 @@ async function boot() {
   let capT = 0;
   function caption(n, force = false) {
     const L = layers[n - 1];
-    if (!L || has('nocaption') || has('test') || has('notitle') || (seen.has(n) && !force)) return;
+    if (!L || opening || has('nocaption') || has('test') || has('notitle') || (seen.has(n) && !force)) return;
     seen.add(n);
     const q = lineOf(L.slug);
     capEl.innerHTML = `<b></b><i></i><q></q>`;
@@ -497,7 +582,7 @@ async function boot() {
   flight.on('back', () => flight.back());
   flight.on('eye', n => { if (n >= 1 && n <= layers.length) currentTo(n); });
   flight.on('fullscreen', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}));
-  const KEYS = 'drag        look; you fly where you look\nW  ↑        faster\nS  ↓        slower\nShift       a swoop\nSpace       let go; the wind has you\nZ           onto your back\n1           to his eye\nL           the ledger\nM           sound\nF           full screen';
+  const KEYS = 'drag        look; you fly where you look\nW  ↑        faster\nS  ↓        slower\nShift       a swoop\nSpace       let go; the wind has you\nZ           onto your back\n1           to his eye\nL           the ledger\nF           full screen';
   const NAMED = { sky: 'our sky   ', stars: 'our stars ', motes: 'the motes ', reflections: 'reflections', sea: 'the sea   ' };
   const NOTE = { sky: 'outside his cone, at his density', stars: `${sky.nStars} unnamed, where the eddies are not`,
                  motes: `a lattice ${sky.mote.cell} m wide, round you`,
@@ -547,7 +632,7 @@ async function boot() {
   const show = (k, text) => { if (panelOn === k) { panel.hidden = true; panelOn = null; return; } panel.textContent = text; panel.hidden = false; panelOn = k; };
   flight.on('help', () => show('help', KEYS));
   flight.on('ledger', () => show('ledger', LEDGER()));
-  if (!has('notitle')) setTimeout(() => { if (!looked && !capT) line.classList.add('on'); }, 800);
+  if (!has('notitle')) setTimeout(() => { if (!looked && !capT && !opening) line.classList.add('on'); }, 800);
 
   const grade = { exposure: +(Q.get('exposure') || 1.0), bloom: 0.7, sat: 1.0, contrast: 1.0, vignette: has('test') ? 0 : 0.3, grain: 0.02, time: 0, warm: 0, black: 0, thresh: 1.0, tone: 0 };
 
@@ -712,7 +797,6 @@ async function boot() {
     U.uHead.value.set(headDir[0] / hl, headDir[1] / hl, headDir[2] / hl);
     U.uPartA.value = Math.max(0.3 * sp, PART);
     U.uPartB.value = Math.max(2.0 * sp, 2 * PART);
-    sound.update({ y: flight.pos[1], time, dt: sdt });
     if (capT && time > capT) { capEl.classList.remove('on'); capT = 0; }
     if (!has('nocaption')) for (let i = 0; i < layers.length; i++) {
       if (seen.has(i + 1)) continue;
@@ -729,6 +813,7 @@ async function boot() {
       if (running.acc >= 1) { running.fps.push(Math.round(running.n / running.acc)); running.acc = 0; running.n = 0; }
       stepFlight(dt);
     }
+    if (opening) openStep(sdt);
     flight.applyTo(camera);
     U.uCam.value.copy(camera.position);
     domeU.uAt.value.copy(camera.position);
@@ -898,6 +983,13 @@ async function boot() {
                           ang: pct(mine.ang_mrad, his.ang_mrad), wid: pct(mine.wid_m, his.wid_m) } };
     },
     go: o => flight.go(o),
+    holdOpen: v => { held = !!v; },
+    // the opening (DESIGN 7.1), for tools/opening.py: which stage it is in, how far the explosion has run, and
+    // where on the screen the veil's canvas is, which is the rectangle the runtime's own canvas is held to
+    opening: () => { const r = veilBox && veilBox.getBoundingClientRect();
+                     return { stage: opening, t: +openT.toFixed(3), burst: +U.uBurst.value.toFixed(4),
+                              hfov: +hfov.toFixed(3), painted: !!veil.painted, up: !!veil.up,
+                              box: r && r.height ? [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)] : null }; },
     eye: n => eyeOf(n),
     speed: v => { flight.speed = flight.target = v; },
     hold: () => { flight.script = { speed: 0, dx: 0, dy: 0 }; flight.speed = 0; },
@@ -1094,9 +1186,8 @@ async function boot() {
                       return { dir: [+v.x.toFixed(5), +v.y.toFixed(5), +v.z.toFixed(5)],
                                az: +(Math.atan2(v.x, -v.z) / DEG).toFixed(4), el: +(Math.asin(v.y) / DEG).toFixed(4) }; },
     under: k => { U.uUnder.value = k; },
-    sound: v => { if (v !== undefined) { sound.start(); sound.setOn(v); } return sound.state(); },
     curl: k => { U.uCurl.value = k; },
-    _: { renderer, scene, camera, post, layers, ours, U, flight, wind, wat, lit, sound },
+    _: { renderer, scene, camera, post, layers, ours, U, flight, wind, wat, lit },
     // the pre-registered glance (DESIGN 6.2): the gaze turns `deg` over `secs` of the piece's own time; how far
     // did the heading follow? Timed by the clock the flight runs on, not the wall's, so that a slow renderer
     // measures the same thing

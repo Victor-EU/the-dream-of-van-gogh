@@ -8,7 +8,7 @@
 // paints, so the long task in which the world is built never stops the brush. Where a canvas cannot be handed
 // over, it paints in the page.
 (() => {
-  const BLOB = 'strokes/s08/starry-canvas.bin';   // stations/s08-saint-remy.json
+  const BLOB = 'strokes/starry-canvas.bin';       // the same record src/main.js explodes (depth/starry.json)
   const ASPECT = 92.1 / 73.7;                     // the canvas, in centimetres
   const PLAY = 3.2;                               // seconds for all 13,999 strokes
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };

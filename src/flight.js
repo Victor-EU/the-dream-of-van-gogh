@@ -38,7 +38,6 @@ export class Flight {
       if (e.code === 'KeyZ') this.emit('back');
       if (e.code === 'KeyH' || e.code === 'Slash') this.emit('help');
       if (e.code === 'KeyL') this.emit('ledger');
-      if (e.code === 'KeyM') this.emit('sound');
       if (e.code === 'KeyF') this.emit('fullscreen');
       const dm = /^Digit(\d)$/.exec(e.code);
       if (dm) this.emit('eye', +dm[1]);

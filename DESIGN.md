@@ -177,6 +177,16 @@ word and each pointing at the entry in `BUILD.md` that records what was found.*
 > lying at its height. It is the right colour now. What it costs and what it is measured by is under D4.6 in
 > `BUILD.md`.
 
+> **Changed by the author, D5 (20 September 2026).** **§10 is struck. The piece is silent.** One of its four
+> layers was built -- the water, in D3, measured and logged -- and the author listened to it and said: *remove
+> the background sound, current sound is too bad.* So it goes, and the three layers D5 was to add with it: the
+> wind by your speed, the eddies' tone, the square's murmur. `src/audio.js` is deleted rather than left unwired,
+> because a file that is not in the piece is not in the piece; `M` stops being a key and §11's four become three;
+> `?nosound` and `dream.sound()` go with them. The design's reasoning for sound was that each layer is keyed to
+> something you are doing, and nothing in that argument says a night must be heard at all. If sound comes back it
+> starts again from nothing and from the author's word, not from this section. The D3 log keeps what was measured
+> about his water, which was never only about sound.
+
 ---
 
 **What this is.** A second piece, built clean, from the same stroke records as its sibling *The World of Van Gogh*

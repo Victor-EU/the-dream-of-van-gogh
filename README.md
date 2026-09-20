@@ -20,6 +20,12 @@ his village at Saint-Remy 0.424 of his — and what that is a share of is not ch
 own sky from the floor it stands over. `DESIGN.md` is the design, written before the build; `BUILD.md` is the plan
 and, under **Progress**, the log of what each milestone found.
 
+It opens on the painting. *The Starry Night* paints itself on primed linen from its own stroke record while the
+world is built behind it; then the eye goes into it, and behind the veil the same canvas is already standing in
+three dimensions with every stroke slid back up its ray to where the ray crosses his picture plane — the canvas
+whole, which the standpoint test reads at 0.998. When the veil has gone, what is left is the painting, and it
+explodes: four seconds down the rays to their depths, and you are in the air over Saint-Remy. It makes no sound.
+
 Its sibling, *The World of Van Gogh* (github.com/Victor-EU/the-world-of-van-gogh), is a walk along a road through
 fourteen of his paintings. This piece is built clean beside it, from the same stroke records.
 
@@ -32,9 +38,9 @@ python3 -m http.server 8712
 Then <http://127.0.0.1:8712/>. Drag to look; you fly where you look. `W` is faster, `S` slower, `Shift` a swoop,
 `Space` lets go and the wind has you, `Z` turns you onto your back, `1` `2` `3` let a current carry you to one of
 his three eyes in eight to twelve seconds — touch the controls and it lets you go — `H` the keys, `L` the ledger,
-which says what is his, what is ours, which of it was measured, and his own line at each canvas, `M` the sound. Fly into the linen and
+which says what is his, what is ours, which of it was measured, and his own line at each canvas. Fly into the linen and
 the dream fades and begins again. Address flags for looking at one thing at a time: `?nowind`, `?nopart`, `?nocurl`,
-`?noStrokes`, `?nosky`, `?nostars`, `?nomotes`, `?nosea`, `?noshore`, `?noreflections`, `?nosound`, `?nocaption`,
+`?noStrokes`, `?nosky`, `?nostars`, `?nomotes`, `?nosea`, `?noshore`, `?noreflections`, `?nocaption`,
 `?sky=0.5` (our sky at half his density), `?water=0.5` (a column at half his count of marks), `?sea=0.5` and
 `?shore=0.5` (the river's and the shore's own marks at half), `?d3floor` (the floor on the reference D3 gave it,
 which is what D4.6 measured its way off), `?nonight` (our sky in the Starry Night's colour everywhere, as it was
@@ -43,7 +49,8 @@ before D4.5), `?sharp=`, `?shoulder=` and
 his canvas faces), `?only=sky|stars|motes|sea|shore|reflections|his|starry|rhone|cafeterrace` (one thing alone), `?nocones`
 (the rule of §5.1 off, so that what it hides can be seen), `?ledger` (ours tinted), `?debug`, `?test` and
 `?at=1|2|3` (a canvas's eye, its field of view, the body still), `?flat`, `?dull`, `?nopost`, `?t=` (the clock
-frozen), `?flight=glide|swoop|village`.
+frozen), `?flight=glide|swoop|village`, `?burst=0` (the opening's explosion held anywhere between his canvas on
+its own picture plane and the world at its depths) and `?hold` (the painting left up until `dream.holdOpen(false)`).
 
 ## Rebuild the depths and the wind
 
@@ -62,6 +69,7 @@ python3 -m venv .venv && .venv/bin/pip install numpy scipy pillow playwright && 
 .venv/bin/python tools/hand.py cafeterrace --only water --water pavement   # the shore's marks -> hand/cafeterrace-pavement.json
 .venv/bin/python tools/nights.py              # his three nights, band by band up each sky -> hand/nights.json
 .venv/bin/python tools/bank.py --out shots/bank.png   # can the bank be seen from the air? -> the floor's profile across it
+.venv/bin/python tools/opening.py --strip     # the handoff from the veil to the world, and the explosion second by second
 .venv/bin/python tools/lines.py               # his four lines, checked against the edition -> letters/letters.json
 .venv/bin/python tools/shot.py --flight swoop --out shots/swoop.png
 ```
@@ -78,8 +86,9 @@ parting test, `dream.eddy(0)` to let go inside the great eddy, `dream.seam()` an
 numbers D2 pre-registers, `dream.water()`, `dream.column(i, eye)` and `dream.floor()` for the three D3
 pre-registers, `dream.current(n)` for D4's, `dream.night()`, `dream.floorOf()` and `dream.nightAt(p)` for D4.5's,
 `dream.light(p)` for D4.6's — our own sky rendered from a place, five faces of a cube and the upper hemisphere of
-them, which is the light the floor there stands under — `dream.cones()` and `dream.clipped()` for the three cones
-and what the rule of §5.1 hides, `dream.sea()`, `dream.counts()`, `dream.sound()`, `dream.wait(secs)` for a shot at a time of the
+them, which is the light the floor there stands under — `dream.opening()` and `dream.holdOpen(v)` for D5's,
+`dream.cones()` and `dream.clipped()` for the three cones
+and what the rule of §5.1 hides, `dream.sea()`, `dream.counts()`, `dream.wait(secs)` for a shot at a time of the
 piece's own clock, and `dream.sim(secs)` to run the body forward without drawing, for a renderer too slow to show
 what it can still measure.
 

@@ -51,6 +51,9 @@ const VERT = /* glsl */`
   uniform vec3 uCam, uHead, uEye, uWave;
   uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uCeil, uEdge, uUnder;
   uniform float uColumn, uColWidth, uOnly, uMine, uWrapLow, uSide, uWrapY;
+  // the opening (DESIGN 7.1): nought puts a canvas back on its own picture plane, one is the world. uFocalM is
+  // this canvas's focal length in metres and uFw the way its eye looks; both are nought for anything of ours
+  uniform float uBurst, uFocalM; uniform vec3 uFw;
   uniform vec2 uBand;                           // the river's two banks, in x (DESIGN 5.1 as D4.5 amends it)
   uniform vec3 uTint;                           // the colour of the night where the eye is, for a lattice that wraps
   uniform mat3 uCone[3]; uniform vec3 uConeAt[3]; uniform vec3 uConeHW[3];   // right, up, forward; the eye; half-widths and whether it is there
@@ -90,6 +93,21 @@ const VERT = /* glsl */`
     if (uOnly >= 0.0 && abs(iLight - uOnly) > 0.5) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     vec3 iQ0 = iP0, iQ1 = iP1, iQ2 = iP2;
     float wid = iSize.x, imp = iSize.y, crl = iSize.w;
+    // The explosion of DESIGN 3.1, run backwards and then forwards once (DESIGN 7.1). Every stroke already lies
+    // on its ray from his eye at the depth the sidecar gives it; slide it back up that ray to where the ray
+    // crosses his picture plane and the canvas is whole again, at the size it is on the canvas -- because a
+    // stroke that is l long on a canvas is l * d / f long at depth d, so one scale does the place and the size.
+    // The plane and not a sphere: at the corner of a 62 degree frame the two are 26% apart in size
+    if (uBurst < 0.999 && uFocalM > 0.0) {
+      float d = max(iMeta.w, 1e-3);
+      vec3 r1 = iQ1 - uEye;
+      float k1 = mix(uFocalM / max(dot(normalize(r1), uFw), 0.05), d, uBurst) / d;
+      vec3 r0 = iQ0 - uEye, r2 = iQ2 - uEye;
+      iQ0 = uEye + r0 * (mix(uFocalM / max(dot(normalize(r0), uFw), 0.05), d, uBurst) / d);
+      iQ1 = uEye + r1 * k1;
+      iQ2 = uEye + r2 * (mix(uFocalM / max(dot(normalize(r2), uFw), 0.05), d, uBurst) / d);
+      wid *= k1; imp *= k1; crl *= k1;
+    }
     // a reflection: laid on the water under its light, where this eye puts it (DESIGN 5.2)
     if (uColumn > 0.0) {
       vec3 L = iP1;
@@ -236,7 +254,8 @@ export class Strokes {
     if (ex.light) add('iLight', ex.light, 1);
     g.instanceCount = ex.n;
     this.u = { ...U, uReveal: { value: 2 }, uMine: { value: -1 }, uWrapLow: { value: 2 },
-               uSide: { value: 0 }, uWrapY: { value: 1 }, uTint: { value: new THREE.Vector3(1, 1, 1) }, ...(ov || {}) };
+               uSide: { value: 0 }, uWrapY: { value: 1 }, uTint: { value: new THREE.Vector3(1, 1, 1) },
+               uFocalM: { value: 0 }, uFw: { value: new THREE.Vector3(0, 0, -1) }, ...(ov || {}) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.u,
       side: THREE.DoubleSide, alphaToCoverage: true }));
     this.mesh.frustumCulled = false;
