@@ -1887,3 +1887,22 @@ large keeps its bristles. The trees' dabs were halved and doubled.
 
 **Still visible**, as before: the village walls are a mixture; the cypress is a tower with licks; the sunflowers
 in the air have stems; the river's columns are fixed on the water; the flowers are 150 draw calls.
+
+### E0.2 — The swirl that flashed  *(the author's word: "the whirl thing is flickering, flashing"; the same day)*
+
+**What it was.** The sky's strokes all lie on one shell, 1,500 m out, and the stars' rings on another. Two
+strokes of the swirl that overlap have the same depth to the last bit, and the depth buffer decides which is in
+front by whatever bit is left -- and since the swirl turns, that bit is decided anew each frame, so that a stroke
+in the arm is on top one frame and under the next. A still swirl would have hidden it; a turning one flashes.
+Measured: with the view held and the world's clock stepped 30 ms, 2.6% of the pixels of the swirl's region
+changed by more than 60 (of 255, summed over the channels); the sky alone, of all the parts, does this.
+
+**What was done.** The sky and the stars write no depth (`depthWrite = false`, `src/main.js`), and are drawn in
+that order before everything nearer. Two strokes on the shell are then covered in the order they were laid,
+always; anything nearer covers them, as it should, since it is drawn after and the shell left nothing in the depth
+buffer to test against. Nothing is beyond the shell.
+
+**Measured**, same view, same 30 ms step: 0.17% of pixels changed -- what the swirl's real turn and the sample
+edges of the paint account for. Frame rate unchanged: 110--111 fps at dpr 1.5 on the knoll and at the swirl.
+
+**Still visible**: as in E0.1.

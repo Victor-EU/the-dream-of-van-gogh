@@ -141,6 +141,10 @@ async function boot() {
   const ridge = az => 6 + 3 * Math.sin(2 * az + 0.4) + 2 * Math.sin(5 * az + 1.7) + 4 * Math.max(0, Math.cos(az));
   const sky = add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
   const stars = add('stars', W.makeStars({ pools }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
+  // the sky and the stars are paint on one shell, so their strokes tie for depth; and with the swirls turning, a tie
+  // between two overlapping strokes is decided anew each frame -- a flashing. So the shell writes no depth: the later
+  // stroke covers the earlier, always, and the shell is drawn before anything nearer, which covers it as it should
+  for (const [st, ord] of [[sky, -2], [stars, -1]]) if (st) { st.mesh.material.depthWrite = false; st.mesh.renderOrder = ord; }
   say('Laying the ground');
   add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 70000) }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
   const lights = W.STARS.filter(s => s.el < 32).map(s => ({ az: s.az, s: s.s })).concat([{ az: W.MOON.az, s: 2.2, moon: true }]);
