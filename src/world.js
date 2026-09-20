@@ -224,9 +224,16 @@ function flowAt(d) {
   return { t: [t[0] / tl, t[1] / tl, t[2] / tl], best, bw, wsum, band };
 }
 
-export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge }) {
+// The sky's depth (E1). A stroke is laid in a direction, as before, so that from the knoll the sky is his picture;
+// and at a distance f·R along it, so that when you fly it has depth: the night between the swirls lies in slow
+// drifts from 0.55 R to 1.45 R; a swirl is a well, its rim at 0.62 R and its eye at 1.47 R, so that flying into it
+// the arms wind round you and close ahead; and in a star's direction the sky keeps behind the star (which is a
+// well of rings down to its core at R, star()). The far hills are a ring at 1.35 R, beyond the ground's edge.
+const HILLS_F = 1.35, STAR_F = 1.0, RING_STEP = 0.06;
+export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars = STARS, moon = MOON }) {
   for (const V of VORTICES) V.dir = dirAzEl(V.az, V.el);
   const rr = rng(seed), rows = new Rows(n), P = pools.sky, PH = pools.hills;
+  const wells = stars.concat(moon ? [moon] : []).map(S => ({ dir: dirAzEl(S.az, S.el), th: 4.6 * S.s * DEG }));
   const lo = Math.sin(-7 * DEG);
   for (let i = 0; i < n; i++) {
     const y = lo + (1 - lo) * rr(), az = rr() * 6.2832, cs = Math.sqrt(Math.max(0, 1 - y * y));
@@ -235,12 +242,12 @@ export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge }) {
     const F = flowAt(d);
     // the swirls take more of the paint than the night between them
     if (F.bw < 0.3 && rr() < 0.3) continue;
-    const c = [d[0] * R, d[1] * R, d[2] * R];
     // the far hills: under the ridge, his hills' colour, laid level
     const rdg = ridge ? ridge(az) : 2;
     if (el < rdg) {
+      const Rh = R * HILLS_F, c = [d[0] * Rh, d[1] * Rh, d[2] * Rh];
       const t = norm3(cross3([0, 1, 0], d));
-      const L = R * (0.014 + 0.014 * rr()), w = L * (0.22 + 0.12 * rr());
+      const L = Rh * (0.014 + 0.014 * rr()), w = L * (0.22 + 0.12 * rr());
       const q = clamp(0.1 + 0.22 * smoothstep(rdg - 14, rdg, el) + 0.16 * (noise3(d[0] * 9, d[1] * 9, d[2] * 9) - 0.5) + 0.1 * (rr() - 0.5), 0, 0.99);
       rows.put(c, t, d, (rr() - 0.5) * 0.1, L, w, 0.02, L * 0.05, jit(pick(PH, q, rr), rr), 0, 0.08 + 0.2 * rr(), rr() * 6.2832, null, 0);
       continue;
@@ -264,14 +271,28 @@ export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge }) {
     }
     const q = clamp(b + 0.06 * (rr() - 0.5), 0.0, 0.995);
     const col = jit(pick(P, q, rr, 0.03), rr, 0.05);
-    const L = R * (0.026 + 0.022 * rr()) * (1 + 1.1 * F.bw), w = L * (0.26 + 0.14 * rr()) / (1 + 0.5 * F.bw);
+    // how far out: a drift for the night, a well for a swirl, and behind the stars
+    const drift = clamp((noise3(d[0] * 2.5 + 7, d[1] * 2.5 + 3, d[2] * 2.5 + 5) - 0.5) * 1.8 + 0.5, 0, 1);
+    let f = 0.55 + 0.9 * drift + 0.1 * (rr() - 0.5);
+    if (F.best) {
+      const V = F.best, th = Math.acos(clamp(dot3(d, V.dir), -1, 1)) / DEG;
+      const well = 0.62 + 0.85 * Math.pow(1 - clamp(th / V.r, 0, 1), 1.3) + 0.06 * (rr() - 0.5);
+      f = lerp(f, well, smoothstep(0.1, 0.5, F.bw));
+    }
+    for (const Wl of wells) {
+      const th = Math.acos(clamp(dot3(d, Wl.dir), -1, 1));
+      const inWell = smoothstep(Wl.th * 1.15, Wl.th * 0.9, th);
+      if (inWell > 0) f = lerp(f, Math.max(f, STAR_F + 0.08 + 0.3 * rr()), inWell);
+    }
+    const Rf = R * f, c = [d[0] * Rf, d[1] * Rf, d[2] * Rf];
+    const L = Rf * (0.026 + 0.022 * rr()) * (1 + 1.1 * F.bw), w = L * (0.26 + 0.14 * rr()) / (1 + 0.5 * F.bw);
     // the bow: round the swirl it lies on, as an arc of that circle
     let bow = (rr() - 0.5) * 0.08, nrm = perp(F.t, d);
     let axis = null, rate = 0;
     if (F.best && F.bw > 0.12) {
       const V = F.best, a = V.dir;
       const toC = norm3([a[0] - d[0] * dot3(a, d), a[1] - d[1] * dot3(a, d), a[2] - d[2] * dot3(a, d)]);
-      const rc = R * Math.sin(Math.max(Math.acos(clamp(dot3(d, a), -1, 1)), 0.02));
+      const rc = Rf * Math.sin(Math.max(Math.acos(clamp(dot3(d, a), -1, 1)), 0.02));
       nrm = toC; bow = clamp(L / (4 * rc), 0, 0.3);
       axis = a; rate = V.w * DEG * clamp(F.bw / (F.bw + F.band * 0.5), 0, 1);
     } else { axis = [0, 1, 0]; rate = 0.22 * DEG * (1 - 0.6 * smoothstep(40, 80, el)); }
@@ -280,10 +301,13 @@ export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge }) {
   return rows.done();
 }
 
-// a star: a core, and rings out of it, each ring turning at its own rate. The moon is a star with a crescent
+// a star: a core, and rings out of it, each ring turning at its own rate. The moon is a star with a crescent.
+// It has depth (E1): the core is at R and each ring is nearer than the one inside it, a step of 0.06 R, so that
+// the star is a well with its widest ring at the mouth, and you fly down it through ring after turning ring to
+// the core, and through the core
 function star(rows, pools, S, R, rr, rev, moon = false) {
   const a = dirAzEl(S.az, S.el), u = perp(a, [0, 1, 0]), v = cross3(a, u);
-  const rad = S.s * DEG, Rk = R * 0.985;
+  const rad = S.s * DEG;
   const P = moon ? pools.moon : pools.star, sign = rr() < 0.5 ? 1 : -1;
   const at = (th, ph) => { const s = Math.sin(th), c = Math.cos(th); return norm3([a[0] * c + (u[0] * Math.cos(ph) + v[0] * Math.sin(ph)) * s, a[1] * c + (u[1] * Math.cos(ph) + v[1] * Math.sin(ph)) * s, a[2] * c + (u[2] * Math.cos(ph) + v[2] * Math.sin(ph)) * s]); };
   // the core: a disc, or a crescent: the disc less a disc set off from it
@@ -291,23 +315,26 @@ function star(rows, pools, S, R, rr, rev, moon = false) {
   for (let i = 0; i < nc; i++) {
     const th = rad * Math.sqrt(rr()), ph = rr() * 6.2832;
     if (moon) { const px = th * Math.cos(ph), py = th * Math.sin(ph); if (Math.hypot(px - rad * 0.55, py - rad * 0.1) < rad * 0.78) continue; }
+    const Rk = R * (STAR_F + 0.016 * (rr() - 0.5));
     const d = at(th, ph), c = [d[0] * Rk, d[1] * Rk, d[2] * Rk];
     const circ = norm3(cross3(a, d)), t = norm3([circ[0] + (rr() - 0.5) * 0.6, circ[1] + (rr() - 0.5) * 0.6, circ[2] + (rr() - 0.5) * 0.6]);
-    const L = R * (0.006 + 0.008 * rr()) * (0.6 + 0.4 * S.s), w = L * 0.35;
+    const L = Rk * (0.006 + 0.008 * rr()) * (0.6 + 0.4 * S.s), w = L * 0.35;
     rows.put(c, t, d, (rr() - 0.5) * 0.1, L, w, 0.02, L * 0.05, jit(pick(P, moon ? 0.35 + 0.4 * rr() : 0.8 + 0.19 * rr(), rr), rr, 0.05), moon ? 0.4 : 0.5, rev + 0.04 * rr(), rr() * 6.2832, a, sign * (5 + 4 * rr()) * DEG * 0.5);
   }
   // the rings
   const rings = moon ? [1.35, 1.75, 2.2, 2.75, 3.4, 4.1] : [1.5, 2.0, 2.6, 3.3, 4.2];
   const qs = moon ? [0.8, 0.65, 0.55, 0.45, 0.4, 0.3] : [0.7, 0.5, 0.35, 0.3, 0.25], sh = moon ? [0.7, 0.5, 0.35, 0.22, 0.12, 0.06] : [0.6, 0.35, 0.2, 0.1, 0.05];
   for (let k = 0; k < rings.length; k++) {
-    const th = rad * rings[k], L = R * (0.010 + 0.010 * rr()) * (0.6 + 0.4 * Math.min(S.s, 2)), w = L * 0.3;
-    const cnt = Math.floor(6.2832 * Math.sin(th) * R / (L * 0.38));
+    const fk = STAR_F - (rings.length - k) * RING_STEP;
+    const th = rad * rings[k], L = R * fk * (0.010 + 0.010 * rr()) * (0.6 + 0.4 * Math.min(S.s, 2)), w = L * 0.3;
+    const cnt = Math.floor(6.2832 * Math.sin(th) * R * fk / (L * 0.38));
     const rate = sign * (k % 2 ? -1 : 1) * (2 + 3 * rr()) * DEG * 0.5;
     for (let i = 0; i < cnt; i++) {
       const ph = (i + rr() * 0.8) / cnt * 6.2832, th2 = th * (1 + (rr() - 0.5) * 0.22);
+      const Rk = R * (fk + 0.03 * (rr() - 0.5));
       const d = at(th2, ph), c = [d[0] * Rk, d[1] * Rk, d[2] * Rk];
       const circ = norm3(cross3(a, d)), toC = norm3([a[0] - d[0] * dot3(a, d), a[1] - d[1] * dot3(a, d), a[2] - d[2] * dot3(a, d)]);
-      const rc = R * Math.sin(th2);
+      const rc = Rk * Math.sin(th2);
       const pool = k >= 3 ? pools.sky : P;
       const q = k >= 3 ? 0.8 + 0.18 * rr() : qs[k] + 0.15 * rr();
       rows.put(c, circ, toC, clamp(L / (4 * rc), 0, 0.3), L, w, 0.02, L * 0.06, jit(pick(pool, q, rr), rr, 0.06), sh[k] * (0.7 + 0.6 * rr()), rev + 0.02 * k + 0.04 * rr(), rr() * 6.2832, a, rate);

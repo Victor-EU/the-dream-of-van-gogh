@@ -10,6 +10,7 @@ const MOVE = 8, FAST = 30;                  // m/s: an arrow, and an arrow with 
 const TURN = 50 * DEG;                      // rad/s: a full turn in seven seconds
 const T_SPEED = 0.2;                        // the body reaches its speed, and loses it, in a fifth of a second
 const FLOOR = 1.0, FLOOR_A = 15;            // over the ground, and how hard it may take to stop you: 1.5 g
+const LIFT_H = 45, LIFT_MAX = 12;           // the lift: the body goes faster the higher it is, twice at 45 m, twelve times at 495
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
 export class Flight {
@@ -24,7 +25,7 @@ export class Flight {
     this.gaze = { yaw: 0, pitch: 0 };      // where the eye looks
     this.head = { yaw: 0, pitch: 0 };      // the way the body goes: the same, now
     this.speed = 0; this.target = 0; this.roll = 0; this.yawRate = 0;
-    this.floor = null; this.ceil = 0; this.edge = 0;   // the ground under you, the sky over you, the edge of the world
+    this.floor = null; this.reach = 0;     // the ground under you, and how far from the middle of the world you may go
     this.script = null;                    // a hand the harness holds
     this.carry = null;                     // a current carrying the body to a standpoint (DESIGN 6.4)
     addEventListener('keydown', e => {
@@ -139,9 +140,15 @@ export class Flight {
     // the speed: nothing pressed is nothing
     const fwd = this.has('ArrowUp') || this.has('KeyW'), back = this.has('ArrowDown') || this.has('KeyS');
     const run = this.has('ShiftLeft') || this.has('ShiftRight');
+    // the lift (E1): near the ground you walk, and the higher you are the faster you go, so that a star 1,500 m up
+    // is half a minute away at a walk and eight seconds with Shift, and grows the whole way; coming down you slow
+    const fl = this.floor ? this.floor(this.pos[0], this.pos[2]) : FLOOR;
+    const h = Math.max(this.pos[1] - fl, 0);
+    const lift = Math.min(LIFT_MAX, 1 + h / LIFT_H);
     let t = 0;
     if (fwd) t = run ? FAST : MOVE; else if (back) t = -(run ? FAST : MOVE);
     if (this.joy.id >= 0) t = this.joy.y * MOVE;
+    t *= lift;
     if (S && S.speed != null) t = S.speed;
     this.target = t;
     this.speed += (t - this.speed) * (1 - Math.exp(-dt / T_SPEED));
@@ -153,13 +160,10 @@ export class Flight {
     // The floor (DESIGN 6.3): a soft floor a metre over the water. Not a wall and not a cushion that scales with
     // your own speed -- the descent is held to the speed a constant deceleration could still stop from here, so
     // however fast you come down you are slowed at the same rate and arrive at a walking pace
-    const fl = this.floor ? this.floor(this.pos[0], this.pos[2]) : FLOOR;
-    const h = Math.max(this.pos[1] - fl, 0);
     if (vy < 0) vy = Math.max(vy, -(Math.sqrt(2 * FLOOR_A * h) + 0.4));
     this.pos[0] += vx * dt; this.pos[1] = Math.max(fl, this.pos[1] + vy * dt); this.pos[2] += vz * dt;
-    // the ground under you rises and falls; and the sky and the edge of the world are as far as you go
-    if (this.ceil) this.pos[1] = Math.min(this.ceil, this.pos[1]);
-    if (this.edge) { const r = Math.hypot(this.pos[0], this.pos[2]); if (r > this.edge) { this.pos[0] *= this.edge / r; this.pos[2] *= this.edge / r; } }
+    // the ground under you rises and falls; and the reach is a sphere round the middle of the world, through the stars
+    if (this.reach) { const r = Math.hypot(this.pos[0], this.pos[1], this.pos[2]); if (r > this.reach) for (let k = 0; k < 3; k++) this.pos[k] *= this.reach / r; }
     this.roll = 0;
     return { vx, vy, vz };
   }

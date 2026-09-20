@@ -4,7 +4,7 @@
 // in the air. The arrows go where you look.
 import * as THREE from 'three';
 import { makeBrushAtlas, NOISE } from './brush.js';
-import { Paint } from './paint.js';
+import { Paint, LOG_VERT, LOG_PASS, LOG_FRAG, LOG_DEPTH } from './paint.js';
 import { Flight } from './flight.js';
 import { Post } from './post.js';
 import * as W from './world.js';
@@ -25,7 +25,7 @@ addEventListener('unhandledrejection', e => fail('Something stopped the paint.',
 
 const HFOV = 70;
 const PART = 3;                                   // the parting radius, m: the paint moves aside for the body
-const CEIL = 620, EDGE = 1150;                    // how high and how far the body may go
+const REACH = 1400;                               // how far from the middle of the world the body may go: to a star, 100 m short of its core
 const PERSON = 1.7;
 // the standpoint: on the brow of the knoll south of the village, looking north over it, a little up at the sky
 const EYE = { x: 0, z: 100, yaw: 0, pitch: 9 };
@@ -41,11 +41,13 @@ const DOME_FRAG = /* glsl */`
     c = mix(c, uGround, smoothstep(0.01, -0.02, e));
     gl_FragColor = vec4(c, 1.0);
   }`;
-const LAND_VERT = /* glsl */`varying vec3 vW; void main() { vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const LAND_VERT = /* glsl */`varying vec3 vW; ${LOG_VERT} void main() { vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); ${LOG_PASS} }`;
 const LAND_FRAG = /* glsl */`
   ${NOISE}
   varying vec3 vW; uniform vec3 uLow, uHigh, uCam; uniform float uDark;
+  ${LOG_FRAG}
   void main() {
+    ${LOG_DEPTH}
     float n = fbm(vW.xz * 0.02);
     vec3 c = mix(uLow, uHigh, clamp(smoothstep(-2.0, 120.0, vW.y) * 0.8 + (n - 0.5) * 0.5, 0.0, 1.0));
     c *= exp(-length(vW - uCam) * uDark);
@@ -97,7 +99,7 @@ async function boot() {
 
   // the ground: a heightfield under the strokes, in the hills' own dark
   say('Raising the hills');
-  const SEGS = 260, SIZE = 2700;
+  const SEGS = 300, SIZE = 3400;
   const landG = new THREE.PlaneGeometry(SIZE, SIZE, SEGS, SEGS);
   landG.rotateX(-Math.PI / 2);
   { const p = landG.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, W.ground(p.getX(i), p.getZ(i))); p.needsUpdate = true; }
@@ -139,14 +141,13 @@ async function boot() {
   const t0build = performance.now();
   say('Turning the sky');
   const ridge = az => 6 + 3 * Math.sin(2 * az + 0.4) + 2 * Math.sin(5 * az + 1.7) + 4 * Math.max(0, Math.cos(az));
-  const sky = add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
-  const stars = add('stars', W.makeStars({ pools }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
-  // the sky and the stars are paint on one shell, so their strokes tie for depth; and with the swirls turning, a tie
-  // between two overlapping strokes is decided anew each frame -- a flashing. So the shell writes no depth: the later
-  // stroke covers the earlier, always, and the shell is drawn before anything nearer, which covers it as it should
-  for (const [st, ord] of [[sky, -2], [stars, -1]]) if (st) { st.mesh.material.depthWrite = false; st.mesh.renderOrder = ord; }
+  // the sky has depth (E1): its night lies in drifts 830 to 2,250 m out, each swirl is a well with its rim near
+  // and its eye deep, and each star a well of rings down to its core; you fly into them. Depth is logarithmic
+  // (paint.js), so the strokes sort exactly at any distance and the E0.2 flashing does not come back
+  add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
+  add('stars', W.makeStars({ pools }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
   say('Laying the ground');
-  add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 70000) }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
+  add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 80000), radius: 1650 }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
   const lights = W.STARS.filter(s => s.el < 32).map(s => ({ az: s.az, s: s.s })).concat([{ az: W.MOON.az, s: 2.2, moon: true }]);
   add('river', W.makeRiver({ pools, lights }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
   say('Building the village');
@@ -181,7 +182,7 @@ async function boot() {
                       bob: 2 + 6 * rr(), spin: (rr() < 0.5 ? 1 : -1) * (0.08 + 0.4 * rr()), yawRate: (rr() - 0.5) * 0.3, tilt: 0.2 + 0.4 * rr() });
     }
   }
-  add('motes', W.makeMotes({ pools, n: +(Q.get('motes') ?? 2400) }), { uWrap: { value: 60 }, uWrapLow: { value: 0 }, uWrapHigh: { value: CEIL + 200 } });
+  add('motes', W.makeMotes({ pools, n: +(Q.get('motes') ?? 2400) }), { uWrap: { value: 60 }, uWrapLow: { value: 0 }, uWrapHigh: { value: REACH + 100 } });
   const buildMs = Math.round(performance.now() - t0build);
   const total = parts.reduce((s, p) => s + p.n, 0);
   say('The night between them');
@@ -189,12 +190,13 @@ async function boot() {
   // the flight
   const flight = new Flight(cv);
   flight.floor = (x, z) => W.ground(x, z) + PERSON * 0.7;
-  flight.ceil = CEIL; flight.edge = EDGE;
+  flight.reach = REACH;
   const standpoint = () => ({ x: EYE.x, y: W.ground(EYE.x, EYE.z) + PERSON, z: EYE.z, yaw: EYE.yaw, pitch: EYE.pitch });
   const PLACES = {
     1: standpoint,
     2: () => ({ x: 10, y: 95, z: -60, yaw: -5, pitch: -28 }),
-    3: () => { const V = W.VORTICES[0], d = dirAzEl(V.az, V.el); return { x: d[0] * 520, y: d[1] * 520, z: d[2] * 520, yaw: V.az, pitch: V.el - 10 }; },
+    3: () => { const V = W.VORTICES[0], d = dirAzEl(V.az, V.el); return { x: d[0] * 1000, y: d[1] * 1000, z: d[2] * 1000, yaw: V.az, pitch: V.el }; },
+    4: () => { const S = W.STARS[0], d = dirAzEl(S.az, S.el); return { x: d[0] * 650, y: d[1] * 650, z: d[2] * 650, yaw: S.az, pitch: S.el }; },
   };
   const goTo = n => { const p = PLACES[n]; if (!p) return; const e = p(); flight.carryTo(e, clamp(4 + Math.hypot(e.x - flight.pos[0], e.y - flight.pos[1], e.z - flight.pos[2]) / 120, 5, 10)); };
   { const e = standpoint(); flight.go({ pos: [e.x, e.y, e.z], yaw: e.yaw, pitch: e.pitch, speed: 0 }); }
@@ -244,8 +246,8 @@ async function boot() {
   flight.on('go', () => { looked = true; line.classList.remove('on'); });
   flight.on('eye', n => goTo(n));
   flight.on('fullscreen', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}));
-  const KEYS = 'drag        look\n↑           go where you look\n↓           back\n← →         turn\nShift       faster\n1           the knoll\n2           over the village\n3           into the swirl\nL           what is here\nF           full screen\n\nnothing pressed, nothing moves';
-  const NOTE = { sky: 'a dome of his sky, seven swirls turning', stars: `${W.STARS.length} stars and the moon, their rings turning`,
+  const KEYS = 'drag        look\n↑           go where you look\n↓           back\n← →         turn\nShift       faster\n1           the knoll\n2           over the village\n3           into the swirl\n4           the morning star\nL           what is here\nF           full screen\n\nnothing pressed, nothing moves';
+  const NOTE = { sky: 'his sky, 830 to 2,250 m out, seven swirls turning, each a well', stars: `${W.STARS.length} stars and the moon, wells of turning rings`,
                  ground: 'the hills, along their own contours', river: 'the water, and the stars in it',
                  village: `${village.houses.length} houses, ${village.trees.length} trees, the church`, cypress: 'two, swaying',
                  field: 'standing on the slope', flowers: `${floating.length} loose in the air`, motes: 'round you, for the speed' };

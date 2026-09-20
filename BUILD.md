@@ -1906,3 +1906,46 @@ buffer to test against. Nothing is beyond the shell.
 edges of the paint account for. Frame rate unchanged: 110--111 fps at dpr 1.5 on the knoll and at the swirl.
 
 **Still visible**: as in E0.1.
+
+### E1 — Toward the star  *(the author's word, from a user: "if they are flying, they should be moving toward the star or the sky"; and: "think about Star Trek -- when the Enterprise moves towards a galaxy, the galaxy becomes bigger"; the same day)*
+
+**What it was.** The sky was a shell 1,500 m out with every stroke on it, and the body could go 620 m up. So
+flying up, nothing came nearer: no stroke passed another (a shell has no parallax), the star grew by half at
+the ceiling and stopped, and the swirl stayed a picture. Nobody felt like flying because flying went nowhere.
+
+**What was done.** Four things, all in the same evening.
+
+1. **The sky has depth** (`makeSky`, `src/world.js`). A stroke is still laid in a direction, so from the knoll the
+   sky is his picture as before; but it lies at a distance of its own. The night between the swirls lies in slow
+   drifts from 830 to 2,175 m. Each swirl is a well: its rim at 930 m and its eye at 2,200, so that flying into
+   it the arms wind round you and close ahead into the eye. In a star's direction the sky keeps behind the star.
+   The far hills are a ring at 2,025 m, beyond the ground's edge (the ground plane is 3,400 m across now, and
+   its strokes reach 1,650 m). Stroke sizes scale with distance, so the picture from the knoll is unchanged.
+2. **Each star is a well** (`star`, `src/world.js`): the core at 1,500 m, and each ring nearer than the one inside
+   it by 90 m, the widest at the mouth. You fly down it through ring after turning ring to the core. The moon
+   the same, six rings deep.
+3. **The reach** (`REACH`, `src/main.js`; `reach`, `src/flight.js`): the body may go anywhere in a sphere of
+   1,400 m round the middle of the world, in place of the old ceiling and edge -- to 100 m short of a star's core,
+   where the core fills the view as a blaze. Place `4` is the morning star, from the mouth of its well; `3` is
+   now 1,000 m into the great swirl.
+4. **The lift** (`src/flight.js`): the body goes faster the higher it is over the ground, twice at 45 m and
+   twelve times at 495 m and over, so that near the ground you still walk, and a star is 40 s away at a walk and
+   11 s with Shift, and grows the whole way -- slowly at first and then fast, which is how a thing you fly at
+   grows. Coming down you slow, and the floor's brake is as it was.
+
+**Depth, logarithmic** (`src/paint.js`, `LOG_*`; the land and the water too). With the eye inside the sky, two
+strokes that overlap at 2,000 m must sort exactly, and a linear depth buffer with the near plane at 0.2 m has
+a step of over a metre there -- the E0.2 flashing, everywhere. So every shader writes its depth as log2(1 + w):
+a step of a millimetre at 2,000 m. The paint sets it at the vertex, which keeps the GPU's early depth test (the
+fragment form cost a third of the frame rate); the ground plane, whose triangles are wide, sets it at the
+fragment, exactly. The E0.2 fix (no depth writes for the shell) is undone, since there is no shell.
+
+**Measured.** The E0.2 flicker metric, same view, same 30 ms step: 0.16% of pixels changed (E0.2 gave 0.17%;
+before the fix, 2.61%). The walk to the morning star, simulated: 40 s at a walk, 11 s with Shift. Frame rate
+was **not** measurable this evening: the author's own Chrome tab had the piece open at the same time, and with
+every stroke hidden the pane ran at 34--46 fps, so nothing here compares with E0.1's numbers. To be re-measured
+on a free GPU.
+
+**Still visible.** Inside the sky a stroke is a plate the size of a house, as it is at your feet; the author may
+want the sky's strokes thinner than the ground's when seen large. Arriving at a star is a white blaze with the
+bloom at 0.9. The far-hill ring at 2,025 m is seen from above as a ring. And the E0.1 list.

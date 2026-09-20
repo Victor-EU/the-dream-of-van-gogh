@@ -12,6 +12,20 @@ import { BRUSH, NOISE } from './brush.js';
 
 const SEG = 5;
 
+// Depth, logarithmic (E1). The sky is now 800 to 2,250 m out and you may fly into it, so two strokes that overlap
+// there must sort by depth exactly, and a linear depth buffer with a near plane at 0.2 m has a step of over a metre
+// at that distance -- strokes at one depth would trade places every frame, a flashing (E0.2). So every shader in
+// the world writes its depth as log2(1 + w), which has a step of a millimetre at 2,000 m and a micron at your feet.
+// The paint sets it at the vertex (LOG_SET), which keeps the GPU's early depth test and is exact at a stroke's
+// corners and a hair deep between them (the interpolation of a convex curve); the ground plane, whose triangles
+// are wide, sets it at the fragment (LOG_DEPTH), exactly. The far plane is 9,000: log2(9001) = 13.1359.
+export const LOG_K = 13.1359;
+export const LOG_SET = /* glsl */`gl_Position.z = (log2(max(1.0 + gl_Position.w, 1e-6)) * (2.0 / ${LOG_K}) - 1.0) * gl_Position.w;`;
+export const LOG_VERT = /* glsl */`varying float vLogW;`;
+export const LOG_PASS = /* glsl */`vLogW = 1.0 + gl_Position.w;`;
+export const LOG_FRAG = /* glsl */`varying float vLogW;`;
+export const LOG_DEPTH = /* glsl */`gl_FragDepthEXT = log2(max(vLogW, 1e-6)) * (1.0 / ${LOG_K});`;
+
 export function ribbon(seg, strips = 2) {
   const uv = [], idx = [];
   for (let s = 0; s < strips; s++) {
@@ -99,6 +113,7 @@ const VERT = /* glsl */`
     float taper = sqrt(max(0.0, 1.0 - pow(abs(2.0 * aUV.x - 1.0), 6.0)));
     vec3 p = pos + S * aUV.y * 0.5 * wid * (aUV.z > 0.5 ? 0.62 : 1.0) * (0.3 + 0.7 * taper);
     gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
+    ${LOG_SET}
     vBig = smoothstep(70.0, 420.0, wid * uFocalPx / max(length(uCam - pos), 1.0));
     vUnder = aUV.z;
     vST = vec2(aUV.x, aUV.y); vRow = iSize.z; vCol = iCol.rgb; vEmit = iCol.w; vP = p; vT = tan; vB = S; vN = N;

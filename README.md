@@ -31,9 +31,12 @@ python3 -m http.server 8712
 
 Then <http://127.0.0.1:8712/>. Drag to look. `↑` goes where you look, `↓` back, `←` `→` turn, `Shift` is faster,
 and nothing pressed is nothing: the body stands until a key is held. There is a ground under you and you go over
-it; the sky is 620 m up and the world 1,150 m across. `1` carries you back to the knoll, `2` over the village,
-`3` into the great swirl; touch the controls and the carry lets you go. `H` the keys, `L` what is here — how many
-strokes each thing is made of. Flags: `?at=1|2|3` (start at a place, no opening), `?flowers=300` (how many in
+it, and the higher you are the faster you go: near the ground you walk, and a star 1,500 m up is half a minute
+away, ten seconds with `Shift`, and grows the whole way. The sky has depth -- its night lies 830 to 2,250 m out,
+each swirl is a well you fly into, and each star a well of turning rings down to its core, which is as far as you
+go. `1` carries you back to the knoll, `2` over the village, `3` into the great swirl, `4` to the morning star;
+touch the controls and the carry lets you go. `H` the keys, `L` what is here — how many
+strokes each thing is made of. Flags: `?at=1|2|3|4` (start at a place, no opening), `?flowers=300` (how many in
 the air; 150 by default), `?sky=0.5`, `?ground=0.5` and `?motes=0` (the sky's, the ground's and the motes'
 counts), `?no<thing>` and `?only=<thing>` for `sky`, `stars`, `ground`, `river`, `village`, `cypress`, `field`,
 `flowers`, `motes`; `?noStrokes` (the bare ground and the night gradient, nothing else), `?nopart`, `?nocurl`,
