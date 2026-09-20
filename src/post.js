@@ -35,7 +35,7 @@ const UP = /* glsl */`
   }`;
 const FINAL = /* glsl */`
   uniform sampler2D tScene, tBloom;
-  uniform float uExposure, uBloom, uSat, uContrast, uVignette, uGrain, uTime, uWarm, uBlack;
+  uniform float uExposure, uBloom, uSat, uContrast, uVignette, uGrain, uTime, uWarm, uBlack, uTone;
   uniform vec2 uRes;
   varying vec2 vUv;
   float h12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -49,7 +49,9 @@ const FINAL = /* glsl */`
     c *= uExposure;
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
     c = max(mix(vec3(l), c, uSat), 0.0);
-    vec3 s = srgb(aces(c));
+    // uTone 1 is the filmic curve; 0 keeps the paint's own values, with only a soft shoulder above 0.85
+    vec3 plain = mix(c, 0.85 + 0.15 * (1.0 - exp(-(c - 0.85) / 0.15)), step(0.85, c));
+    vec3 s = srgb(mix(clamp(plain, 0.0, 1.0), aces(c), uTone));
     s = clamp((s - 0.5) * uContrast + 0.5, 0.0, 1.0);
     s += vec3(0.018, 0.004, -0.02) * uWarm;
     vec2 q = vUv - 0.5; q.x *= uRes.x / uRes.y;
@@ -83,7 +85,7 @@ export class Post {
     this.mFinal = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FINAL, depthTest: false, depthWrite: false,
       uniforms: { tScene: { value: null }, tBloom: { value: null }, uExposure: { value: 1 }, uBloom: { value: 0.6 },
         uSat: { value: 1.1 }, uContrast: { value: 1.05 }, uVignette: { value: 0.35 }, uGrain: { value: 0.025 },
-        uTime: { value: 0 }, uWarm: { value: 0 }, uBlack: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) } } });
+        uTime: { value: 0 }, uWarm: { value: 0 }, uBlack: { value: 0 }, uTone: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) } } });
   }
   setSize(w, h) {
     this.w = w; this.h = h;
@@ -116,7 +118,7 @@ export class Post {
     const F = this.mFinal.uniforms;
     F.tScene.value = this.main.texture; F.tBloom.value = this.lv[0].texture;
     F.uExposure.value = P.exposure; F.uBloom.value = P.bloom; F.uSat.value = P.sat; F.uContrast.value = P.contrast;
-    F.uVignette.value = P.vignette; F.uGrain.value = P.grain; F.uTime.value = P.time; F.uWarm.value = P.warm; F.uBlack.value = P.black;
+    F.uVignette.value = P.vignette; F.uGrain.value = P.grain; F.uTime.value = P.time; F.uWarm.value = P.warm; F.uBlack.value = P.black; F.uTone.value = P.tone ?? 1;
     this.quad.material = this.mFinal;
     r.setRenderTarget(null);
     r.clear(true, true, false);

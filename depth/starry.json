@@ -1,0 +1,157 @@
+{
+ "_": "The Starry Night, exploded. Every number here is a person's (DESIGN 4.3). The eye is in the air over the water, forty metres up, looking eight degrees above the horizontal: from there the horizon line of the canvas, v 0.74, is a ray five degrees below the horizontal that meets the water 460 m out, which is where the village ends and the hills begin. The sky is far at the hills and nearer overhead, so that climbing puts you among it, and its pale bands stand forward of its dark ones, so that from inside it is ribbons and not chips. The two eddies recede: each is a tunnel that goes away from the eye. The stars and the moon stand a little in front of the sky round them, as he painted them over it. The cypress floats: its foot is cut by the canvas's edge and it is put where its size says, not on the ground. D0 found the jitter and the order term had to be small: at three and four percent the sky was confetti.",
+ "slug": "starry",
+ "eye": {
+  "x": -700,
+  "y": 42.761,
+  "z": 0,
+  "yaw": 0,
+  "pitch": 8,
+  "hfov": 62
+ },
+ "floor": 2.761,
+ "far": 3000,
+ "noise": 0.006,
+ "orderNear": 0.012,
+ "regions": {
+  "skyRange": {
+   "key": [
+    0,
+    0,
+    1
+   ],
+   "law": {
+    "type": "range",
+    "v0": 0.62,
+    "d0": 700,
+    "v1": 0.0,
+    "d1": 250
+   }
+  },
+  "sky": {
+   "key": [
+    60,
+    90,
+    200
+   ],
+   "law": {
+    "type": "relief",
+    "base": "skyRange",
+    "amp": 45,
+    "by": "brightness"
+   }
+  },
+  "swirl": {
+   "key": [
+    120,
+    160,
+    240
+   ],
+   "law": {
+    "type": "funnel",
+    "base": "sky",
+    "amp": 160,
+    "centres": [
+     [
+      0.49,
+      0.34,
+      0.17,
+      0.15
+     ],
+     [
+      0.69,
+      0.45,
+      0.085,
+      0.075
+     ]
+    ]
+   }
+  },
+  "star": {
+   "key": [
+    255,
+    240,
+    120
+   ],
+   "law": {
+    "type": "rel",
+    "base": "sky",
+    "k": 0.9
+   },
+   "shine": 0.6,
+   "noise": 0.003
+  },
+  "moon": {
+   "key": [
+    255,
+    200,
+    40
+   ],
+   "law": {
+    "type": "rel",
+    "base": "sky",
+    "k": 0.92
+   },
+   "shine": 0.8,
+   "noise": 0.002
+  },
+  "hills": {
+   "key": [
+    40,
+    40,
+    120
+   ],
+   "law": {
+    "type": "range",
+    "v0": 0.78,
+    "d0": 460,
+    "v1": 0.5,
+    "d1": 1600
+   },
+   "noise": 0.004
+  },
+  "village": {
+   "key": [
+    160,
+    120,
+    60
+   ],
+   "law": {
+    "type": "plane",
+    "y": 2.761,
+    "far": 900
+   },
+   "noise": 0.0,
+   "windows": {
+    "lum": 0.45,
+    "yellow": 0.18,
+    "shine": 1.4
+   }
+  },
+  "cypress": {
+   "key": [
+    20,
+    60,
+    30
+   ],
+   "law": {
+    "type": "relief",
+    "base": "cypressCore",
+    "amp": 12,
+    "by": "brightness"
+   },
+   "noise": 0.004
+  },
+  "cypressCore": {
+   "key": [
+    0,
+    0,
+    0
+   ],
+   "law": {
+    "type": "const",
+    "d": 110
+   }
+  }
+ }
+}

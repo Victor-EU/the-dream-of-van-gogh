@@ -1,240 +1,39 @@
 {
- "_about": "Every line of his letters the piece shows, and what a stranger needs to check each one against the edition: the letter, the paragraph, the words, the paragraph he wrote in the language he wrote it, and the canvas the edition's own note says the passage is about. Written by tools/letters.py, which reads the edition's public pages; a person chooses a line, and nothing else in this file is typed.",
+ "_about": "DESIGN 9. Checked by tools/lines.py against the edition; see letters/lines.json for what was asked.",
  "edition": {
   "cite": "Leo Jansen, Hans Luijten, Nienke Bakker (eds.) (2009), Vincent van Gogh - The Letters. Version: December 2024. Amsterdam & The Hague: Van Gogh Museum & Huygens ING. https://vangoghletters.org",
   "version": "December 2024",
   "licence": "CC BY-NC-SA 4.0 -- the licence the edition gives its own source files (https://vangoghletters.org/vg/about_6.html, section 6.4)"
  },
- "checked": "2026-09-11",
+ "checked": "2026-09-20",
  "lines": [
   {
-   "station": 1,
-   "title": "The Potato Eaters",
-   "letter": 499,
+   "id": "piece",
+   "title": "The Dream of Van Gogh",
+   "letter": 638,
    "to": "Theo van Gogh",
-   "place": "Nuenen",
-   "date": "on or about 2 May 1885",
+   "place": "Arles",
+   "date": "9 or 10 July 1888",
    "concordance": {
-    "Br. 1990": "502",
-    "CL": "405"
+    "Br. 1990": "642",
+    "CL": "506"
    },
-   "paragraph": 4,
+   "paragraph": 32,
    "from": "the translation",
-   "text": "The subject here is a grey interior, lit by a small lamp.",
-   "words": 12,
-   "original": "Ik denk dat Portier het begrijpen zal. Het is zeer donker echter en in het wit b.v. is haast niet eens wit gebruikt doch eenvoudig de neutrale kleur die ontstaat als men rood, blaauw, geel dooreen mengt, b.v. vermilloen, Parijsch blaauw en Napels geel.– Die kleur is dus op zich zelf een vrij donker grijs maar doet wit in ’t schij. Ik zal U zeggen waarom ik dat doe. Hier is ’t motief een grijs interieur, verlicht door een lampje.",
-   "canvas": {
-    "blob": "strokes/s01/potatoeaters-canvas.bin",
-    "title": "The Potato Eaters"
-   },
-   "identified": {
-    "note": "n-2",
-    "paragraph": 3,
-    "work": "The potato eaters",
-    "F": "82",
-    "JH": "764",
-    "cm": [
-     82.0,
-     114.0
-    ],
-    "credit": "Amsterdam, Van Gogh Museum, Vincent van Gogh Foundation",
-    "also": []
-   },
-   "why": null,
-   "links": {
-    "translation": "https://vangoghletters.org/en/let499",
-    "original": "https://vangoghletters.org/orig/let499"
-   }
-  },
-  {
-   "station": 2,
-   "title": "The corridor of self-portraits",
-   "letter": 569,
-   "to": "Horace Mann Livens",
-   "place": "Paris",
-   "date": "September or October 1886",
-   "concordance": {
-    "Br. 1990": "572",
-    "CL": "459a"
-   },
-   "paragraph": 9,
-   "from": "the original, which he wrote in English",
-   "text": "Trying to render intense COLOUR and not a grey harmony.",
-   "words": 10,
-   "original": "Trying to render intense COLOUR and not a grey harmony.",
-   "canvas": {
-    "blob": "strokes/s02/selfgrey-canvas.bin",
-    "title": "Self-Portrait"
-   },
+   "text": "Just as we take the train to go to Tarascon or Rouen, we take death to go to a star.",
+   "words": 20,
+   "original": "Mourir tranquillement de vieillesse serait y aller à pied.",
+   "canvas": null,
    "identified": null,
-   "why": "About what the whole corridor is doing rather than one canvas in it: the edition ties nothing around this paragraph to a painting the piece has. He wrote this letter in English, so the line is his own words and capitals, not a translation.",
+   "why": "the line of the piece, not of a canvas: DESIGN 1 takes its thesis from it and DESIGN 9 puts it under the title at the opening. It stands at no painting, so no note can be asked to identify one.",
    "links": {
-    "translation": "https://vangoghletters.org/en/let569",
-    "original": "https://vangoghletters.org/orig/let569"
+    "translation": "https://vangoghletters.org/en/let638",
+    "original": "https://vangoghletters.org/orig/let638"
    }
   },
   {
-   "station": 3,
-   "title": "Snow, then blossom",
-   "letter": 594,
-   "to": "Theo van Gogh",
-   "place": "Arles",
-   "date": "9 April 1888",
-   "concordance": {
-    "Br. 1990": "596",
-    "CL": "474"
-   },
-   "paragraph": 1,
-   "from": "the translation",
-   "text": "Am hard at work again, still orchards in blossom.",
-   "words": 9,
-   "original": "Merci de ta lettre et du billet de 100 fr. qu’elle contenait. je t’ai envoyé des croquis des tableaux destinés pour la Hollande. Va sans dire que les études peintes sont plus éclatantes de couleur.– Suis de nouveau en plein travail, toujours des vergers en fleur.",
-   "canvas": {
-    "blob": "strokes/s03/whiteorchard-canvas.bin",
-    "title": "The White Orchard"
-   },
-   "identified": null,
-   "why": "About the run of orchards, which is what this station is, and not one canvas in it: the paintings the edition's note names beside this line are the Kroller-Muller's Langlois Bridge and Souvenir de Mauve, neither of which the piece has.",
-   "links": {
-    "translation": "https://vangoghletters.org/en/let594",
-    "original": "https://vangoghletters.org/orig/let594"
-   }
-  },
-  {
-   "station": 4,
-   "title": "The Harvest",
-   "letter": 627,
-   "to": "John Peter Russell",
-   "place": "Arles",
-   "date": "on or about 17 June 1888",
-   "concordance": {
-    "Br. 1990": "629",
-    "CL": "501a"
-   },
-   "paragraph": 1,
-   "from": "the original, which he wrote in English",
-   "text": "We have harvest time here at present and I am always in the fields.",
-   "words": 14,
-   "original": "for ever so long I have been wanting to write to you – but then the work has so taken me up. We have harvest time here at present and I am always in the fields.",
-   "canvas": {
-    "blob": "strokes/s04/harvest-canvas.bin",
-    "title": "The Harvest (The Blue Cart)"
-   },
-   "identified": null,
-   "why": "About the week of the harvest and not one canvas: the letter names no painting this station stands. Written in English, to John Peter Russell, so the words are his exactly.",
-   "links": {
-    "translation": "https://vangoghletters.org/en/let627",
-    "original": "https://vangoghletters.org/orig/let627"
-   }
-  },
-  {
-   "station": 5,
-   "title": "The Yellow House",
-   "letter": 705,
-   "to": "Theo van Gogh",
-   "place": "Arles",
-   "date": "16 October 1888",
-   "concordance": {
-    "Br. 1990": "710",
-    "CL": "554"
-   },
-   "paragraph": 3,
-   "from": "the translation",
-   "text": "This time it’s simply my bedroom, but the colour has to do the job here…",
-   "words": 15,
-   "original": "C’est cette fois ci ma chambre à coucher tout simplement, seulement la couleur doit ici faire la chôse et en donnant par sa simplification un style plus grand aux chôses, être suggestive ici du repos ou du sommeil en général. Enfin la vue du tableau doit reposer la tête ou plutôt l’imagination.–",
-   "canvas": {
-    "blob": "strokes/s05/bedroom1-canvas.bin",
-    "title": "The Bedroom"
-   },
-   "identified": {
-    "note": "n-1",
-    "paragraph": 3,
-    "work": "The bedroom",
-    "F": "482",
-    "JH": "1608",
-    "cm": [
-     72.0,
-     90.0
-    ],
-    "credit": "Amsterdam, Van Gogh Museum, Vincent van Gogh Foundation",
-    "also": []
-   },
-   "why": null,
-   "links": {
-    "translation": "https://vangoghletters.org/en/let705",
-    "original": "https://vangoghletters.org/orig/let705"
-   }
-  },
-  {
-   "station": 6,
-   "title": "The night of Arles",
-   "letter": 676,
-   "to": "Theo van Gogh",
-   "place": "Arles",
-   "date": "8 September 1888",
-   "concordance": {
-    "Br. 1990": "679",
-    "CL": "533"
-   },
-   "paragraph": 2,
-   "from": "the translation",
-   "text": "I’ve tried to express the terrible human passions with the red and the green.",
-   "words": 14,
-   "original": "J’ai cherché à exprimer avec le rouge et le vert les terribles passions humaines.",
-   "canvas": {
-    "blob": "strokes/s06/nightcafe-canvas.bin",
-    "title": "The Night Cafe"
-   },
-   "identified": {
-    "note": "n-7",
-    "paragraph": 4,
-    "work": "The night café",
-    "F": "463",
-    "JH": "1575",
-    "cm": [
-     70.0,
-     89.0
-    ],
-    "credit": "New Haven, Yale University Art Gallery, Bequest of Stephen Carlton Clark, B.A. 1903",
-    "also": []
-   },
-   "why": null,
-   "links": {
-    "translation": "https://vangoghletters.org/en/let676",
-    "original": "https://vangoghletters.org/orig/let676"
-   }
-  },
-  {
-   "station": 7,
-   "title": "The red vineyard",
-   "letter": 717,
-   "to": "Theo van Gogh",
-   "place": "Arles",
-   "date": "on or about 3 November 1888",
-   "concordance": {
-    "Br. 1990": "722",
-    "CL": "559"
-   },
-   "paragraph": 21,
-   "from": "the translation",
-   "text": "We saw a red vineyard, completely red like red wine.",
-   "words": 10,
-   "original": "Mais Dimanche si tu avais été avec nous!– nous avons vu une vigne rouge, toute rouge comme du vin rouge. Dans le lointain elle devenait jaune et puis un ciel vert avec un soleil, des terrains après la pluie violets et scintillant jaune par ci par là où se refletait le soleil couchant.–",
-   "canvas": {
-    "blob": "strokes/s07/redvineyard-canvas.bin",
-    "title": "The Red Vineyard"
-   },
-   "identified": null,
-   "why": "What he saw on the Sunday walk, not yet the canvas: the edition ties the canvas to paragraph 4 of this letter and to letter 718, and none of the notes around this paragraph names it. The land at this station is painted from these words, and the canvas stands in it.",
-   "links": {
-    "translation": "https://vangoghletters.org/en/let717",
-    "original": "https://vangoghletters.org/orig/let717"
-   }
-  },
-  {
-   "station": 8,
-   "title": "Saint-Remy",
+   "id": "starry",
+   "title": "The Starry Night",
    "letter": 782,
    "to": "Theo van Gogh",
    "place": "Saint-Rémy-de-Provence",
@@ -245,13 +44,10 @@
    },
    "paragraph": 12,
    "from": "the translation",
-   "text": "At last I have a landscape with olive trees, and also a new study of a starry sky.",
-   "words": 18,
+   "text": "…a new study of a starry sky.",
+   "words": 7,
    "original": "Enfin j’ai un paysage avec des oliviers et aussi une nouvelle étude de ciel étoilé.",
-   "canvas": {
-    "blob": "strokes/s08/starry-canvas.bin",
-    "title": "The Starry Night"
-   },
+   "canvas": "starry",
    "identified": {
     "note": "n-8",
     "paragraph": 12,
@@ -272,83 +68,75 @@
    }
   },
   {
-   "station": 9,
-   "title": "Auvers",
-   "letter": 879,
-   "to": "Willemien van Gogh",
-   "place": "Auvers-sur-Oise",
-   "date": "5 June 1890",
+   "id": "rhone",
+   "title": "Starry Night Over the Rhône",
+   "letter": 691,
+   "to": "Theo van Gogh",
+   "place": "Arles",
+   "date": "on or about 29 September 1888",
    "concordance": {
-    "Br. 1990": "883",
-    "CL": "W22"
+    "Br. 1990": "695",
+    "CL": "543"
    },
-   "paragraph": 3,
+   "paragraph": 2,
    "from": "the translation",
-   "text": "…the building appears purplish against a sky of a deep and simple blue of pure cobalt…",
-   "words": 16,
-   "original": "Pour moi le voyage & le reste jusqu’ici se sont bien passés et de revenir dans le nord me distrait beaucoup. Puis j’ai trouvé dans le Dr Gachet un ami tout fait et quelque chôse comme un nouveau frère serait – tellement nous nous ressemblons physiquement et moralement aussi. Il est très nerveux et beaucoup bizarre luimême et a rendu aux artistes de la nouvelle école beaucoup d’amitiés & services, tant que c’était dans son pouvoir. J’ai fait son portrait l’autre jour et vais peindre aussi celui de sa fille qui a 19 ans. Il a perdu sa femme il y a quelques années ce qui a contribué à beaucoup le casser. Nous avons été amis pour ainsi dire tout de suite et j’irai passer toutes les semaines une ou deux journées chez lui à travailler dans son jardin dont j’ai déjà peint deux études, l’une avec des plantes du midi, aloès, cyprès, soucis, l’autre des roses blanches, de la vigne et une figure. puis un bouquet de renoncules. Avec cela j’ai un plus grand tableau de l’église du village – un effet où le bâtiment parait violacé contre un ciel d’un bleu profond & simple de cobalt pur, les fenêtres à vitraux paraissent comme des taches bleu d’outremer, le toit est violet et en partie orangé. Sur l’avant plan un peu de verdure fleurie et du sable ensoleillé rose. C’est encore presque la même chôse que les études que je fis à Nunen de la vieille tour et du cimetière. Seulement à présent la couleur est probablement plus expressive, plus somptueuse. Mais dans les derniers temps à St Remy j’ai encore travaillé comme un enragé, surtout à des bouquets de fleurs. Roses et Iris violets.",
-   "canvas": {
-    "blob": "strokes/s09/church-canvas.bin",
-    "title": "The Church at Auvers"
-   },
+   "text": "…the starry sky at last, actually painted at night, under a gas-lamp.",
+   "words": 12,
+   "original": "Ci inclus petit croquis d’une toile de 30 carrée – enfin le ciel étoilé peint la nuit même, sous un bec de gaz. Le ciel est bleu vert, l’eau est bleu de roi, les terrains sont mauves. La ville est bleue et violette. le gaz est jaune et ses reflets sont or roux et descendent jusqu’au bronze vert. Sur le champ bleu vert du ciel la Grande Ourse a un scintillement vert et rose dont la paleur discrète contraste avec l’or brutal du gaz.",
+   "canvas": "rhone",
    "identified": {
-    "note": "n-8",
+    "note": "n-1",
     "paragraph": 3,
-    "work": "Church at Auvers",
-    "F": "789",
-    "JH": "2006",
+    "work": "Starry night over the Rhône",
+    "F": "474",
+    "JH": "1592",
     "cm": [
-     94.0,
-     74.0
+     72.5,
+     92.0
     ],
     "credit": "Paris, Musée d'Orsay",
     "also": []
    },
    "why": null,
    "links": {
-    "translation": "https://vangoghletters.org/en/let879",
-    "original": "https://vangoghletters.org/orig/let879"
+    "translation": "https://vangoghletters.org/en/let691",
+    "original": "https://vangoghletters.org/orig/let691"
    }
   },
   {
-   "station": 10,
-   "title": "The wheatfield",
-   "letter": 898,
-   "to": "Theo van Gogh and Jo van Gogh-Bonger",
-   "place": "Auvers-sur-Oise",
-   "date": "on or about 10 July 1890",
+   "id": "cafeterrace",
+   "title": "Café Terrace at Night",
+   "letter": 678,
+   "to": "Willemien van Gogh",
+   "place": "Arles",
+   "date": "9 and about 14 September 1888",
    "concordance": {
-    "Br. 1990": "903",
-    "CL": "649"
+    "Br. 1990": "681",
+    "CL": "W7"
    },
-   "paragraph": 3,
+   "paragraph": 19,
    "from": "the translation",
-   "text": "They’re immense stretches of wheatfields under turbulent skies…",
+   "text": "Now there’s a painting of night without black.",
    "words": 8,
-   "original": "Là – revenu ici je me suis remis au travail – le pinceau pourtant me tombant presque des mains et – sachant bien ce que je voulais j’ai encore depuis peint trois grandes toiles. Ce sont d’immenses étendues de blés sous des ciels troublés et je ne me suis pas gêné pour chercher à exprimer de la tristesse, de la solitude extrême. Vous verrez cela j’espère sous peu – car j’espère vous les apporter à Paris le plus tôt possible puisque je croirais presque que ces toiles vous diront ce que je ne sais dire en paroles, ce que je vois de sain et de fortifiant dans la campagne.",
-   "canvas": {
-    "blob": "strokes/s10/crows-canvas.bin",
-    "title": "Wheatfield with Crows"
-   },
+   "original": "j’ai été interrompu justement par le travail que m’a donné de ces jours ci un nouveau tableau réprésentant l’extérieur d’un café le soir. Sur la terrasse il y a de petites figurines de buveurs. Une immense lanterne jaune éclaire la terrasse, la devanture, le trottoir, et projette meme une lumiere sur les pavés de la rue, qui prend une teinte de violet rose. Les pignons des maisons d’une rue qui file sous le ciel bleu constellé d’etoiles sont bleus foncés ou violets avec un arbre vert.– Voila un tableau de nuit sans noir. rien qu’avec du beau bleu et du violet et du vert, et dans cet entourage la place illuminée se colore de souffre pâle, de citron vert. Cela m’amuse enormement de peindre la nuit sur place. Autrefois on dessinait et peignait le tableau le jour d’après le dessin. Mais moi je m’en trouve bien de peindre la chôse immediatement. Il est bien vrai que dans l’obscurité je peux prendre un bleu pour un vert, un lilas bleu pour un lilas rose puisqu’on ne distingue pas bien la qualité du ton. Mais c’est le seul moyen de sortir de la nuit noire conventionelle avec une pauvre lumière blafarde et blanchâtre alors que pourtant une simple bougie déjà nous donne les jaunes, les orangés les plus riches. J’ai aussi fait un nouveau portrait de moi-même comme étude où j’ai l’air d’un japonais. Tu ne m’as jamais dit si tu avais lu Bel ami de Guy de Maupassant et ce que tu penses maintenant en general de son talent. Je dis cela parceque le commencement de Bel ami est justement la description d’une nuit étoilée à Paris avec les cafés illuminés du Boulevard et c’est à peu près ce même sujet que je viens de peindre maintenant.",
+   "canvas": "cafeterrace",
    "identified": {
-    "note": "n-4",
-    "paragraph": 3,
-    "work": "Wheatfield with crows",
-    "F": "779",
-    "JH": "2117",
+    "note": "n-12",
+    "paragraph": 19,
+    "work": "Café terrace at night",
+    "F": "467",
+    "JH": "1580",
     "cm": [
-     50.5,
-     103.0
+     80.7,
+     65.3
     ],
-    "credit": "Amsterdam, Van Gogh Museum, Vincent van Gogh Foundation",
-    "also": [
-     "Wheatfield under troubled skies (F 778)"
-    ]
+    "credit": "Otterlo, Kröller-Müller Museum",
+    "also": []
    },
    "why": null,
    "links": {
-    "translation": "https://vangoghletters.org/en/let898",
-    "original": "https://vangoghletters.org/orig/let898"
+    "translation": "https://vangoghletters.org/en/let678",
+    "original": "https://vangoghletters.org/orig/let678"
    }
   }
  ]

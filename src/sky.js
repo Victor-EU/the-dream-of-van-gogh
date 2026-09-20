@@ -1,427 +1,340 @@
-// The sky: a painted dome, and over it tens of thousands of strokes laid
-// along the wind, curled into his eddies, ringed round his stars. Each world
-// has its own sky; going through a door into the next repaints it stroke by
-// stroke, from the way you were walking outward.
-import * as THREE from 'three';
-import { NOISE, BRUSH } from './brush.js';
-import { NST } from './journey.js';
-import { rng, lin, mixc, jitter, dirAzEl, norm3, cross3, dot3, add3, sub3, mul3, clamp, smoothstep, lerp, noise2, DEG } from './util.js';
+// Our sky, in his hand (DESIGN 4.6, 5.3). Rule 3 of the build: nothing of ours is invented. Every number a stroke
+// of ours carries -- its colour, how long and how wide it is, how much it curls, how deep its paint stands, how far
+// it lies off the band it is in, and how it bows -- is drawn from hand/starry-sky.json, which tools/hand.py measured
+// from the Starry Night's own sky. What is ours is where it stands: outside his cone, at his density, on the shell
+// his depth law gives when it is read in elevation, along the wind of 4.7 continued by its curl noise.
+//
+// Three generators, one draw call each. The sky: his density, 16,562 strokes a steradian, over the sky above the
+// water that his canvas does not hold. The stars: few, unnamed, placed where the noise's eddies are not, each a
+// core and rings out of the hand of his eleven. The motes: the one generator whose purpose is the sensation and
+// not the picture, small marks of sky colour on a lattice that wraps round the eye, so that a swoop has speed in
+// it and a glide has none. The ledger names all three.
+import { rng, lerp, clamp, smoothstep, noise3 } from './util.js';
 
-const R_SKY = 800;
-
-export function ribbon(seg) {
-  const uv = [], idx = [];
-  for (let i = 0; i <= seg; i++) uv.push(i / seg, -1, i / seg, 1);
-  for (let i = 0; i < seg; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-  const g = new THREE.InstancedBufferGeometry();
-  g.setAttribute('aUV', new THREE.Float32BufferAttribute(uv, 2));
-  g.setIndex(idx);
-  return g;
+// a colour out of a measured paint: its mean, moved mostly along itself by its own spread and a little freely
+function paint(mean, sd, r) {
+  const z = r.normal() * 0.75;
+  return [0, 1, 2].map(k => Math.max(0, mean[k] + sd[k] * (z + r.normal() * 0.55)));
 }
 
-const SKY_VERT = /* glsl */`
-  attribute vec2 aUV;
-  attribute vec3 iDir, iTan;
-  attribute vec4 iSize, iCol, iCol2, iAxis;
-  uniform float uTime, uFade, uSide, uFlow, uIntro;
-  uniform vec3 uWipeDir;
-  varying vec2 vST; varying float vRow, vEmit; varying vec3 vCol, vCol2;
-  vec3 rotA(vec3 v, vec3 k, float th) { float c = cos(th), s = sin(th); return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c); }
-  void main() {
-    // a stroke's turn to go over: mostly by how far it is round from the way you were walking, a little by chance
-    float r = 0.7 * acos(clamp(dot(iDir, uWipeDir), -1.0, 1.0)) / 3.14159 + 0.3 * iCol2.w;
-    if ((uSide < 0.5 && r < uFade) || (uSide > 0.5 && r >= uFade)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
-    if (fract(iAxis.w * 1.6180339) > uIntro * 1.12 - 0.02) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
-    vec3 d = iDir, t = iTan;
-    float w = length(iAxis.xyz);
-    if (w > 1e-6) { vec3 k = iAxis.xyz / w; float th = w * uTime; d = rotA(d, k, th); t = rotA(t, k, th); }
-    vec3 b = normalize(cross(d, t));
-    float x = aUV.x * 2.0 - 1.0;
-    float slide = sin(uTime * 0.37 + iAxis.w) * 0.28 * uFlow;
-    float s = (x + slide) * iSize.x;
-    float taper = sqrt(max(0.0, 1.0 - pow(abs(x), 6.0)));
-    vec3 p = normalize(d + t * s + b * (iSize.z * s * s / max(iSize.x, 1e-5) + aUV.y * iSize.y * (0.4 + 0.6 * taper)));
-    gl_Position = projectionMatrix * vec4(mat3(viewMatrix) * p * ${R_SKY.toFixed(1)}, 1.0);
-    vST = aUV; vRow = iSize.w; vCol = iCol.rgb; vEmit = iCol.w; vCol2 = iCol2.rgb;
-  }
-`;
-const SKY_FRAG = /* glsl */`
-  ${BRUSH}
-  varying vec2 vST; varying float vRow, vEmit; varying vec3 vCol, vCol2;
-  uniform float uOpacity;
-  void main() {
-    vec4 br = brush(vST, vRow);
-    float a = smoothstep(0.22, 0.6, br.g) * uOpacity;
-    if (a < 0.01) discard;
-    vec3 n = brushNormal(vST, vRow, br.r, 1.3);
-    float relief = 0.9 + 0.22 * dot(n, normalize(vec3(-0.35, 0.55, 0.76)));
-    vec3 c = mix(vCol, vCol2, br.a * 0.8) * (0.88 + 0.24 * br.b) * relief;
-    c += vCol * vEmit * (0.55 + 0.9 * br.r);
-    gl_FragColor = vec4(c, a);
-  }
-`;
+const QS = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98];
+const DEG = Math.PI / 180;
+const F1 = [31.7, 8.2, 57.4], F2 = [103.4, 61.9, 12.8];   // two fields of the same shape, laid over each other
 
-const GLOW_VERT = /* glsl */`
-  attribute vec2 aUV;
-  attribute vec4 gDir, gCol;
-  uniform float uFade, uSide, uTime, uIntro;
-  varying vec2 vQ; varying vec3 vC;
-  void main() {
-    vec3 d = normalize(gDir.xyz);
-    vec3 t = normalize(cross(vec3(0.0, 1.0, 0.0), d) + vec3(1e-5, 0.0, 0.0)), b = cross(d, t);
-    vec2 q = vec2(aUV.x * 2.0 - 1.0, aUV.y);
-    float pulse = 1.0 + 0.06 * sin(uTime * 1.3 + gDir.x * 40.0);
-    vec3 p = normalize(d + (t * q.x + b * q.y) * gDir.w * pulse);
-    gl_Position = projectionMatrix * vec4(mat3(viewMatrix) * p * ${(R_SKY * 0.99).toFixed(1)}, 1.0);
-    vQ = q; vC = gCol.rgb * gCol.w * (uSide < 0.5 ? 1.0 - uFade : uFade) * uIntro;
-  }
-`;
-const GLOW_FRAG = /* glsl */`
-  varying vec2 vQ; varying vec3 vC;
-  void main() { float r = length(vQ); float g = exp(-r * r * 5.5) * (1.0 - smoothstep(0.75, 1.0, r)); gl_FragColor = vec4(vC * g, 1.0); }
-`;
-
-const DOME_VERT = /* glsl */`
-  varying vec3 vDir;
-  void main() { vDir = position; vec4 p = projectionMatrix * vec4(mat3(viewMatrix) * position * 900.0, 1.0); gl_Position = p.xyww; }
-`;
-const DOME_FRAG = /* glsl */`
-  ${NOISE}
-  uniform vec3 uZen0, uMid0, uHor0, uZen1, uMid1, uHor1, uLand;
-  uniform vec4 uHill0, uHill1;
-  uniform vec3 uHillC0, uHillC1, uHillD0, uHillD1;
-  uniform float uMix, uBare, uTime, uIntro;
-  varying vec3 vDir;
-  const vec3 LINEN = vec3(0.807, 0.761, 0.644);
-  vec3 skyCol(vec3 zen, vec3 mid, vec3 hor, float el) {
-    float e = el / 1.5708;
-    return mix(mix(hor, mid, smoothstep(0.0, 0.2, e)), zen, smoothstep(0.2, 0.95, e));
-  }
-  float hillProf(vec4 H, float az) {
-    if (H.w < 0.5) return -1.0;
-    float p = sin(az * H.y + H.z) * 0.5 + 0.5;
-    float q = sin(az * H.y * 2.37 + H.z * 1.7) * 0.5 + 0.5;
-    float r = sin(az * H.y * 6.1 + H.z * 3.1) * 0.5 + 0.5;
-    return H.x * (0.3 + 0.45 * p + 0.3 * q * p + 0.08 * r);
-  }
-  vec3 hills(vec3 c, vec4 H, vec3 C, vec3 D, float az, float el, vec3 hor) {
-    float h = hillProf(H, az);
-    if (el >= h) return c;
-    float streak = fbm(vec2(az * 30.0, el * 260.0));
-    vec3 hc = mix(D, C, smoothstep(-0.01, h, el) * 0.8 + (streak - 0.5) * 0.5);
-    return mix(hc, hor, 0.25 * (1.0 - smoothstep(0.0, h, el)));
-  }
-  void main() {
-    vec3 d = normalize(vDir);
-    float el = asin(clamp(d.y, -1.0, 1.0)), az = atan(d.x, -d.z);
-    vec3 c0 = skyCol(uZen0, uMid0, uHor0, max(el, 0.0)), c1 = skyCol(uZen1, uMid1, uHor1, max(el, 0.0));
-    c0 = hills(c0, uHill0, uHillC0, uHillD0, az, el, uHor0);
-    c1 = hills(c1, uHill1, uHillC1, uHillD1, az, el, uHor1);
-    vec3 c = mix(c0, c1, uMix);
-    float st = fbm(vec2(az * 7.0 + uTime * 0.004, el * 48.0));
-    c *= 0.88 + 0.24 * st;
-    c = mix(c, uLand, smoothstep(0.0, -0.035, el));
-    c = mix(LINEN * (0.95 + 0.07 * vnoise(vec2(az * 260.0, el * 260.0))), c, smoothstep(st - 0.12, st + 0.12, uIntro * 1.35 - 0.2));
-    c = mix(c, LINEN * (0.95 + 0.08 * vnoise(vec2(az * 300.0, el * 300.0))), uBare);
-    gl_FragColor = vec4(c, 1.0);
-  }
-`;
-
-// --------------------------------------------------------- building a sky --
-class Pack {
-  constructor() { this.d = []; this.t = []; this.size = []; this.col = []; this.col2 = []; this.axis = []; this.n = 0; }
-  push(d, t, hl, hw, bend, row, c, emit, c2, r, axis, phase) {
-    this.d.push(...d); this.t.push(...t); this.size.push(hl, hw, bend, row);
-    this.col.push(c[0], c[1], c[2], emit); this.col2.push(c2[0], c2[1], c2[2], r);
-    this.axis.push(axis[0], axis[1], axis[2], phase); this.n++;
-  }
+// a measured quantile table, read back: the inverse of its own distribution, flat past the ends
+function draw(tbl, u) {
+  if (u <= QS[0]) return tbl[0];
+  if (u >= QS[QS.length - 1]) return tbl[tbl.length - 1];
+  let i = 1;
+  while (i < QS.length - 1 && u > QS[i]) i++;
+  return lerp(tbl[i - 1], tbl[i], (u - QS[i - 1]) / (QS[i] - QS[i - 1]));
 }
-
-const tangents = d => {
-  const up = Math.abs(d[1]) > 0.999 ? [1, 0, 0] : [0, 1, 0];
-  const east = norm3(cross3(up, d));        // increasing azimuth, seen from inside
-  const north = norm3(cross3(d, east));
-  return [mul3(east, -1), north];
-};
-
-function buildSky(cfg, seed) {
-  const sky = cfg.sky, R = rng(seed);
-  const P = new Pack();
-  const low = (sky.low || ['#888888']).map(lin), high = (sky.high || ['#888888']).map(lin);
-  const light = (sky.light || ['#ffffff']).map(lin);
-  const bare = sky.bare || 0, dots = sky.dots || 0, swirl = sky.swirl || 0, wave = sky.wave || 0;
-  const V = (sky.vortices || []).map(v => ({ ...v }));
-  for (let i = 0; i < (sky.eddies || 0); i++)
-    V.push({ az: R.range(-180, 180), el: R.range(10, 58), r: R.range(4.5, 9), dir: R.sign(), s: R.range(0.45, 0.85) });
-  V.forEach(v => { v.c = dirAzEl(v.az, v.el); v.rr = v.r * DEG; });
-  // hills that are painted: the field's strokes under the dome's ridge take the ridge's colours, so that a range
-  // that is meant to be seen (the Alpilles) is his marks and not the dome showing through between them. The
-  // profile is the dome's own, line for line.
-  const hills = sky.hills && sky.hills.paint ? sky.hills : null;
-  const HH = hills ? [hills.h * DEG, hills.f, hills.seed ?? hills.f * 1.7] : null;
-  const hillC = hills ? lin(hills.col) : null, hillD = hills ? lin(hills.col2 || hills.col) : null;
-  const hillProf = a => {
-    const p = Math.sin(a * HH[1] + HH[2]) * 0.5 + 0.5, q = Math.sin(a * HH[1] * 2.37 + HH[2] * 1.7) * 0.5 + 0.5;
-    const r = Math.sin(a * HH[1] * 6.1 + HH[2] * 3.1) * 0.5 + 0.5;
-    return HH[0] * (0.3 + 0.45 * p + 0.3 * q * p + 0.08 * r);
-  };
-
-  const flowAt = (d, az, el) => {
-    const [east, north] = tangents(d);
-    const th = wave * 0.55 * Math.sin(az * DEG * 3 + el * DEG * 7 + 1.3) + wave * 0.3 * Math.sin(az * DEG * 7.3 - el * DEG * 3.1);
-    let t = add3(mul3(east, Math.cos(th)), mul3(north, Math.sin(th)));
-    let best = null, bw = 0;
-    for (const v of V) {
-      const ang = Math.acos(clamp(dot3(d, v.c), -1, 1));
-      const w = smoothstep(v.rr * 1.8, v.rr * 0.55, ang) * swirl * v.s;
-      if (w > bw) { bw = w; best = { v, ang }; }
-    }
-    let axis = [0, 0, 0];
-    if (best) {
-      const tv = mul3(norm3(cross3(best.v.c, d)), best.v.dir);
-      t = norm3(add3(mul3(t, 1 - bw), mul3(tv, bw)));
-      if (bw > 0.3) axis = mul3(best.v.c, best.v.dir * 0.045 * best.v.s * (1.25 - 0.5 * best.ang / best.v.rr));
-    }
-    t = norm3(sub3(t, mul3(d, dot3(t, d))));
-    return { t, best, bw, axis };
-  };
-
-  // the field of the sky: long marks laid side by side along the flow, their
-  // colour from broad bands that follow the wind rather than a coin toss each
-  const band = (d, f, o) => (noise2(d[0] * f + o, d[2] * f) + noise2(d[1] * f * 1.3 + o * 2, d[0] * f + 7.1) + noise2(d[2] * f + 3.3, d[1] * f + o)) / 3;
-  const N = Math.round(11000 * (1 - 0.75 * bare) * (sky.density || 1) * (1 + dots * 1.3));
-  for (let i = 0; i < N; i++) {
-    const y = -0.06 + 1.06 * Math.pow(R(), 1.25);
-    const el = Math.asin(clamp(y, -1, 1)) / DEG, az = R.range(-180, 180);
-    const d = dirAzEl(az, el);
-    const { t, best, bw, axis } = flowAt(d, az, el);
-    let hl = R.range(1.5, 2.5) * DEG, hw = R.range(0.42, 0.6) * DEG;
-    if (dots) { hl = lerp(hl, hw * 1.3, dots); hw *= lerp(1, 1.05, dots); }
-    if (best && bw > 0.4) hl *= 0.82;
-    const b1 = band(d, 2.2, 0.0), b2 = band(d, 3.1, 11.0);
-    const pick = (arr, v) => arr[Math.floor(clamp(v * 1.8 - 0.4 + (R() - 0.5) * 0.45, 0, 0.999) * arr.length)];
-    const e01 = clamp(el / 46, 0, 1);
-    let c = mixc(pick(low, b1), pick(high, b2), smoothstep(0.1, 0.8, e01 + (b1 - 0.5) * 0.45));
-    if (best && bw > 0.2) {
-      const ring = Math.sin(best.ang / best.v.rr * 8.5 + best.v.az);
-      if (ring > 0.1) c = mixc(c, pick(light, b2), 0.66 * bw);
-    } else if (band(d, 5.0, 23.0) > 0.66) c = mixc(c, pick(light, b1), 0.4);
-    c = jitter(c, R, 0.05);
-    if (bare) c = mixc(c, [0.807, 0.761, 0.644], bare * 0.7);
-    let c2 = mixc(c, pick(light, b1), 0.3);
-    if (hills) {
-      const hh = hillProf(az * DEG);
-      if (el * DEG < hh) { c = jitter(mixc(hillD, hillC, clamp(el * DEG / hh, 0, 1) * 0.8 + (R() - 0.5) * 0.3), R, 0.06); c2 = mixc(c, hillD, 0.5); }
-    }
-    P.push(d, t, hl, hw, R.range(-0.12, 0.12) + (best ? best.v.dir * 0.4 * bw : 0), Math.floor(R() * 8), c, 0, c2, R(), axis, R() * 6.28);
-  }
-
-  // clouds: knots of lighter strokes curling on themselves
-  const ccols = (sky.cloudCols || []).map(lin);
-  for (let k = 0; k < (sky.clouds || 0); k++) {
-    const caz = R.range(-180, 180), cel = R.range(9, 34), cr = R.range(5, 11);
-    const cc = dirAzEl(caz, cel), [ce, cn] = tangents(cc);
-    const n = Math.round(cr * cr * 7);
-    const flat = R.range(0.45, 0.7);
-    for (let i = 0; i < n; i++) {
-      const a = R() * Math.PI * 2, rr = Math.sqrt(R()) * cr * DEG;
-      const off = add3(mul3(ce, Math.cos(a) * rr), mul3(cn, Math.sin(a) * rr * flat));
-      const d = norm3(add3(cc, off));
-      const lump = Math.sin(a * 3 + k) * 0.5 + 0.5;
-      if (rr > cr * DEG * (0.6 + 0.4 * lump)) continue;
-      let t = norm3(add3(mul3(ce, -Math.sin(a)), mul3(cn, Math.cos(a) * flat)));
-      t = norm3(add3(t, mul3(ce, 0.6)));
-      t = norm3(sub3(t, mul3(d, dot3(t, d))));
-      const up = Math.sin(a);
-      const c = jitter(ccols[Math.min(ccols.length - 1, Math.floor((1 - (up * 0.5 + 0.5)) * ccols.length))] || [1, 1, 1], R, 0.06);
-      P.push(d, t, R.range(0.8, 1.5) * DEG, R.range(0.32, 0.46) * DEG, R.range(-0.4, 0.4), Math.floor(R() * 8), c, 0.05,
-             mixc(c, [1, 1, 1], 0.3), R(), [0, 0.004, 0], R() * 6.28);
-    }
-  }
-
-  const glows = [];
-  const halo = (sky.halo || ['#ffffff']).map(lin);
-  // a star: a hot core and rings of short strokes round it
-  const star = (az, el, size, bright) => {
-    const c0 = dirAzEl(az, el), [e, nn] = tangents(c0);
-    const core = lin(sky.starCol || '#fff4c0');
-    for (let i = 0; i < 10 + size * 10; i++) {
-      const a = R() * 6.28, rr = Math.sqrt(R()) * size * 0.55 * DEG;
-      const d = norm3(add3(c0, add3(mul3(e, Math.cos(a) * rr), mul3(nn, Math.sin(a) * rr))));
-      const t = norm3(add3(mul3(e, -Math.sin(a)), mul3(nn, Math.cos(a))));
-      P.push(d, t, size * 0.4 * DEG, size * 0.2 * DEG, 0.3, Math.floor(R() * 8), core, 0.9 * bright, core, R(), [0, 0, 0], 0);
-    }
-    const rings = size > 0.8 ? 3 : 1;
-    for (let k = 1; k <= rings; k++) {
-      const rad = size * (0.7 + 0.55 * k) * DEG;
-      const m = Math.round(7 + rad / DEG * 6);
-      for (let i = 0; i < m; i++) {
-        const a = (i / m) * 6.28 + R() * 0.3;
-        const d = norm3(add3(c0, add3(mul3(e, Math.cos(a) * rad), mul3(nn, Math.sin(a) * rad))));
-        const t = norm3(add3(mul3(e, -Math.sin(a)), mul3(nn, Math.cos(a))));
-        const hc = jitter(halo[Math.min(halo.length - 1, k - 1)], R, 0.05);
-        P.push(d, t, rad * R.range(0.42, 0.62), size * 0.22 * DEG, 0.95, Math.floor(R() * 8), hc, (0.22 / k) * bright, mixc(hc, core, 0.3), R(), [0, 0, 0], 0);
-      }
-    }
-    glows.push([...c0, size * 2.4 * DEG, ...core, 0.16 * bright]);
-  };
-  (sky.named || []).forEach(s => star(s.az, s.el, R.range(0.85, 1.15), 0.8));
-  if (sky.dipper) [[-14, 30], [-8, 33], [-2, 34], [4, 32], [9, 30], [12, 24], [18, 25]].forEach(([a, e]) => star(a, e, 0.9, 1));
-  for (let i = 0; i < (sky.stars || 0); i++) {
-    const el = R.range(6, 80), az = R.range(-180, 180);
-    star(az, el, R.range(0.2, 0.55), R.range(0.35, 0.8));
-  }
-  if (sky.moon) {
-    const m = sky.moon, c0 = dirAzEl(m.az, m.el), [e, nn] = tangents(c0);
-    const mc = [lin('#f6c142'), lin('#f0a830'), lin('#fbe07a')];
-    for (let i = 0; i < 260; i++) {
-      const a = R() * 6.28, rr = Math.sqrt(R()) * m.r * DEG;
-      const off = add3(mul3(e, Math.cos(a) * rr), mul3(nn, Math.sin(a) * rr));
-      const bite = add3(off, mul3(e, -m.r * 0.55 * DEG));
-      if (Math.hypot(...bite) < m.r * 0.78 * DEG) continue;
-      const d = norm3(add3(c0, off));
-      const t = norm3(add3(mul3(e, -Math.sin(a)), mul3(nn, Math.cos(a))));
-      P.push(d, t, m.r * 0.22 * DEG, m.r * 0.08 * DEG, 0.6, Math.floor(R() * 8), R.pick(mc), 0.5, R.pick(mc), R(), [0, 0, 0], 0);
-    }
-    for (let k = 1; k <= 4; k++) {
-      const rad = m.r * (1.0 + 0.42 * k) * DEG, cnt = Math.round(22 + k * 10);
-      const hc = [lin('#f4d860'), lin('#e8e090'), lin('#c8d8a8'), lin('#9ab8c0')][k - 1];
-      for (let i = 0; i < cnt; i++) {
-        const a = (i / cnt) * 6.28 + R() * 0.1;
-        const d = norm3(add3(c0, add3(mul3(e, Math.cos(a) * rad), mul3(nn, Math.sin(a) * rad))));
-        const t = norm3(add3(mul3(e, -Math.sin(a)), mul3(nn, Math.cos(a))));
-        P.push(d, t, rad * 0.27, m.r * 0.11 * DEG, 0.95, Math.floor(R() * 8), jitter(hc, R, 0.05), 0.24 / k, hc, R(), [0, 0, 0], 0);
-      }
-    }
-    glows.push([...c0, m.r * 3.0 * DEG, ...lin('#ffd76a'), 0.12]);
-  }
-  if (sky.sun) {
-    const su = sky.sun, c0 = dirAzEl(su.az, su.el), [e, nn] = tangents(c0);
-    const col = lin(su.col), hal = (su.halo || [su.col]).map(lin);
-    for (let i = 0; i < Math.round(su.r * su.r * 22); i++) {
-      const a = R() * 6.28, rr = Math.sqrt(R()) * su.r * DEG;
-      const d = norm3(add3(c0, add3(mul3(e, Math.cos(a) * rr), mul3(nn, Math.sin(a) * rr))));
-      const t = norm3(add3(mul3(e, -Math.sin(a)), mul3(nn, Math.cos(a))));
-      P.push(d, t, su.r * 0.18 * DEG, su.r * 0.07 * DEG, 0.5, Math.floor(R() * 8), jitter(col, R, 0.06), 0.55, mixc(col, [1, 1, 1], 0.25), R(), [0, 0, 0], 0);
-    }
-    for (let k = 0; k < hal.length + 1; k++) {
-      const rad = su.r * (1.25 + 0.5 * k) * DEG, cnt = Math.round(36 + k * 20);
-      const hc = hal[Math.min(k, hal.length - 1)];
-      for (let i = 0; i < cnt; i++) {
-        const a = (i / cnt) * 6.28 + R() * 0.12;
-        const d = norm3(add3(c0, add3(mul3(e, Math.cos(a) * rad), mul3(nn, Math.sin(a) * rad))));
-        const radial = R() < 0.14;
-        const t = radial ? norm3(add3(mul3(e, Math.cos(a)), mul3(nn, Math.sin(a))))
-                         : norm3(add3(mul3(e, -Math.sin(a)), mul3(nn, Math.cos(a))));
-        P.push(d, t, rad * (radial ? 0.1 : 0.2), su.r * 0.1 * DEG, radial ? 0 : 0.9, Math.floor(R() * 8), jitter(hc, R, 0.05), 0.17 / (k + 1), mixc(hc, col, 0.3), R(), [0, 0, 0], 0);
-      }
-    }
-    glows.push([...c0, su.r * 3.6 * DEG, ...col, 0.2]);
-  }
-  return { P, glows };
+const norm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+// where a point of his canvas plane stands against the edge of his cone: how far along that edge, and how far
+// outside it. The same walk tools/hand.py takes when it writes down what his sky is doing there
+function perim(x, y, A, B, out = [0, 0]) {
+  const dx = Math.abs(x) - A, dy = Math.abs(y) - B;
+  out[1] = dx > 0 && dy > 0 ? Math.hypot(dx, dy) : Math.max(dx, dy);
+  const P = 4 * (A + B), cy = clamp(y, -B, B), cx = clamp(x, -A, A);
+  out[0] = dx > dy ? (x >= 0 ? (cy + B) / P : (2 * B + 2 * A + (B - cy)) / P)
+                   : (y >= 0 ? (2 * B + (A - cx)) / P : (4 * B + 2 * A + (cx + A)) / P);
+  out[0] -= Math.floor(out[0]);
+  return out;
 }
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
-function packGeometry(P) {
-  const g = ribbon(4);
-  const add = (name, arr, n) => g.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(arr), n));
-  add('iDir', P.d, 3); add('iTan', P.t, 3); add('iSize', P.size, 4);
-  add('iCol', P.col, 4); add('iCol2', P.col2, 4); add('iAxis', P.axis, 4);
-  g.instanceCount = P.n;
-  return g;
-}
-
-const avg = arr => { const m = arr.map(lin); return [0, 1, 2].map(k => m.reduce((s, c) => s + c[k], 0) / m.length); };
-const domeCache = new Map();
-function domeCols(sky) {
-  if (domeCache.has(sky)) return domeCache.get(sky);
-  const lo = avg(sky.low || [sky.horizon]), hi = avg(sky.high || [sky.zenith]);
-  const r = [mixc(lin(sky.zenith), hi, 0.6), mixc(lin(sky.mid), mixc(lo, hi, 0.5), 0.6), mixc(lin(sky.horizon), lo, 0.55)];
-  domeCache.set(sky, r);
-  return r;
+class Rows {
+  constructor(cap) {
+    this.cap = cap; this.n = 0;
+    this.P = [new Float32Array(cap * 3), new Float32Array(cap * 3), new Float32Array(cap * 3)];
+    this.size = new Float32Array(cap * 4); this.col = new Float32Array(cap * 4); this.meta = new Float32Array(cap * 4);
+  }
+  rest(i, w, h, curl, rgb, shine, r, d) {
+    this.size[i * 4] = w; this.size[i * 4 + 1] = h; this.size[i * 4 + 2] = Math.floor(r() * 8) % 8; this.size[i * 4 + 3] = curl;
+    this.col[i * 4] = rgb[0]; this.col[i * 4 + 1] = rgb[1]; this.col[i * 4 + 2] = rgb[2]; this.col[i * 4 + 3] = shine;
+    this.meta[i * 4] = r(); this.meta[i * 4 + 1] = 1; this.meta[i * 4 + 2] = r() * 6.2832; this.meta[i * 4 + 3] = d;
+  }
+  // a stroke: an arc on the sphere of radius d round his eye, as his own are -- three points at one depth,
+  // a tangent, a bow off the chord, and the paint it is made of
+  put(eye, dir, d, t, bow, L, w, h, curl, rgb, shine, r) {
+    if (this.n >= this.cap) return;
+    const i = this.n++, n = cross(dir, t);
+    const a = [-0.5 * L, 0, 0.5 * L], b = [0, bow * L, 0];
+    for (let c = 0; c < 3; c++) {
+      const q = norm([dir[0] + (a[c] * t[0] + b[c] * n[0]) / d, dir[1] + (a[c] * t[1] + b[c] * n[1]) / d, dir[2] + (a[c] * t[2] + b[c] * n[2]) / d]);
+      for (let k = 0; k < 3; k++) this.P[c][i * 3 + k] = eye[k] + q[k] * d;
+    }
+    this.rest(i, w, h, curl, rgb, shine, r, d);
+  }
+  // a mark at a place, not on a ray: the motes, which live on their own lattice
+  putAt(c, t, n, bow, L, w, h, curl, rgb, shine, r, d) {
+    if (this.n >= this.cap) return;
+    const i = this.n++;
+    const a = [-0.5 * L, 0, 0.5 * L], b = [0, bow * L, 0];
+    for (let k2 = 0; k2 < 3; k2++) for (let k = 0; k < 3; k++) this.P[k2][i * 3 + k] = c[k] + a[k2] * t[k] + b[k2] * n[k];
+    this.rest(i, w, h, curl, rgb, shine, r, d);
+  }
+  done() {
+    const n = this.n;
+    return { n, P: this.P.map(p => p.subarray(0, n * 3)), size: this.size.subarray(0, n * 4),
+             col: this.col.subarray(0, n * 4), meta: this.meta.subarray(0, n * 4) };
+  }
 }
 
 export class Sky {
-  constructor(U, stations) {
-    this.U = U;
-    this.stations = stations;
-    this.scene = new THREE.Scene();
-    this.layers = new Array(NST).fill(null);
-    this.dir = new THREE.Vector3(0, 0, -1);   // the way you were walking when you went through the last door
-    this.domeU = {
-      uZen0: { value: new THREE.Color() }, uMid0: { value: new THREE.Color() }, uHor0: { value: new THREE.Color() },
-      uZen1: { value: new THREE.Color() }, uMid1: { value: new THREE.Color() }, uHor1: { value: new THREE.Color() },
-      uLand: { value: new THREE.Color() },
-      uHill0: { value: new THREE.Vector4() }, uHill1: { value: new THREE.Vector4() },
-      uHillC0: { value: new THREE.Color() }, uHillC1: { value: new THREE.Color() },
-      uHillD0: { value: new THREE.Color() }, uHillD1: { value: new THREE.Color() },
-      uMix: { value: 0 }, uBare: { value: 0 }, uTime: U.uTime, uIntro: U.uIntro,
-    };
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 40),
-      new THREE.ShaderMaterial({ vertexShader: DOME_VERT, fragmentShader: DOME_FRAG, uniforms: this.domeU,
-        side: THREE.BackSide, depthTest: false, depthWrite: false }));
-    dome.frustumCulled = false;
-    dome.renderOrder = -10;
-    this.scene.add(dome);
+  constructor(o) {
+    const { hand, star, wind, laws } = o;
+    this.hand = hand; this.starHand = star; this.wind = wind;
+    this.eye = wind.eye; this.f = hand.canvas.f;
+    // the three nights and the three cones (D4.5): one field of ours round each of his eyes, at the depth his
+    // own sky stands at there, and the rule that keeps every one of them out of all three cones
+    this.nights = o.nights;
+    this.night = o.night !== false;   // ?nonight: the hand's own colour everywhere, to measure the field against
+    this.cones = o.cones ?? [];
+    this.anchors = o.nights.spec.nights.map((n, i) => ({ i, slug: n.slug, at: [n.eye.x, n.eye.y, n.eye.z],
+                                                         near: n.depth_m[0], far: n.depth_m[1], mean: n.depth_m[2] }));
+    const m0 = this.anchors[0].mean;
+    for (const A of this.anchors) { A.lo = 200 * A.mean / m0; A.hi = 1000 * A.mean / m0; }
+    this.density = o.density ?? 1;
+    this.nStars = o.stars ?? 12;
+    this.mote = { n: o.motes ?? 2600, cell: o.cell ?? 60, ref: 30 };
+    this.funnel = laws.regions.swirl.law.amp;               // his eddies are tunnels; ours are his law's, 160 m
+    this.jitter = laws.regions.sky?.noise ?? laws.noise ?? 0.006;
+    this.ceiling = o.ceiling ?? 700;
+    this.edge = o.edge ?? 2500;
+    this.linenCol = o.linen ?? [0.16, 0.14, 0.10];
+    // the paint is banded, not salt and pepper: a noise of the measured size plus a white part of equal weight,
+    // which is what his measured structure asks for (0.24 of the scale at half a degree against 0.33 at twenty)
+    this.pl = o.paintLam ?? 0.087;
+    this.cdf = this._cdf();
+    this.built = { sky: null, stars: null, motes: null };
   }
-
-  layer(i) {
-    if (this.layers[i]) return this.layers[i];
-    const { P, glows } = buildSky(this.stations[i], 7001 + (this.stations[i].id - 1) * 131);
-    const u = { uTime: this.U.uTime, uFade: { value: 0 }, uSide: { value: 0 }, uBrush: this.U.uBrush,
-                uFlow: { value: 1 }, uOpacity: { value: 1 }, uIntro: this.U.uIntro, uWipeDir: { value: this.dir } };
-    const mesh = new THREE.Mesh(packGeometry(P), new THREE.ShaderMaterial({
-      vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, uniforms: u,
-      transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
-    mesh.frustumCulled = false;
-    mesh.renderOrder = -5;
-    const group = new THREE.Group();
-    group.add(mesh);
-    if (glows.length) {
-      const g = ribbon(1);
-      const gd = [], gc = [];
-      glows.forEach(v => { gd.push(v[0], v[1], v[2], v[3]); gc.push(v[4], v[5], v[6], v[7]); });
-      g.setAttribute('gDir', new THREE.InstancedBufferAttribute(new Float32Array(gd), 4));
-      g.setAttribute('gCol', new THREE.InstancedBufferAttribute(new Float32Array(gc), 4));
-      g.instanceCount = glows.length;
-      const gm = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG,
-        uniforms: u, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
-      gm.frustumCulled = false;
-      gm.renderOrder = -4;
-      group.add(gm);
-    }
-    group.visible = false;
-    this.scene.add(group);
-    this.layers[i] = { group, u, count: P.n };
-    return this.layers[i];
+  base(elDeg) {                                            // his depth law, read in elevation (hand.py)
+    const c = this.hand.depth.by_elevation, R = this.hand.depth.range_m;
+    return clamp(c[0] + c[1] * elDeg + c[2] * elDeg * elDeg, R[0], R[1]);
   }
-
-  // the sky of world a, going over to world b's by f; dir is the way you were walking through the door
-  update(a, b, f, dir) {
-    if (dir) this.dir.copy(dir);
-    if (f >= 1) { a = b; f = 0; }
-    const A = this.layer(a), Bl = this.layer(b);
-    this.layers.forEach((l, i) => { if (l) l.group.visible = i === a || (i === b && f > 0.001); });
-    A.u.uSide.value = 0; A.u.uFade.value = f;
-    if (b !== a) { Bl.u.uSide.value = 1; Bl.u.uFade.value = f; }
-    const sa = this.stations[a].sky, sb = this.stations[b].sky, D = this.domeU;
-    const ga = domeCols(sa), gb = domeCols(sb);
-    D.uZen0.value.setRGB(...ga[0]); D.uMid0.value.setRGB(...ga[1]); D.uHor0.value.setRGB(...ga[2]);
-    D.uZen1.value.setRGB(...gb[0]); D.uMid1.value.setRGB(...gb[1]); D.uHor1.value.setRGB(...gb[2]);
-    const hill = (h, V, C, Dd) => {
-      if (!h) { V.set(0, 1, 0, 0); return; }
-      V.set(h.h * DEG, h.f, (h.seed ?? h.f * 1.7), 1);
-      C.setRGB(...lin(h.col)); Dd.setRGB(...lin(h.col2 || h.col));
-    };
-    hill(sa.hills, D.uHill0.value, D.uHillC0.value, D.uHillD0.value);
-    hill(sb.hills, D.uHill1.value, D.uHillC1.value, D.uHillD1.value);
-    D.uMix.value = f;
-    D.uBare.value = lerp(sa.bare || 0, sb.bare || 0, f) * 0.85;
-    D.uLand.value.copy(this.U.uFogCol.value);
-    // prefetch the next sky while this one is up
-    const n = Math.max(a, b) + 1;
-    if (n < NST && !this.layers[n] && !this._pending) {
-      this._pending = true;
-      setTimeout(() => { this.layer(n); this._pending = false; }, 400);
+  // The paint's own field, at the angular size his paint stays itself over. His bands run a little more along the
+  // flow than across it (0.226 of the range against 0.252, a degree apart); ours does not, and the log says so
+  pnoise(d, o = F1) {
+    const s = 1 / this.pl;
+    return noise3(d[0] * s + o[0], d[1] * s + o[1], d[2] * s + o[2]);
+  }
+  _cdf() {                                                 // so that a paint's share of our sky is its share of his
+    const r = rng(90210), a = new Float64Array(4096);
+    for (let i = 0; i < 4096; i++) {
+      const z = 2 * r() - 1, w = 2 * Math.PI * r(), c = Math.sqrt(Math.max(0, 1 - z * z));
+      a[i] = (this.pnoise([c * Math.cos(w), z, c * Math.sin(w)]) - 0.5) / 0.19 + (r() - 0.5) / 0.289;
     }
+    return a.sort();
+  }
+  paintAt(d, u, o) {
+    const v = (this.pnoise(d, o) - 0.5) / 0.19 + (u - 0.5) / 0.289;
+    let lo = 0, hi = this.cdf.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (this.cdf[m] < v) lo = m + 1; else hi = m; }
+    return clamp(lo / this.cdf.length, 0, 0.999999);
+  }
+  // how far into the linen a point is: above the ceiling, or beyond the edge of the dream (DESIGN 5.4)
+  linen(p) {
+    const h = smoothstep(this.ceiling - 120, this.ceiling, p[1]);
+    return Math.max(h, smoothstep(this.edge - 300, this.edge, Math.hypot(p[0], p[2])));
+  }
+  // ---- our sky -----------------------------------------------------------------------------------------------
+  // Our sky, three fields, one night (DESIGN 5.3 as D4.5 amends it). Before D4.5 this was one shell round the
+  // Starry Night's eye, and seen from the quay 968 m away seven of twelve compass bins above ten degrees held
+  // no sky of ours at all while one held six times his density: a bubble round one standpoint, which is one of
+  // the two reasons the three cones read as pictures on a pond. Now there is one field round each of his eyes,
+  // at the depth his own sky paint stands at there and in the colour his own night is, each thinned by how much
+  // of that night the place stands in (src/night.js). The three weights sum to one, so the three fields sum to
+  // his density, 16,562 strokes a steradian, wherever their shells overlap -- and they overlap because the
+  // towns are 300 and 968 m apart and his skies are 400 to 600 m deep.
+  //
+  // The hand is one hand and is his: every measure a stroke carries still comes from hand/starry-sky.json, and
+  // so do the two fields of the world a stroke is put into -- the paint's own field and the wind's -- which are
+  // read in the direction the stroke stands in from the eye those were measured at, not from the eye that made
+  // it. What each field takes from its own canvas is the two things a canvas can say about its night without a
+  // hand: how deep his paint stands in it, and what colour it is.
+  makeSky() {
+    const H = this.hand, w = this.wind, r = rng(4271), E = H.edge, N = this.nights;
+    const eyeS = this.eye, AN = this.anchors;
+    const per = H.density.per_sr * this.density;
+    const M = Math.round(per * 2 * Math.PI);               // candidates over the sky above the shore, per field
+    const rows = new Rows(Math.round(M * AN.length * 0.75));
+    const t0 = [0, 0, 0], sh = [0, 0, 0], pv = [0, 0, 0];
+    for (const A of AN) {
+      const kd = A.mean / AN[0].mean;                      // his own sky's depth, against the one our hand is from
+      for (let i = 0; i < M; i++) {
+        const y = r(), az = 6.2832 * r(), c = Math.sqrt(Math.max(0, 1 - y * y));
+        const dir = [c * Math.sin(az), y, -c * Math.cos(az)];
+        // where this would stand, so that the fields of the world can be asked what they are doing there. They
+        // live on the sphere round the eye his sky was measured at, so they are asked in that direction
+        for (let k = 0; k < 3; k++) pv[k] = A.at[k] + dir[k] * A.mean;
+        const dv = norm([pv[0] - eyeS[0], pv[1] - eyeS[1], pv[2] - eyeS[2]]);
+        let q = this.paintAt(dv, r()), lenK = 1, ec = null, ek = 0;
+        const b = H.paints[Math.min(H.paints.length - 1, Math.floor(q * H.paints.length))];
+        const el = Math.asin(y) / DEG;
+        // the depth: his law in elevation, his funnel where the noise turns hardest, his relief for this paint,
+        // and his jitter, so that neighbours are not exactly coplanar -- all of it moved to the depth this
+        // canvas's own sky paint stands at, which keeps every angle and changes only how far off it all is
+        const psi = Math.abs(w.psi(dv));
+        let d = this.base(el) + this.funnel * smoothstep(0.62, 1.05, psi) + b.ddep_mean + draw(b.ddep, r());
+        d = clamp(d * (1 + (r() - 0.5) * 2 * this.jitter) * kd, 200 * kd, 1000 * kd);
+        const p = [A.at[0] + dir[0] * d, A.at[1] + dir[1] * d, A.at[2] + dir[2] * d];
+        if (p[1] < 8) continue;                            // nothing of the sky stands in the water
+        if (r() >= this.share(p)) continue;                // this field's share of the sky standing over there
+        if (this.inAnyCone(p)) continue;                   // inside a cone there is his painting and nothing else
+        if (r() < this.linen(p)) continue;                 // toward the linen the paint goes sparse
+        const dS = norm([p[0] - eyeS[0], p[1] - eyeS[1], p[2] - eyeS[2]]);
+        w.layDir(dS, t0);
+        // at the edge of his cone our sky takes his own value and lets go over the angle his paint takes to
+        // forget itself: his corners are darker than his sky's mean and his strokes cover less angle there, and
+        // a generator that knows only his averages meets him with a step. The walk is his one measured edge,
+        // the Starry Night's, and a stroke of any of the three fields that stands near it takes it
+        const pp = w.planeOf(dS, this._pp || (this._pp = [0, 0]));
+        const pe = perim(pp[0], pp[1], E.A, E.B, this._pe || (this._pe = [0, 0]));
+        if (pe[1] > 0) {
+          const bi = Math.min(E.n - 1, Math.floor(pe[0] * E.n));
+          if (E.q[bi] !== null) {
+            ek = Math.exp(-(pe[1] / this.f) / (E.let_go_deg * DEG));
+            q = clamp(q + ek * (E.q[bi] - 0.5), 0, 0.999999);
+            lenK = 1 + Math.exp(-(pe[1] / this.f) / (E.let_go_size_deg * DEG)) * (E.len[bi] / E.len_mean - 1);
+            ec = E.rgb[bi];
+          }
+        }
+        const b2 = H.paints[Math.min(H.paints.length - 1, Math.floor(q * H.paints.length))];
+        // the tangent: the fitted field's direction at this ray, turned by the angle a stroke of his lies off its band
+        const ang = draw(b2.off, r()) * DEG, ca = Math.cos(ang), sa = Math.sin(ang);
+        const nn = cross(dir, t0);
+        for (let k = 0; k < 3; k++) sh[k] = t0[k] * ca + nn[k] * sa;
+        const L = draw(b2.len, r()) * lenK * d, wid = draw(b2.wid, r()) * d;
+        // his colour on its own three axes: the first is the paint this stroke is, the second a field of its own
+        // laid over it, the third -- one per cent of his colour -- the stroke's alone
+        const nb = H.paints.length, bi2 = Math.min(nb - 1, Math.floor(q * nb));
+        const a1 = draw(b2.a[0], clamp(q * nb - bi2, 0, 1)), a2 = draw(b2.a[1], this.paintAt(dS, r(), F2)), a3 = draw(b2.a[2], r());
+        const CM = H.colour.mean, AX = H.colour.axes;
+        const rgb = [0, 1, 2].map(k => Math.max(0, CM[k] + a1 * AX[0][k] + a2 * AX[1][k] + a3 * AX[2][k]));
+        // and what the paint a stroke is made of cannot say, his edge's own colour does: the last of the step closed
+        if (ec) for (let k = 0; k < 3; k++) rgb[k] = Math.max(0, rgb[k] + ek * (ec[k] - b2.rgb[k]));
+        // and last, the night it stands in: his own sky's colour there, as a ratio on the sky this hand is from
+        if (this.night) { const kn = N.ratio(p); for (let k = 0; k < 3; k++) rgb[k] *= kn[k]; }
+        rows.put(A.at, dir, d, norm([sh[0], sh[1], sh[2]]), draw(b2.bow, r()), L, wid,
+                 draw(b2.h_mm, r()) / 1000 * d / this.f, draw(b2.curl, r()) * d, rgb, 0, r);
+      }
+    }
+    this.built.sky = rows.done();
+    this.built.sky.candidates = M * AN.length;
+    return this.built.sky;
+  }
+  // How much of the sky over a place each field is to lay. This is a question about *how many* and not about
+  // *what colour*, and the two must not share a weight: the night's partition (src/night.js) is sharpened by
+  // which way a canvas faces and which band of sky it painted, and a field thinned by those would leave a hole
+  // that no other field fills, because each field's strokes live on its own shell and not everywhere.
+  //
+  // What each field would lay here on its own is a number: it scatters its candidates evenly over the sphere
+  // of directions from its eye and over the depths his sky paint stands at, so its density at a place falls as
+  // the square of the distance to that eye and as the thickness of its own shell, and is nothing outside it.
+  // The three are thinned by the same fraction, the largest of those over their sum, so that what they add up
+  // to is what the fullest of them would have laid alone -- his density, once. Where one shell reaches, it
+  // lays all of it; where Arles' two overlap, and they nearly wholly do at 300 m apart, they halve; and where
+  // Saint-Remy's far edge reaches over Arles it is a twentieth as dense there and is thinned away to almost
+  // nothing, instead of piling a second sky on the first.
+  share(p) {
+    let s = 0, top = 0;
+    for (const A of this.anchors) {
+      const r = Math.hypot(p[0] - A.at[0], p[1] - A.at[1], p[2] - A.at[2]);
+      const n = (r >= A.lo && r <= A.hi) ? 1 / ((A.hi - A.lo) * r * r) : 0;
+      s += n; if (n > top) top = n;
+    }
+    return s > 0 ? top / s : 1;
+  }
+  // Inside a cone there is his painting and nothing else (DESIGN 5.1, D4 (3)). The shader keeps this rule for
+  // every stroke in the piece; a generator that also keeps it does not pay for the ones that would be hidden
+  inAnyCone(p) {
+    for (const k of this.cones) {
+      const dx = p[0] - k.at[0], dy = p[1] - k.at[1], dz = p[2] - k.at[2];
+      const L = Math.hypot(dx, dy, dz);
+      if (L > (k.far ?? 1e9)) continue;                  // past the end of his paint: his cone is over
+      const q = [dx / L, dy / L, dz / L];
+      const z = q[0] * k.Fw[0] + q[1] * k.Fw[1] + q[2] * k.Fw[2];
+      if (z <= 0) continue;
+      const cx = (q[0] * k.R[0] + q[1] * k.R[1] + q[2] * k.R[2]) / (k.hw * z);
+      const cy = (q[0] * k.U[0] + q[1] * k.U[1] + q[2] * k.U[2]) / (k.hh * z);
+      if (Math.abs(cx) >= 1 || Math.abs(cy) >= 1) continue;
+      if (!k.depthMap) return true;
+      const N = k.depthMap.n;
+      const gx = Math.min(N - 1, Math.max(0, Math.floor((0.5 + 0.5 * cx) * N)));
+      const gy = Math.min(N - 1, Math.max(0, Math.floor((0.5 - 0.5 * cy) * N)));
+      const hisD = k.depthMap.d[gy * N + gx];
+      if (hisD > 0 && L > hisD) continue;
+      return true;
+    }
+    return false;
+  }
+  // ---- our stars ---------------------------------------------------------------------------------------------
+  makeStars() {
+    const S = this.starHand, w = this.wind, r = rng(881), N = this.nights, AN = this.anchors;
+    const rows = new Rows(this.nStars * 400);
+    const placed = [], ranges = [];
+    let guard = 0;
+    // over the whole night and not over one standpoint: each star belongs to one of his skies in turn, at that
+    // sky's own depth, and two stars of ours stand at least 150 m apart in the world rather than 22 degrees
+    // apart at one eye -- which is the same rule once there is more than one place to stand
+    while (placed.length < this.nStars && guard++ < 20000) {
+      const A = AN[placed.length % AN.length], eye = A.at, kd = A.mean / AN[0].mean;
+      const y = 0.08 + 0.85 * r(), az = 6.2832 * r(), c = Math.sqrt(Math.max(0, 1 - y * y));
+      const dir = [c * Math.sin(az), y, -c * Math.cos(az)];
+      const d = 0.9 * this.base(Math.asin(y) / DEG) * kd;   // his stars stand a little in front of the sky (depth/starry.json)
+      const at = [eye[0] + dir[0] * d, eye[1] + dir[1] * d, eye[2] + dir[2] * d];
+      const dS = norm([at[0] - this.eye[0], at[1] - this.eye[1], at[2] - this.eye[2]]);
+      if (this.inAnyCone(at)) continue;
+      if (Math.abs(w.psi(dS)) > 0.35) continue;             // where the wind's eddies are not (DESIGN 5.3)
+      if (placed.some(q => Math.hypot(q.at[0] - at[0], q.at[1] - at[1], q.at[2] - at[2]) < 150)) continue;
+      placed.push({ dir, at, of: A.slug });
+      const from = rows.n;
+      const R = draw(S.per_star.radius_rad, r());
+      const n = Math.round(draw(S.per_star.strokes, r()));
+      const kn = N.ratio(at);
+      const fr = w.frame(dir);
+      for (let i = 0; i < n; i++) {
+        let u = r(), k = 0, acc = 0;
+        for (; k < S.rings.length - 1; k++) { acc += S.rings[k].share; if (u < acc) break; }
+        const ring = S.rings[k];
+        const rad = R * lerp(ring.r[0], ring.r[1], r()), th = 6.2832 * r();
+        const ct = Math.cos(th), st = Math.sin(th);
+        const out = [0, 1, 2].map(j => fr.Rp[j] * ct + fr.Up[j] * st);         // the way out from the star's middle
+        const sd = norm([0, 1, 2].map(j => dir[j] * Math.cos(rad) + out[j] * Math.sin(rad)));
+        const tang = norm(cross(sd, out));                                     // round the star, which is where his lie
+        const a = draw(ring.off_tangent_deg, r()) * DEG * (r() < 0.5 ? -1 : 1);
+        const nn = cross(sd, tang);
+        const t = norm([0, 1, 2].map(j => tang[j] * Math.cos(a) + nn[j] * Math.sin(a)));
+        const rgb = paint(ring.rgb, ring.sd, r).map((v, k) => v * kn[k]);
+        rows.put(eye, sd, d, t, (r() - 0.5) * 0.5, draw(ring.len, r()) * d, draw(ring.wid, r()) * d,
+                 draw(ring.h_mm, r()) / 1000 * d / this.f, draw(ring.curl, r()) * d, rgb, ring.shine, r);
+      }
+      ranges.push({ from, n: rows.n - from, dir, at, of: A.slug });
+    }
+    this.built.stars = rows.done();
+    this.built.stars.places = placed;
+    this.built.stars.groups = ranges;
+    return this.built.stars;
+  }
+  // ---- the motes ---------------------------------------------------------------------------------------------
+  // On a lattice one cell wide that wraps round the eye in the shader, so that a handful of thousands is a field
+  // without end. The one generator whose purpose is the sensation; the ledger says so.
+  makeMotes() {
+    const S = this.hand.small, r = rng(5150), L = this.mote.cell, D = this.mote.ref;
+    const rows = new Rows(this.mote.n);
+    for (let i = 0; i < this.mote.n; i++) {
+      const c = [r() * L, r() * L, r() * L];
+      const z = 2 * r() - 1, az = 6.2832 * r(), s = Math.sqrt(Math.max(0, 1 - z * z));
+      const dir = [s * Math.cos(az), z, s * Math.sin(az)];
+      const t = norm(cross(dir, [0.31, 0.83, -0.47]));
+      const len = draw(S.len, r()) * D, wid = draw(S.wid, r()) * D;
+      const rgb = paint(S.rgb, S.sd, r);
+      rows.putAt(c, t, norm(cross(dir, t)), (r() - 0.5) * 0.4, len, wid,
+                 draw(S.h_mm, r()) / 1000 * D / this.f, draw(S.curl, r()) * D, rgb, 0, r, D);
+    }
+    this.built.motes = rows.done();
+    this.built.motes.cell = L;
+    return this.built.motes;
   }
 }

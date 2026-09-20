@@ -1,0 +1,33 @@
+{
+ "_": "What his own canvas says about D3's law, once the canvas had a standpoint (BUILD.md D4). Nothing here is used by the runtime: it is the record of a law being asked the one question that could refute it. Put his eye, his lamps and his far bank into D3's glitter path and it opens the column twice as far out as he painted it -- his ten run 22 to 86 m from his eye and the law's 47 to 186 -- and no slope mends both ends, because his columns lie entirely inside the mirror point (A D / (A + B), about 118 m here) where a specular path must straddle it. Solved jointly for pitch, eye height and slope, the best fit runs to the edge of the physical range: an eye 7 m up pitched 15.8 degrees down, a bank 26 m off and a water tilting 22.5 degrees, which is not a river at Arles and not water. So his reflections are drawn the way reflections are drawn, hanging from the light toward the viewer, and the specular account of where a column stands is a model his canvas does not carry. D3's slope is kept in the runtime because what it gets right is the one thing the piece needs from it -- a column of about his angular length that follows the eye -- and this file says what it gets wrong.",
+ "slug": "rhone",
+ "eye": {
+  "x": -100,
+  "y": 4.411,
+  "z": 760,
+  "yaw": 90,
+  "pitch": -2.14,
+  "hfov": 50
+ },
+ "far_bank_m": 220,
+ "slope_deg": 9.405,
+ "per_column_deg": [
+  11.58,
+  9.56,
+  9.31,
+  6.82,
+  8.33,
+  6.8,
+  7.73,
+  9.5,
+  10.99,
+  11.47
+ ],
+ "sd_deg": 1.691,
+ "n": 10,
+ "d3_slope_deg": 4.236,
+ "d3_off_pct": {
+  "near": 117.1,
+  "far": 111.7
+ }
+}

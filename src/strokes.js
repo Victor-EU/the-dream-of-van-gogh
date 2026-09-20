@@ -1,167 +1,245 @@
-// Strokes on things: every house, tree and easel is a cloud of brush marks
-// laid on its surface, facing out, lit by the station's light, and painted in
-// when you arrive -- nearest first, from the ground up. A plain core behind the
-// marks keeps the sky from showing through the gaps.
+// One shader for every stroke in the piece (DESIGN 4.5), his and ours. A stroke is a quadratic arc in the world
+// with a width, a colour, a shine, a curl and an order. Its face turns to the eye about its own tangent, so that it
+// keeps his direction and never shows its edge; at the standpoint that is exactly the canvas. The brush print and
+// the relief are the sibling's (brush.js). Curl (uCurl) slides each stroke along its own arc by the amplitude the
+// pipeline measured, at one rate; parting (uPart) bends the paint round the eye.
+//
+// D3 adds a fourth: the column mode (uColumn), in which the three control points are not a place in the world
+// but a place on a reflection -- how far down its column a mark lies, how far across, and how it is turned --
+// with its light in the second slot. A reflection is not a decal: it lies between the eye and its light and
+// moves with the eye, so only the shader can know where it is. The arithmetic is DESIGN 5.2 read as what a
+// reflection is: a column runs along the water between the eye and the light, from the far point where the
+// water would have to tilt by the slope his columns measure to send the light back, to the near one where it
+// would have to tilt as far the other way. Everything else about the mark -- its size, its slant, its paint --
+// is a ratio of its own column's width, which is how tools/columns.py measured his.
+//
+// D4 makes the rule of DESIGN 5.1 general. There are three cones now, and inside a cone there is his painting
+// and nothing else: not our sky, not a reflection, not a mote, and not another canvas of his. A stroke is hidden
+// when its middle lies inside a cone that is not its own, which is what keeps each standpoint test standing with
+// the other two canvases in the air, and what says in one line where the dream's islands end.
+//
+// D2 adds three things. The underside: every ribbon carries a second, narrower one behind it, along the stroke's
+// own ray from the standpoint, which is the way the paint stands off the canvas, by the impasto height the record
+// measured. From his eye it hides exactly behind the face, so the standpoint is unchanged; from anywhere else the
+// stroke has a body and a dark side. The lattice (uWrap): the motes live in one cell that wraps round the eye, so
+// that a few thousand marks are a field without end. And the linen (DESIGN 5.4): above the ceiling and past the
+// edge of the dream the paint goes to the colour of primed linen, wherever the paint happens to be.
 import * as THREE from 'three';
-import { NOISE, BRUSH, LIGHT } from './brush.js';
-import { ribbon } from './sky.js';
+import { BRUSH, NOISE } from './brush.js';
+
+const SEG = 5;
+
+// two strips: the face, and the underside behind it
+export function ribbon(seg, strips = 2) {
+  const uv = [], idx = [];
+  for (let s = 0; s < strips; s++) {
+    const o = s * (seg + 1) * 2;
+    for (let i = 0; i <= seg; i++) uv.push(i / seg, -1, s, i / seg, 1, s);
+    for (let i = 0; i < seg; i++) { const a = o + i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('aUV', new THREE.Float32BufferAttribute(uv, 3));
+  g.setIndex(idx);
+  return g;
+}
 
 const VERT = /* glsl */`
-  ${NOISE}
-  ${LIGHT}
-  attribute vec2 aUV;
-  attribute vec3 iPos, iDir, iNrm;
-  attribute vec4 iShape, iCol, iCol2, iAnim;
-  uniform float uProgress, uWind, uArrive;
-  varying vec2 vST; varying vec3 vCol, vCol2, vP, vN, vT, vB; varying float vRow, vEmit;
+  attribute vec3 aUV;
+  attribute vec3 iP0, iP1, iP2;
+  attribute vec4 iSize, iCol, iMeta;
+  attribute float iLight;                       // which light a reflection belongs to; nought where there is none
+  uniform vec3 uCam, uHead, uEye, uWave;
+  uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uCeil, uEdge, uUnder;
+  uniform float uColumn, uColWidth, uOnly, uMine, uWrapLow, uSide, uWrapY;
+  uniform vec2 uBand;                           // the river's two banks, in x (DESIGN 5.1 as D4.5 amends it)
+  uniform vec3 uTint;                           // the colour of the night where the eye is, for a lattice that wraps
+  uniform mat3 uCone[3]; uniform vec3 uConeAt[3]; uniform vec3 uConeHW[3];   // right, up, forward; the eye; half-widths and whether it is there
+  uniform float uConeFar[3];                  // and how far his own paint reaches down it, at its farthest
+  uniform sampler2D uConeDepth;               // his three depth maps side by side, one tile each
+  uniform float uConeCells, uConeRule;        // cells across a tile; and 0 for the whole cone, 1 for his paint's own depth
+  varying vec2 vST; varying vec3 vCol, vP, vT, vB, vN; varying float vRow, vEmit, vMine, vBig, vUnder, vPale;
+  // Inside a cone there is his painting and nothing else (DESIGN 5.1): is this point in a cone not its own?
+  bool inSomeoneElses(vec3 P) {
+    for (int i = 0; i < 3; i++) {
+      if (uConeHW[i].z < 0.5 || abs(float(i) - uMine) < 0.5) continue;
+      vec3 v = P - uConeAt[i];
+      // and not past the end of his paint. The rule is there so that at his eye the frame is his painting and
+      // nothing else, and a stroke standing *behind* the farthest thing he painted cannot get in front of it.
+      // Hiding those as well empties his whole cone out to the edge of the dream, and from outside that is a
+      // black rectangle cut in the sky with a small painting floating in it, which is D4.5's own gate failing
+      // for the opposite reason to D4's. What it costs at the standpoint is measured (BUILD.md D4.5)
+      if (uConeRule > 0.5 && dot(v, v) > uConeFar[i] * uConeFar[i]) continue;
+      vec3 q = normalize(v);
+      float qz = dot(q, uCone[i][2]);
+      if (qz <= 0.0) continue;
+      float cx = dot(q, uCone[i][0]) / (uConeHW[i].x * qz);
+      float cy = dot(q, uCone[i][1]) / (uConeHW[i].y * qz);
+      if (abs(cx) >= 1.0 || abs(cy) >= 1.0) continue;
+      if (uConeRule < 0.5) return true;                 // the whole cone is his, to the edge of the dream
+      // his own paint's depth along this very ray, off his canvas: a stroke behind it cannot stand in front
+      // of it, and leaving those in is what keeps a cone from being a hole cut in the night
+      vec2 uv = vec2((float(i) + clamp(0.5 + 0.5 * cx, 0.0, 1.0)) / 3.0, clamp(0.5 - 0.5 * cy, 0.0, 1.0));
+      float hisD = texture(uConeDepth, uv).r;
+      if (hisD > 0.0 && length(v) > hisD) continue;
+      return true;
+    }
+    return false;
+  }
   void main() {
-    float arrive = clamp((uProgress - iCol2.w) / uArrive, 0.0, 1.0);
-    if (arrive <= 0.0) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
-    vec3 T = normalize(iDir), N = normalize(iNrm);
-    vec3 Bv = normalize(cross(N, T));
-    float x = -1.0 + aUV.x * 2.0 * arrive;
-    float len = iShape.x, wid = iShape.y;
-    float taper = sqrt(max(0.0, 1.0 - pow(abs(aUV.x * 2.0 - 1.0), 6.0)));
-    vec3 p = iPos + T * (x * len) + Bv * (aUV.y * wid * (0.35 + 0.65 * taper) + iShape.z * len * (x * x - 0.33));
-    float h = max(p.y - iAnim.z, 0.0);
-    p += vec3(sin(uTime * 1.25 + iAnim.y), 0.0, 0.6 * cos(uTime * 1.05 + iAnim.y * 1.7)) * iAnim.x * h * h * 0.0035 * uWind;
-    vec4 wp = modelMatrix * vec4(p, 1.0);
-    mat3 m3 = mat3(modelMatrix);
-    vST = aUV; vRow = iShape.w;
-    vCol = iCol.rgb; vEmit = iCol.w; vCol2 = iCol2.rgb;
-    vP = wp.xyz; vN = normalize(m3 * N); vT = normalize(m3 * T); vB = normalize(m3 * Bv);
-    gl_Position = projectionMatrix * viewMatrix * wp;
+    if (iMeta.x > uReveal) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    if (uOnly >= 0.0 && abs(iLight - uOnly) > 0.5) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    vec3 iQ0 = iP0, iQ1 = iP1, iQ2 = iP2;
+    float wid = iSize.x, imp = iSize.y, crl = iSize.w;
+    // a reflection: laid on the water under its light, where this eye puts it (DESIGN 5.2)
+    if (uColumn > 0.0) {
+      vec3 L = iP1;
+      float A = uCam.y, B = L.y;
+      vec2 n2 = L.xz - uCam.xz;
+      float D = length(n2);
+      if (A < 0.2 || B < 0.2 || D < 0.5) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+      n2 /= D;
+      // the two ends: k x^2 - x (A + B + kD) + (AD - kAB) = 0 for the near one, and the same with the tilt the
+      // other way for the far one. k is the tangent of twice the water's slope; at k -> 0 both go to the flat
+      // mirror's point, AD / (A + B), which is where a still water would put the light exactly
+      float k = uColumn;
+      float b1 = A + B + k * D, c1 = A * D - k * A * B, d1 = b1 * b1 - 4.0 * k * c1;
+      float xn = d1 > 0.0 ? (b1 - sqrt(d1)) / (2.0 * k) : A * D / (A + B);
+      float b2 = A + B - k * D, c2 = A * D + k * A * B;
+      float xf = min((-b2 + sqrt(max(b2 * b2 + 4.0 * k * c2, 0.0))) / (2.0 * k), D * 0.999);
+      xn = clamp(xn, 0.2, xf);
+      // the slow wave of 5.5: the whole column breathes along itself, and each mark slides a little across
+      float ph = uTime * uWave.y + iP2.z;
+      float t = clamp(iP0.x + uWave.x * sin(ph), 0.0, 1.0);
+      // how far down the column a mark lies was measured on his canvas, which is an angle and not a distance:
+      // laid evenly in the distance along the water, the near end of a long column comes apart into gaps
+      float x = A / tan(mix(atan(A / xf), atan(A / xn), t));
+      vec3 P = vec3(uCam.x + n2.x * x, 0.0, uCam.z + n2.y * x);
+      vec3 rr = P - uCam;
+      float rl = max(length(rr), 0.3);
+      vec3 rh = rr / rl;
+      vec3 perp = vec3(-n2.y, 0.0, n2.x), along = vec3(n2.x, 0.0, n2.y);
+      // his column keeps its proportions as they are seen: as wide, against how long it looks from here, as his
+      float angW = uColWidth * (atan(A / xn) - atan(A / xf));
+      // a mark's slant is a slant on the canvas, and the water runs away from the eye, so what lies along the
+      // column is stretched by how flat it is seen -- exactly by how much, so the angle comes back as his
+      float stretch = clamp(sqrt(x * x + A * A) / A, 1.0, 40.0);
+      vec3 dw = normalize(perp * cos(iP0.z) + along * (sin(iP0.z) * stretch));
+      float fore = max(length(dw - rh * dot(dw, rh)), 0.06);
+      float foreP = max(length(perp - rh * dot(perp, rh)), 0.06);
+      float Lw = iP2.x * angW * rl / fore;
+      wid = iP2.y * angW * rl;
+      imp = iSize.y * angW * rl;                  // the paint stands off the water in his own proportion to it
+      crl = iSize.w * angW * rl;
+      P += perp * ((iP0.y + uWave.z * uWave.x * sin(1.7 * ph)) * 0.5 * angW * rl / foreP);
+      vec3 nb = normalize(cross(dw, rh));
+      iQ0 = P - dw * (0.5 * Lw); iQ2 = P + dw * (0.5 * Lw); iQ1 = P + nb * (iMeta.w * Lw);
+    }
+    // the lattice the motes live on: one cell, carried to the eye, so that the field has no end and no edge
+    if (uWrap > 0.0) {
+      vec3 o = uWrap * floor((uCam - iP1) / uWrap + 0.5);
+      // a lattice on a surface wraps along it and not through it: the motes live in the air and wrap in three
+      // directions, but the sea and the shore lie on the floor, and carrying them in y lifts the water to the
+      // height of the eye. Found in D4.5; before it, every mark of the sea stood at the nearest multiple of
+      // its own cell to the camera, which from a hundred metres up is a sea in the air
+      if (uWrapY < 0.5) o.y = 0.0;
+      iQ0 += o; iQ1 += o; iQ2 += o;
+      if (iQ1.y < uWrapLow || iQ1.y > uCeil) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    }
+    // a mark of the river must not lie on the shore, nor the shore's in the water: one floor, two surfaces, and
+    // a mark belongs to the one it was measured from. A reflection is the river's too (DESIGN 5.2, D4.5)
+    if (uSide != 0.0 && ((iQ1.x > uBand.x && iQ1.x < uBand.y) != (uSide > 0.0))) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    // Between the cones there is the sea, our sky over it, and the reflections (DESIGN 5.1). Inside one there is
+    // only what was painted there, which is what keeps every standpoint test standing with all three in the air
+    if (inSomeoneElses(iQ1)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    float chord = max(length(iQ2 - iQ0), 1e-3);
+    float slide = uCurl * crl * sin(uTime * 0.42 + iMeta.z) / chord;
+    float t = clamp(aUV.x + slide, -0.2, 1.2), mt = 1.0 - t;
+    vec3 pos = mt * mt * iQ0 + 2.0 * t * mt * iQ1 + t * t * iQ2;
+    vec3 tan = normalize(2.0 * mt * (iQ1 - iQ0) + 2.0 * t * (iQ2 - iQ1) + vec3(1e-5, 0.0, 0.0));
+    // the underside: the paint stands off the canvas along the stroke's own ray from the standpoint, so from his
+    // eye it is exactly behind the face and from anywhere else it is the stroke's body. Seen from near his eye
+    // the body hides behind the face exactly, and a strip that would move less than a pixel is not drawn at all
+    if (aUV.z > 0.5) {
+      if (uUnder < 0.5) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+      vec3 ray = uColumn > 0.0 ? vec3(0.0, 1.0, 0.0) : normalize(iQ1 - uEye);   // paint stands off what it lies on
+      vec3 toEye = uCam - iQ1;
+      float dist = max(length(toEye), 0.5);
+      if (imp * length(cross(ray, toEye / dist)) * uFocalPx / dist < 0.8) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+      pos += ray * imp;
+    }
+    // parting (DESIGN 3.3, 6.5): the line of flight is a tube of radius uPart, and every point of every stroke
+    // inside it is moved out onto it, along the shortest way, by a map that keeps their order (sd -> sqrt(sd^2 +
+    // R^2)); a stroke clears the tube by its own half width too. The third of a second out and the two seconds
+    // back are distances along the line at the body's speed: uPartA ahead, uPartB behind, set by main.js
+    if (uPart > 0.0) {
+      vec3 rel = pos - uCam;
+      float along = dot(rel, uHead);
+      vec3 side = rel - uHead * along;
+      float sd = length(side);
+      float ka = smoothstep(-uPartB, -0.15 * uPartB, along) * (1.0 - smoothstep(uPartA, 2.0 * uPartA, along));
+      float Rt = ka * (uPart + 0.5 * wid);
+      if (Rt > 0.0) {
+        vec3 dir = sd > 1e-3 ? side / sd : normalize(cross(uHead, abs(uHead.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+        pos += dir * (sqrt(sd * sd + Rt * Rt) - sd);
+      }
+    }
+    vec3 E = normalize(uCam - pos);
+    vec3 S = normalize(cross(tan, E) + vec3(0.0, 1e-5, 0.0));
+    vec3 N = cross(S, tan);
+    float taper = sqrt(max(0.0, 1.0 - pow(abs(2.0 * aUV.x - 1.0), 6.0)));
+    vec3 p = pos + S * aUV.y * 0.5 * wid * (aUV.z > 0.5 ? 0.62 : 1.0) * (0.3 + 0.7 * taper);
+    gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
+    // how wide the stroke is on the screen: past a hand's breadth of pixels its bristles are read as a mass
+    vBig = smoothstep(30.0, 140.0, wid * uFocalPx / max(length(uCam - pos), 1.0));
+    vPale = max(smoothstep(uCeil - 140.0, uCeil, p.y), smoothstep(uEdge - 400.0, uEdge, length(p.xz)));
+    vUnder = aUV.z;
+    vST = vec2(aUV.x, aUV.y); vRow = iSize.z; vCol = iCol.rgb * uTint; vEmit = iCol.w; vP = p; vT = tan; vB = S; vN = N; vMine = iMeta.y;
   }
 `;
 const FRAG = /* glsl */`
   ${NOISE}
   ${BRUSH}
-  ${LIGHT}
-  varying vec2 vST; varying vec3 vCol, vCol2, vP, vN, vT, vB; varying float vRow, vEmit;
+  uniform vec3 uCam, uKeyDir, uKeyCol, uLinen;
+  uniform float uDark, uLedger;
+  varying vec2 vST; varying vec3 vCol, vP, vT, vB, vN; varying float vRow, vEmit, vMine, vBig, vUnder, vPale;
   void main() {
     vec4 br = brush(vST, vRow);
-    float a = smoothstep(0.22, 0.55, br.g);
+    // seen large, the print is sampled soft, so that the dry end is a body of paint and not teeth
+    float soft = texture2D(uBrush, brushUV(vST, vRow), 2.5 * vBig).g;
+    float a = mix(smoothstep(0.18, 0.46, br.g), smoothstep(0.05, 0.3, soft), vBig);
     if (a < 0.02) discard;
+    vec3 nt = brushNormal(vST, vRow, br.r, 2.2);
+    vec3 N = normalize(vT * nt.x + vB * nt.y + vN * nt.z);
     vec3 V = normalize(uCam - vP);
-    vec3 Ng = dot(vN, V) < 0.0 ? -vN : vN;
-    vec3 nt = brushNormal(vST, vRow, br.r, 2.0);
-    vec3 N = normalize(vT * nt.x + vB * nt.y + Ng * nt.z);
-    vec3 alb = mix(vCol, vCol2, br.a * 0.75) * (0.82 + 0.36 * br.b);
-    vec3 c = paintShade(alb, N, V, vP, 0.45 * br.r);
+    // the painting's colour is the light: a flat face is exactly the record's colour from every side, and the
+    // moon lights only the relief -- the ridges of the print toward it, the hollows away
+    vec3 alb = vCol * (0.94 + 0.12 * br.b);
+    float relief = dot(N, uKeyDir) - dot(normalize(vN), uKeyDir);
+    vec3 H = normalize(uKeyDir + V);
+    float sp = pow(max(dot(N, H), 0.0), 30.0);
+    vec3 c = alb * (1.0 + 0.5 * relief) + uKeyCol * sp * 0.05 * br.r;
     c += vCol * vEmit * (0.6 + 0.8 * br.r);
-    gl_FragColor = vec4(fogged(c, vP), a);
+    if (vUnder > 0.5) c = vCol * 0.3 * (0.7 + 0.5 * br.b);          // the side of the ridge, in its own shadow
+    c *= exp(-length(vP - uCam) * uDark);
+    c = mix(c, uLinen, vPale);                                       // at the edge of the dream, bare linen
+    if (uLedger > 0.5 && vMine > 0.5) c = mix(c, vec3(1.0, 0.15, 0.6), 0.5);
+    gl_FragColor = vec4(c, a);
   }
 `;
 
-export class StrokeBuilder {
-  constructor() { this.pos = []; this.dir = []; this.nrm = []; this.shape = []; this.col = []; this.col2 = []; this.anim = []; this.n = 0; }
-  // len and wid are half-extents in metres
-  add(p, d, n, len, wid, col, o = {}) {
-    this.pos.push(p[0], p[1], p[2]); this.dir.push(d[0], d[1], d[2]); this.nrm.push(n[0], n[1], n[2]);
-    this.shape.push(len, wid, o.bend ?? 0, o.row ?? ((this.n * 5) % 8));
-    this.col.push(col[0], col[1], col[2], o.emit ?? 0);
-    const c2 = o.col2 || col;
-    this.col2.push(c2[0], c2[1], c2[2], o.order ?? 0);
-    this.anim.push(o.sway ?? 0, o.phase ?? 0, o.base ?? 0, 0);
-    this.n++;
-  }
-  build(U, extra = {}) {
-    const g = ribbon(4);
-    const A = (name, arr, k) => g.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(arr), k));
-    A('iPos', this.pos, 3); A('iDir', this.dir, 3); A('iNrm', this.nrm, 3);
-    A('iShape', this.shape, 4); A('iCol', this.col, 4); A('iCol2', this.col2, 4); A('iAnim', this.anim, 4);
-    g.instanceCount = this.n;
-    const u = { ...U, uProgress: { value: 0 }, uWind: { value: 1 }, uArrive: { value: 0.035 }, ...extra };
-    const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: u,
+export class Strokes {
+  constructor(U, ex, ov) {
+    const g = ribbon(SEG, U.uUnder && U.uUnder.value > 0.5 ? 2 : 1);
+    const add = (name, arr, k) => g.setAttribute(name, new THREE.InstancedBufferAttribute(arr, k));
+    add('iP0', ex.P[0], 3); add('iP1', ex.P[1], 3); add('iP2', ex.P[2], 3);
+    add('iSize', ex.size, 4); add('iCol', ex.col, 4); add('iMeta', ex.meta, 4);
+    if (ex.light) add('iLight', ex.light, 1);
+    g.instanceCount = ex.n;
+    this.u = { ...U, uReveal: { value: 2 }, uMine: { value: -1 }, uWrapLow: { value: 2 },
+               uSide: { value: 0 }, uWrapY: { value: 1 }, uTint: { value: new THREE.Vector3(1, 1, 1) }, ...(ov || {}) };
+    this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.u,
       side: THREE.DoubleSide, alphaToCoverage: true }));
-    m.frustumCulled = false;
-    return m;
-  }
-}
-
-const CORE_VERT = /* glsl */`
-  ${NOISE}
-  ${LIGHT}
-  attribute vec3 aCol; attribute float aOrder;
-  varying vec3 vP, vN, vC; varying float vO;
-  void main() {
-    vec4 wp = modelMatrix * vec4(position, 1.0);
-    vP = wp.xyz; vN = normalize(mat3(modelMatrix) * normal); vC = aCol; vO = aOrder;
-    gl_Position = projectionMatrix * viewMatrix * wp;
-  }
-`;
-const CORE_FRAG = /* glsl */`
-  ${NOISE}
-  ${LIGHT}
-  uniform float uProgress;
-  varying vec3 vP, vN, vC; varying float vO;
-  void main() {
-    if (uProgress < vO) discard;
-    vec3 V = normalize(uCam - vP);
-    vec3 N = normalize(vN); if (dot(N, V) < 0.0) N = -N;
-    float n = vnoise(vP.xz * 4.0 + vP.y * 3.0);
-    vec3 c = paintShade(vC * (0.85 + 0.25 * n), N, V, vP, 0.0);
-    gl_FragColor = vec4(fogged(c, vP), 1.0);
-  }
-`;
-
-// solid shapes behind the marks
-export class CoreBuilder {
-  constructor() { this.p = []; this.n = []; this.c = []; this.o = []; }
-  tri(a, b, c, col, ord) {
-    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-    const l = Math.hypot(...n) || 1; n = [n[0] / l, n[1] / l, n[2] / l];
-    for (const p of [a, b, c]) { this.p.push(...p); this.n.push(...n); this.c.push(...col); this.o.push(ord); }
-  }
-  quad(a, b, c, d, col, ord) { this.tri(a, b, c, col, ord); this.tri(a, c, d, col, ord); }
-  // local frame helper: yaw about y
-  frame(x, y, z, yaw) {
-    const cy = Math.cos(yaw), sy = Math.sin(yaw);
-    return (lx, ly, lz) => [x + lx * cy + lz * sy, y + ly, z - lx * sy + lz * cy];
-  }
-  box(x, y, z, hx, hy, hz, yaw, col, ord) {
-    const W = this.frame(x, y, z, yaw);
-    const P = [[-hx, -hy, -hz], [hx, -hy, -hz], [hx, hy, -hz], [-hx, hy, -hz], [-hx, -hy, hz], [hx, -hy, hz], [hx, hy, hz], [-hx, hy, hz]].map(v => W(...v));
-    [[4, 5, 6, 7], [1, 0, 3, 2], [5, 1, 2, 6], [0, 4, 7, 3], [7, 6, 2, 3], [0, 1, 5, 4]].forEach(([a, b, c, d]) => this.quad(P[a], P[b], P[c], P[d], col, ord));
-  }
-  // a roof: ridge along local x at height rh above y, eaves at +-hz
-  gable(x, y, z, hx, hz, rh, yaw, col, ord) {
-    const W = this.frame(x, y, z, yaw);
-    const A = W(-hx, 0, hz), B = W(hx, 0, hz), C = W(hx, rh, 0), D = W(-hx, rh, 0), E = W(-hx, 0, -hz), F = W(hx, 0, -hz);
-    this.quad(A, B, C, D, col, ord); this.quad(F, E, D, C, col, ord);
-    this.tri(B, F, C, col, ord); this.tri(E, A, D, col, ord);
-  }
-  // a surface of revolution about a vertical axis: r(t) for t in 0..1 over height h
-  lathe(x, y, z, rf, h, col, ord, seg = 12, rows = 10) {
-    for (let j = 0; j < rows; j++) {
-      const t0 = j / rows, t1 = (j + 1) / rows, r0 = rf(t0), r1 = rf(t1);
-      for (let i = 0; i < seg; i++) {
-        const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
-        const P = (r, a, t) => [x + Math.cos(a) * r, y + t * h, z + Math.sin(a) * r];
-        this.quad(P(r0, a0, t0), P(r0, a1, t0), P(r1, a1, t1), P(r1, a0, t1), col, ord);
-      }
-    }
-  }
-  ellipsoid(x, y, z, rx, ry, rz, col, ord, seg = 10, rows = 7) {
-    for (let j = 0; j < rows; j++) {
-      const v0 = (j / rows) * Math.PI - Math.PI / 2, v1 = ((j + 1) / rows) * Math.PI - Math.PI / 2;
-      for (let i = 0; i < seg; i++) {
-        const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
-        const P = (a, v) => [x + Math.cos(a) * Math.cos(v) * rx, y + Math.sin(v) * ry, z + Math.sin(a) * Math.cos(v) * rz];
-        this.quad(P(a0, v0), P(a1, v0), P(a1, v1), P(a0, v1), col, ord);
-      }
-    }
-  }
-  build(U, extra = {}) {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3));
-    g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3));
-    g.setAttribute('aCol', new THREE.Float32BufferAttribute(this.c, 3));
-    g.setAttribute('aOrder', new THREE.Float32BufferAttribute(this.o, 1));
-    const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: CORE_VERT, fragmentShader: CORE_FRAG,
-      uniforms: { ...U, uProgress: { value: 0 }, ...extra }, side: THREE.DoubleSide }));
-    m.frustumCulled = false;
-    return m;
+    this.mesh.frustumCulled = false;
+    this.n = ex.n;
   }
 }

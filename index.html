@@ -2,214 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The World of Van Gogh</title>
-<meta name="description" content="Walk into Vincent van Gogh’s paintings, one after another, and watch each become its world, stroke by stroke.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>The Dream of Van Gogh</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; --bone: #f4eee3; }
+  html, body { margin: 0; height: 100%; background: #04060f; overflow: hidden; color: #cfd3dc; font-family: 'Cormorant Garamond', Georgia, serif; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+  .corner { position: fixed; left: 28px; bottom: 24px; font-size: 19px; letter-spacing: 0.02em; opacity: 0; transition: opacity 1.2s; pointer-events: none; text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+  .corner.on { opacity: 0.85; }
+  #caption { position: fixed; left: 28px; bottom: 24px; max-width: min(620px, 74vw); font-size: 19px; line-height: 1.45;
+             opacity: 0; transition: opacity 1.4s; pointer-events: none; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+  #caption.on { opacity: 0.88; }
+  #caption b { display: block; font-weight: 500; font-size: 22px; letter-spacing: 0.01em; }
+  #caption i { display: block; font-size: 16px; opacity: 0.7; font-style: normal; margin-bottom: 7px; }
+  #caption q { quotes: none; font-style: italic; }
+  #panel { position: fixed; right: 24px; top: 22px; font-size: 15px; line-height: 1.5; white-space: pre; opacity: 0.8; background: rgba(6, 8, 18, 0.55); padding: 10px 14px; border-radius: 4px; }
+  #linen { position: fixed; inset: 0; background: #6d6350; opacity: 0; pointer-events: none; }
+  #debug { position: fixed; left: 12px; top: 10px; font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre; opacity: 0.7; }
   [hidden] { display: none !important; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0c0f16; color: var(--bone);
-    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased; }
-  #stage, #stage canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
-  #stage canvas { cursor: grab; }
-  #stage canvas:active { cursor: grabbing; }
-  button { font: inherit; color: inherit; }
-  .serif, .veil-title h1, .veil-plaque b, #st-title, #st-sub, #plaque b, #end h2 {
-    font-family: "Cormorant Garamond", "Iowan Old Style", Georgia, serif; }
-  kbd { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box;
-    border: 1px solid rgba(244,238,227,.55); border-bottom-width: 2px; border-radius: 6px; margin: 0 2px;
-    font: 600 12.5px/1 -apple-system, Helvetica, sans-serif; background: rgba(12,14,22,.4); }
-  kbd.wide { min-width: 52px; }
-
-  /* the opening: The Starry Night, painted in front of you on a primed canvas from his own stroke record while
-     the world is built behind it (src/veil.js); then it lifts, and you are standing in the world */
-  #veil { position: fixed; inset: 0; z-index: 7; overflow: hidden; touch-action: none;
-    background: radial-gradient(90% 75% at 50% 40%, #182139 0%, #0d1222 55%, #06080f 100%);
-    transition: opacity 1.9s ease-in-out, visibility 0s linear 1.9s; }
-  #veil-art { position: absolute; inset: 0; transition: transform 2.4s cubic-bezier(.45, 0, .85, .55); }
-  #veil-canvas { position: absolute; background:
-      repeating-linear-gradient(0deg, rgba(70,56,34,.06) 0 1px, rgba(0,0,0,0) 1px 3px),
-      repeating-linear-gradient(90deg, rgba(70,56,34,.05) 0 1px, rgba(0,0,0,0) 1px 3px), #cdc3a6;
-    box-shadow: 0 26px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3); }
-  #veil-under, #veil-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  #veil-under { opacity: 0; transition: opacity .5s linear; }
-  #veil .glow { position: absolute; width: 7%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; opacity: 0;
-    mix-blend-mode: screen; transform: translate(-50%, -50%) scale(.85); transition: opacity 1.8s ease;
-    background: radial-gradient(closest-side, rgba(255,242,178,.8), rgba(250,222,128,.3) 45%, rgba(250,222,128,0)); }
-  #veil .glow.moon { width: 13%; }
-  #veil.painted .glow { opacity: .7; animation: twinkle 3.4s ease-in-out infinite alternate; }
-  @keyframes twinkle { to { transform: translate(-50%, -50%) scale(1.14); } }
-  #veil.bare #veil-canvas { background: none; box-shadow: none; }
-  #veil.bare .veil-plaque { display: none; }
-  .veil-plaque { position: absolute; right: 0; top: 100%; margin: 12px 0 0; font-size: 11.5px; letter-spacing: .03em;
-    opacity: .66; white-space: nowrap; }
-  .veil-plaque b { font-style: italic; font-weight: 500; font-size: 15px; letter-spacing: 0; margin-right: 8px; }
-  .veil-title { position: absolute; left: 0; right: 0; top: 80%; padding: 0 6vw; text-align: center; opacity: 0;
-    transition: opacity 1.4s ease; }
-  #veil.type .veil-title { opacity: 1; }
-  .veil-title h1 { font-weight: 600; font-size: clamp(30px, 3.4vw, 50px); line-height: 1; margin: 0 0 12px;
-    text-shadow: 0 2px 30px rgba(0,0,0,.6); }
-  #veil-status { margin: 0; min-height: 1.6em; font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
-    opacity: .72; transition: opacity .8s ease; }
-  #veil-status.off { opacity: 0; }
-  /* the lift: you go into the painting -- it comes towards you until it fills the window, and only then lets go */
-  #veil.lift { opacity: 0; visibility: hidden; pointer-events: none;
-    transition: opacity 1.5s cubic-bezier(.4, 0, .6, 1) .75s, visibility 0s linear 2.25s; }
-  #veil.lift #veil-art { transform: scale(var(--fill, 1.32)); transition: transform 1.8s cubic-bezier(.55, 0, .35, 1); }
-  #veil.lift .veil-title { opacity: 0; transition-duration: .7s; }
-  @media (prefers-reduced-motion: reduce) {
-    #veil-art { transition: none; }
-    #veil.lift #veil-art { transform: none; }
-    #veil.painted .glow { animation: none; }
-  }
-
-  /* the one line that says how, until a hand moves */
-  #hint { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); white-space: nowrap; font-size: 13px;
-    letter-spacing: .04em; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; z-index: 3;
-    text-shadow: 0 1px 14px rgba(0,0,0,.8), 0 0 3px rgba(0,0,0,.55); }
-  #hint.show { opacity: .92; }
-
-  /* one card of keys */
-  #help { position: fixed; left: 50%; bottom: 84px; transform: translate(-50%, 14px); display: flex; gap: 22px;
-    flex-wrap: wrap; justify-content: center; padding: 14px 22px; border-radius: 16px; max-width: 92vw;
-    background: rgba(10,12,20,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(244,238,227,.14); opacity: 0; pointer-events: none;
-    transition: opacity .7s ease, transform .7s ease; z-index: 4; }
-  #help.on { opacity: 1; transform: translate(-50%, 0); }
-  #help .k { display: flex; align-items: center; gap: 8px; font-size: 13px; white-space: nowrap; }
-
-  /* where you are */
-  #station { position: fixed; left: 40px; top: 34px; max-width: min(40vw, 620px); opacity: 0; transform: translateY(-8px);
-    transition: opacity 1.6s ease, transform 1.6s ease; text-shadow: 0 1px 22px rgba(0,0,0,.6); pointer-events: none; z-index: 3; }
-  #station.on { opacity: 1; transform: none; }
-  #st-place { margin: 0 0 6px; font-size: 12px; letter-spacing: .26em; text-transform: uppercase; opacity: .88; }
-  #st-title { margin: 0; font-weight: 600; font-size: clamp(34px, 3.8vw, 58px); line-height: 1.02; }
-  #st-sub { margin: 8px 0 0; font-style: italic; font-size: 20px; opacity: .88; }
-
-  /* the plaque by a painting */
-  #plaque { position: fixed; left: 40px; bottom: 80px; padding: 11px 18px 12px; border-left: 2px solid rgba(244,238,227,.75);
-    background: linear-gradient(to right, rgba(10,12,20,.58), rgba(10,12,20,0)); opacity: 0; transition: opacity .9s ease;
-    max-width: 30em; pointer-events: none; z-index: 3; }
-  #plaque.on { opacity: 1; }
-  #plaque b { display: block; font-size: 24px; font-weight: 600; line-height: 1.15; }
-  #plaque span { display: block; font-size: 12.5px; opacity: .82; margin-top: 3px; }
-
-  #auto { position: fixed; left: 50%; top: 22px; transform: translateX(-50%); font-size: 11.5px; letter-spacing: .14em;
-    text-transform: uppercase; padding: 7px 15px; border-radius: 999px; background: rgba(10,12,20,.5); opacity: 0;
-    transition: opacity .5s; pointer-events: none; z-index: 3; }
-  #auto.on { opacity: .92; }
-
-  #corner { position: fixed; right: 18px; top: 16px; display: flex; gap: 8px; opacity: 0; transition: opacity 1.2s; z-index: 4; }
-  body.awake #corner { opacity: 1; }
-  #corner button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(244,238,227,.32);
-    background: rgba(10,12,20,.42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); cursor: pointer;
-    display: grid; place-items: center; padding: 0; transition: border-color .2s, background .2s; }
-  #corner button:hover, #corner button:focus-visible { border-color: rgba(244,238,227,.85); outline: none; }
-  #corner button.on { background: rgba(244,238,227,.18); border-color: rgba(244,238,227,.7); }
-  #corner svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-  #btn-pace { font: 600 12.5px/1 -apple-system, Helvetica, sans-serif; letter-spacing: .01em; }
-  #btn-sound .x { display: inline; } #btn-sound.on .x { display: none; } #btn-sound .w { display: none; } #btn-sound.on .w { display: inline; }
-
-  /* the road, as a line you can travel along */
-  #journey { position: fixed; left: 44px; right: 44px; bottom: 26px; height: 30px; opacity: 0; transition: opacity 1.2s; z-index: 4; }
-  body.awake #journey { opacity: 1; }
-  #j-track { position: absolute; left: 0; right: 0; top: 14px; height: 2px; background: rgba(244,238,227,.22); border-radius: 2px;
-    box-shadow: 0 0 10px rgba(0,0,0,.35); }
-  #j-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(244,238,227,.78); border-radius: 2px; }
-  #j-dot { position: absolute; top: 50%; left: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%;
-    background: var(--bone); box-shadow: 0 0 14px rgba(255,236,190,.9); pointer-events: none; }
-  .tick { position: absolute; top: -9px; width: 22px; height: 22px; margin-left: -11px; padding: 0; border: 0; background: none; cursor: pointer; }
-  .tick i { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px; border-radius: 50%; box-sizing: border-box;
-    background: rgba(12,14,22,.9); border: 1.5px solid rgba(244,238,227,.85); transition: transform .2s; }
-  .tick:hover i, .tick:focus-visible i { transform: scale(1.5); }
-  .tick:focus-visible { outline: none; }
-  .tick span { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(4px); white-space: nowrap;
-    font-size: 12.5px; padding: 6px 10px; border-radius: 8px; background: rgba(10,12,20,.78); opacity: 0;
-    transition: opacity .2s, transform .2s; pointer-events: none; line-height: 1.3; }
-  .tick span em { display: block; font-style: normal; opacity: .7; font-size: 11px; }
-  .tick:hover span, .tick:focus-visible span { opacity: 1; transform: translateX(-50%); }
-  #j-name { position: absolute; right: 0; top: -12px; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase;
-    opacity: .9; text-shadow: 0 1px 10px rgba(0,0,0,.7); pointer-events: none; }
-
-  #end { position: fixed; left: 50%; bottom: 12vh; transform: translateX(-50%); text-align: center; opacity: 0;
-    transition: opacity 3s ease; pointer-events: none; z-index: 3; color: #1d1b18; }
-  #end.on { opacity: 1; pointer-events: auto; }
-  #end .kicker { letter-spacing: .3em; text-transform: uppercase; font-size: 12px; margin: 0 0 12px; opacity: .75; }
-  #end h2 { font-size: clamp(36px, 4.4vw, 60px); font-weight: 600; line-height: 1.05; margin: 0 0 26px; }
-  #end button { cursor: pointer; border: 1px solid rgba(29,27,24,.55); background: none; padding: 11px 28px; border-radius: 999px;
-    letter-spacing: .14em; text-transform: uppercase; font-size: 12.5px; color: #1d1b18; }
-
-  #fail { position: fixed; inset: 0; display: grid; place-items: center; background: #0c0f16; padding: 8vw; z-index: 10; }
-  #fail h1 { font-family: "Cormorant Garamond", Georgia, serif; font-size: 32px; margin: 0 0 10px; font-weight: 600; }
-  #fail p { opacity: .8; }
-  #fail code { font: 11px/1.5 ui-monospace, Menlo, monospace; opacity: .55; white-space: pre-wrap; display: block; margin-top: 14px; max-height: 40vh; overflow: auto; }
-  #debug { position: fixed; right: 18px; top: 66px; font: 11px/1.5 ui-monospace, Menlo, monospace; white-space: pre; text-align: right;
-    opacity: .85; text-shadow: 0 1px 8px #000; z-index: 6; pointer-events: none; }
-  @media (max-width: 760px) {
-    #station { left: 20px; top: 68px; max-width: 78vw; }
-    #journey { left: 22px; right: 22px; }
-    #plaque { left: 20px; }
-    #help { bottom: 76px; gap: 12px; padding: 12px 14px; }
-    #help .k { font-size: 12px; }
-    #hint { white-space: normal; width: 88vw; text-align: center; bottom: 22px; }
-    .veil-plaque { white-space: normal; width: 100%; text-align: right; }
-  }
+  #fail { position: fixed; inset: 0; display: grid; place-items: center; background: #04060f; text-align: center; }
+  #fail h1 { font-weight: 400; font-size: 28px; margin: 0 0 8px; }
+  #fail p { margin: 0 0 12px; opacity: 0.8; }
+  #fail code { display: block; font-size: 11px; white-space: pre-wrap; max-width: 80vw; opacity: 0.6; text-align: left; }
 </style>
 </head>
 <body>
 <div id="stage"></div>
-
-<div id="veil">
-  <div id="veil-art" aria-hidden="true">
-    <div id="veil-canvas">
-      <img id="veil-under" src="strokes/s08/starry-canvas-under.png" alt="">
-      <canvas id="veil-cv"></canvas>
-      <p class="veil-plaque"><b>The Starry Night</b>Saint-Rémy, June 1889 · Museum of Modern Art, New York</p>
-    </div>
-  </div>
-  <div class="veil-title"><h1>The World of Van Gogh</h1><p id="veil-status">Mixing the colours</p></div>
-</div>
-<script src="src/veil.js"></script>
-
-<div id="hint" aria-hidden="true">Walk with <kbd>↑</kbd> · turn with <kbd>←</kbd><kbd>→</kbd> · drag to look · <kbd class="wide">space</kbd> walks on its own</div>
-
-<div id="help" role="note" aria-label="Controls">
-  <div class="k"><kbd>↑</kbd><kbd>↓</kbd> walk</div>
-  <div class="k"><kbd>←</kbd><kbd>→</kbd> turn</div>
-  <div class="k"><kbd class="wide">drag</kbd> look around</div>
-  <div class="k"><kbd class="wide">space</kbd> walk on its own</div>
-  <div class="k"><kbd>X</kbd> walk faster</div>
-  <div class="k"><kbd>Z</kbd> lie down and look up</div>
-  <div class="k"><kbd>1</kbd>–<kbd>0</kbd> jump to a painting</div>
-</div>
-
-<div id="station" aria-live="polite"><p id="st-place"></p><h2 id="st-title"></h2><p id="st-sub"></p></div>
-<div id="plaque" aria-live="polite"><b id="pl-title"></b><span id="pl-sub"></span></div>
-<div id="auto">Walking on its own · ← → steer · ↑ ↓ take over</div>
-<div id="end"><p class="kicker">Auvers-sur-Oise · 29 July 1890</p><h2>Vincent van Gogh<br>1853 – 1890</h2><button id="again" type="button">Walk it again</button></div>
-
-<div id="corner">
-  <button id="btn-pace" type="button" aria-label="Walking speed, normal" title="Walking speed 1× (X)">1×</button>
-  <button id="btn-sound" type="button" aria-pressed="false" aria-label="Sound" title="Sound (M)">
-    <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="M17 10l4 4M21 10l-4 4"/></svg>
-  </button>
-  <button id="btn-help" type="button" aria-label="Controls" title="Controls (H)">
-    <svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h1M9 10h1M12 10h1M15 10h1M18 10h0M7 14h10"/></svg>
-  </button>
-  <button id="btn-fs" type="button" aria-label="Full screen" title="Full screen (F)">
-    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-  </button>
-</div>
-
-<nav id="journey" aria-label="The road: ten paintings, and their worlds"><div id="j-track"><div id="j-fill"></div><div id="j-ticks"></div><div id="j-dot"></div></div><div id="j-name"></div></nav>
-
-<div id="fail" hidden><div><h1 id="fail-h">Something stopped the paint.</h1><p id="fail-p"></p><code id="fail-c"></code></div></div>
+<div id="line" class="corner">you fly where you look</div>
+<div id="caption"></div>
+<div id="linen"></div>
+<div id="panel" hidden></div>
 <div id="debug" hidden></div>
-
+<div id="fail" hidden><div><h1 id="fail-h"></h1><p id="fail-p"></p><code id="fail-c"></code></div></div>
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
 </script>

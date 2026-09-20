@@ -1,0 +1,246 @@
+{
+ "_": "The wind of the Starry Night (DESIGN 3.2, 4.7). \"measured\" is the fit of tools/wind.py to his sky strokes' tangent lines, up to one scale; \"authored\" is what lines cannot say: which way the drift blows, and how fast in metres a second. \"flown\" is what src/wind.js evaluates: the fitted shape at the authored speeds, in metres a second on the canvas plane.",
+ "slug": "starry",
+ "eye": {
+  "x": 0,
+  "y": 40,
+  "z": 0,
+  "yaw": 0,
+  "pitch": 8,
+  "hfov": 62
+ },
+ "canvas": {
+  "W": 0.9307,
+  "H": 0.737,
+  "f": 0.7745
+ },
+ "measured": {
+  "strokes": 6427,
+  "regions": [
+   "sky",
+   "swirl"
+  ],
+  "profile": "gauss",
+  "noise_floor_deg": 14.81,
+  "residual_deg": 21.74,
+  "residual_bands_deg": 15.43,
+  "residual_drift_only_deg": 34.59,
+  "residual_by_region_deg": {
+   "sky": 22.2,
+   "swirl": 19.86,
+   "star": 28.02,
+   "moon": 21.15,
+   "hills": 32.8,
+   "village": 37.13,
+   "cypress": 58.47
+  },
+  "drift_deg": -1.83,
+  "wave": {
+   "A": 0.3971,
+   "phi": 0.0926,
+   "lam": 0.3235,
+   "psi": -0.0241
+  },
+  "vortices": [
+   {
+    "c": [
+     -0.0117,
+     0.1044
+    ],
+    "uv": [
+     0.487,
+     0.358
+    ],
+    "r": 0.0791,
+    "deg": 5.83,
+    "s": -6.3621,
+    "q": -0.2701,
+    "mirrored_residual_deg": 26.07,
+    "depth_far_m": 626.6,
+    "depth_rim_m": 556.4
+   },
+   {
+    "c": [
+     0.1487,
+     0.0685
+    ],
+    "uv": [
+     0.66,
+     0.407
+    ],
+    "r": 0.0891,
+    "deg": 6.56,
+    "s": 1.0794,
+    "q": -0.1837,
+    "mirrored_residual_deg": 21.82,
+    "depth_far_m": 567.8,
+    "depth_rim_m": 548.6
+   },
+   {
+    "c": [
+     0.3656,
+     0.2419
+    ],
+    "uv": [
+     0.893,
+     0.172
+    ],
+    "r": 0.0688,
+    "deg": 5.07,
+    "s": 15.0,
+    "q": 0.0289,
+    "mirrored_residual_deg": 21.74,
+    "depth_far_m": null,
+    "depth_rim_m": null
+   },
+   {
+    "c": [
+     0.2303,
+     0.2087
+    ],
+    "uv": [
+     0.747,
+     0.217
+    ],
+    "r": 0.1163,
+    "deg": 8.54,
+    "s": -2.3038,
+    "q": -0.2943,
+    "mirrored_residual_deg": 22.33,
+    "depth_far_m": 404.5,
+    "depth_rim_m": 461.9
+   },
+   {
+    "c": [
+     0.2006,
+     0.2687
+    ],
+    "uv": [
+     0.715,
+     0.135
+    ],
+    "r": 0.0607,
+    "deg": 4.48,
+    "s": 4.1294,
+    "q": -0.1748,
+    "mirrored_residual_deg": 23.43,
+    "depth_far_m": 372.8,
+    "depth_rim_m": 355.2
+   },
+   {
+    "c": [
+     -0.0046,
+     0.1211
+    ],
+    "uv": [
+     0.495,
+     0.336
+    ],
+    "r": 0.0365,
+    "deg": 2.7,
+    "s": -15.0,
+    "q": -0.7863,
+    "mirrored_residual_deg": 21.57,
+    "depth_far_m": 630.3,
+    "depth_rim_m": 587.9
+   }
+  ]
+ },
+ "authored": {
+  "sense": "the drift blows from the canvas's left to its right",
+  "drift_mps": 2.0,
+  "peak_mps": 8.0,
+  "draw_mps": 1.0,
+  "inflow": 0.0,
+  "vortex_scale": 0.3266,
+  "eddies": [
+   [
+    0,
+    5
+   ],
+   [
+    1
+   ],
+   [
+    2
+   ],
+   [
+    3,
+    4
+   ]
+  ],
+  "capped": {},
+  "residual_flown_deg": 31.14,
+  "residual_flown_bands_deg": 27.51
+ },
+ "flown": {
+  "profile": "gauss",
+  "drift": [
+   1.999,
+   -0.064
+  ],
+  "wave": {
+   "A": 0.7942,
+   "phi": 0.0926,
+   "lam": 0.3235,
+   "psi": -0.0241
+  },
+  "vortices": [
+   {
+    "c": [
+     -0.0117,
+     0.1044
+    ],
+    "r": 0.0791,
+    "s": -2.0776,
+    "q": -0.0
+   },
+   {
+    "c": [
+     0.1487,
+     0.0685
+    ],
+    "r": 0.0891,
+    "s": 0.3525,
+    "q": -0.0
+   },
+   {
+    "c": [
+     0.3656,
+     0.2419
+    ],
+    "r": 0.0688,
+    "s": 4.8985,
+    "q": 0.0
+   },
+   {
+    "c": [
+     0.2303,
+     0.2087
+    ],
+    "r": 0.1163,
+    "s": -0.7523,
+    "q": -0.0
+   },
+   {
+    "c": [
+     0.2006,
+     0.2687
+    ],
+    "r": 0.0607,
+    "s": 1.3485,
+    "q": -0.0
+   },
+   {
+    "c": [
+     -0.0046,
+     0.1211
+    ],
+    "r": 0.0365,
+    "s": -4.8985,
+    "q": -0.0
+   }
+  ],
+  "draw": 1.0
+ }
+}

@@ -1,0 +1,44 @@
+{
+ "_": "The terrace has no hand for a star, and that is the measurement. Its 24 star strokes fall into 9 clusters of which the biggest is 7 marks: he paints a star here as one pale dab, not as the core and rings the Starry Night gives. So our stars keep the Starry Night's hand (hand/starry-star.json) and this file is kept as the record of what was asked and what came back. BUILD.md D4.",
+ "slug": "cafeterrace",
+ "region": "star",
+ "n": 24,
+ "stars": 0,
+ "clusters": [
+  7,
+  4,
+  3,
+  2,
+  2,
+  2,
+  2,
+  1,
+  1
+ ],
+ "least": 20,
+ "canvas": {
+  "f": 0.6939
+ },
+ "link_m": 0.01,
+ "per_star": {
+  "strokes": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "radius_rad": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "rings": []
+}

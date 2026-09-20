@@ -1,38 +1,19 @@
-# Source scans: 1.7 GB of museum photography, gathered by tools/, never committed.
-# paintings/CREDITS.md records exactly what is in here and where each file came from.
+# The source scans: 1.7 GB of museum photography, gathered for the sibling piece and read from
+# ref/originals/, outside the repository. paintings/CREDITS.md records what they are.
 ref/
 
-# Local Python environment for the offline extraction pipeline.
+# The local Python environment behind tools/.
 .venv/
 
 .DS_Store
+__pycache__/
 
-# Build outputs of the offline pipeline. Reproducible from ref/ plus params/,
-# and re-tuning forty canvases through git history is hundreds of megabytes of
-# churn. From M6 a station's blobs are committed once that station is frozen.
-strokes/**/*.bin
-strokes/**/*.json
-strokes/**/*.png
-strokes/**/*.wav
+# Every frame a tool has ever taken. The ones the log keeps are copied into docs/ by name.
+shots/
 
-# ...except the golden image, which is the pipeline regression: every build
-# reports its RMS against this, and a change that moves it without meaning to
-# is caught in seconds instead of in a milestone.
-!strokes/golden/
-!strokes/golden/*.png
-
-# ...and, after M9, the records the page loads: each canvas's strokes and its
-# underlayer, 12 MB for all of them, so that a clone shows the paintings. The
-# rest of a build stays out, and so does La berceuse, the stand-in for the old
-# station 7, which no station hangs any more.
-!strokes/s[0-9][0-9]/*-canvas.bin
-!strokes/s[0-9][0-9]/*-canvas-under.png
-strokes/s07/berceuse-*
-
-# tools/letters.py keeps the edition's pages it read, so a check can be re-run
-# without asking the edition again. letters/letters.json is the record; this is
-# only the cache behind it.
+# tools/lines.py keeps the edition's pages it read, so a check can be re-run without asking the
+# edition again. letters/letters.json is the record; this is only the cache behind it.
 letters/.cache/
 
-# Local deploy-tool marker, tied to whichever project this folder was last deployed as.
+# A deploy tool's marker, tied to whichever project this folder was last deployed as.
 .telbase/

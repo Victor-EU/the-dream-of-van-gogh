@@ -1,0 +1,75 @@
+{
+  "_": "DESIGN 9: one line of his per canvas, and one for the piece. What is typed here is a citation and a quotation, and neither is typed from memory: tools/lines.py asks the edition for the letter, finds every fragment of the line in the paragraph named, verbatim and in order, and checks that the edition's own note says the passage is about the canvas the line stands at -- or, where no note does, that none of the notes around it names any canvas this piece has, and that the `why` says why it stands there anyway. The sibling learnt this the hard way (tools/letters.py): seven of its nine citations, typed from memory, were wrong.",
+  "lines": [
+    {
+      "id": "piece",
+      "canvas": null,
+      "title": "The Dream of Van Gogh",
+      "letter": {
+        "n": 638,
+        "para": 32,
+        "text": "Just as we take the train to go to Tarascon or Rouen, we take death to go to a star.",
+        "why": "the line of the piece, not of a canvas: DESIGN 1 takes its thesis from it and DESIGN 9 puts it under the title at the opening. It stands at no painting, so no note can be asked to identify one."
+      }
+    },
+    {
+      "id": "starry",
+      "canvas": "starry",
+      "title": "The Starry Night",
+      "letter": {
+        "n": 782,
+        "para": 12,
+        "note": "n-8",
+        "text": "…a new study of a starry sky."
+      }
+    },
+    {
+      "id": "rhone",
+      "canvas": "rhone",
+      "title": "Starry Night Over the Rhône",
+      "letter": {
+        "n": 691,
+        "para": 2,
+        "text": "…the starry sky at last, actually painted at night, under a gas-lamp.",
+        "note": "n-1"
+      }
+    },
+    {
+      "id": "cafeterrace",
+      "canvas": "cafeterrace",
+      "title": "Café Terrace at Night",
+      "letter": {
+        "n": 678,
+        "para": 19,
+        "note": "n-12",
+        "text": "Now there’s a painting of night without black."
+      }
+    }
+  ],
+  "canvases": {
+    "starry": {
+      "title": "The Starry Night",
+      "collection": "Museum of Modern Art, New York",
+      "cm": [
+        92.1,
+        73.7
+      ]
+    },
+    "rhone": {
+      "title": "Starry Night Over the Rhône",
+      "collection": "Musée d'Orsay, Paris",
+      "cm": [
+        92.0,
+        72.5
+      ]
+    },
+    "cafeterrace": {
+      "title": "Café Terrace at Night",
+      "collection": "Kröller-Müller Museum, Otterlo",
+      "cm": [
+        65.3,
+        80.7
+      ]
+    }
+  }
+}

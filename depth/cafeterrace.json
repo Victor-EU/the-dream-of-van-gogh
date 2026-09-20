@@ -1,0 +1,173 @@
+{
+ "_": "Cafe Terrace at Night, exploded. The sibling measured this canvas as a wall with no horizon and gave it a pitch of fourteen degrees; the canvas says something else. The waiter walking in the road is 1.65 m tall, which puts him 17.1 m off, and his head sits at v 0.580 -- so a standing eye sees his head on the horizon, and the horizon at v 0.580 is a pitch of +5.19, not +14. Everything else follows from that one line: the pavement is the plane 1.65 m under the eye, the awning the same law read upward at 3.65 m, and the two sides of the street two vertical planes six and eight metres off. The tables are not a law of their own: a table top is 0.9 m under the eye where the pavement is 1.65, so a table is the pavement at 0.545 of its distance, which is the whole of it. The lamp is not a region either: DESIGN 4.3's `windows` finds it where he painted it, in the brightest tenth of the awning and in the lit door of the cafe. The square's pavement stands on the sea of DESIGN 5.1, at its level, because everything in this piece does.",
+ "slug": "cafeterrace",
+ "eye": {
+  "x": -400,
+  "y": 4.411,
+  "z": 760,
+  "yaw": 270,
+  "pitch": 5.19,
+  "hfov": 50
+ },
+ "floor": 2.761,
+ "far": 900,
+ "noise": 0.006,
+ "orderNear": 0.012,
+ "regions": {
+  "skyRange": {
+   "key": [
+    0,
+    0,
+    1
+   ],
+   "law": {
+    "type": "range",
+    "v0": 0.33,
+    "d0": 600,
+    "v1": 0.0,
+    "d1": 260
+   }
+  },
+  "sky": {
+   "key": [
+    40,
+    70,
+    180
+   ],
+   "law": {
+    "type": "relief",
+    "base": "skyRange",
+    "amp": 40,
+    "by": "brightness"
+   }
+  },
+  "star": {
+   "key": [
+    255,
+    240,
+    120
+   ],
+   "law": {
+    "type": "rel",
+    "base": "sky",
+    "k": 0.9
+   },
+   "shine": 0.6,
+   "noise": 0.003
+  },
+  "awning": {
+   "key": [
+    230,
+    180,
+    40
+   ],
+   "law": {
+    "type": "plane",
+    "y": 6.411,
+    "far": 22
+   },
+   "near": 3.6,
+   "far": 22,
+   "noise": 0.004,
+   "windows": {
+    "lum": 0.58,
+    "yellow": 0.42,
+    "shine": 1.2
+   }
+  },
+  "facade": {
+   "key": [
+    180,
+    90,
+    30
+   ],
+   "law": {
+    "type": "wall",
+    "n_deg": -60,
+    "c": 6.0,
+    "far": 40
+   },
+   "near": 4.0,
+   "far": 40,
+   "noise": 0.006,
+   "windows": {
+    "lum": 0.6,
+    "yellow": 0.2,
+    "shine": 1.8
+   }
+  },
+  "street": {
+   "key": [
+    70,
+    90,
+    110
+   ],
+   "law": {
+    "type": "wall",
+    "n_deg": 60,
+    "c": 8.0,
+    "far": 60
+   },
+   "near": 8.0,
+   "far": 60,
+   "noise": 0.008,
+   "windows": {
+    "lum": 0.4,
+    "yellow": 0.12,
+    "shine": 1.5
+   }
+  },
+  "alley": {
+   "key": [
+    30,
+    30,
+    60
+   ],
+   "law": {
+    "type": "const",
+    "d": 40
+   },
+   "noise": 0.02
+  },
+  "pavement": {
+   "key": [
+    120,
+    110,
+    90
+   ],
+   "law": {
+    "type": "plane",
+    "y": 2.761,
+    "far": 90
+   },
+   "noise": 0.0
+  },
+  "table": {
+   "key": [
+    200,
+    230,
+    200
+   ],
+   "law": {
+    "type": "rel",
+    "base": "pavement",
+    "k": 0.545
+   },
+   "near": 3.0,
+   "far": 30,
+   "noise": 0.004
+  },
+  "figure": {
+   "key": [
+    200,
+    40,
+    40
+   ],
+   "law": {
+    "type": "const",
+    "d": 17.1
+   },
+   "noise": 0.05
+  }
+ }
+}
