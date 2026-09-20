@@ -27,6 +27,10 @@ fourteen of his paintings. This piece is built clean beside it, from the same st
 
 ## Run it
 
+It is live at <https://the-dream-of-van-gogh.telbase.ai>. `tools/deploy.py` puts a commit there, each script at an
+address made of its content, so that a browser which has been before gets the new page with the new scripts
+(the host keeps a script for a year otherwise). To run it here:
+
 ```bash
 python3 -m http.server 8712
 ```

@@ -2060,3 +2060,29 @@ the far flowers stay dabs for a second or two while the near ones come up whole 
 A flower crossing 12 m pops between its whole head and its thirds, as in E1.2 it popped in space rather than
 in time. The plot's edges are still straight enough to read as a field only from the air; from the ground the
 wave is invisible. The motes are still white dashes at 25 px. The E1.1 list.
+
+### After E1.3 — The site  *(the author's word: "deploy to telbase.ai"; the same day)*
+
+**What was found first.** This folder began as a copy of the sibling's, and its deploy link came with it:
+`.telbase/project.json` (untracked) named the sibling's project, `the-world-of-van-gogh`, the same project id
+as in the sibling's own folder. A deploy from here would have put the Dream over The World's live site. So
+the Dream got a project of its own first, `the-dream-of-van-gogh`, and the link here now names it.
+
+**Done.**
+- `tools/deploy.py`: new, the sibling's deploy carried over. It exports a commit (without `.claude`, `tools`,
+  `docs` and `shots`, which the page never loads; `hand/` stays, the page reads its region map), stamps the two
+  script tags and the import map with each script's content (the host sends every `.js` as immutable for a
+  year -- the sibling's After M9, the scripts a browser keeps), checks that the link names the Dream's own
+  project and stops otherwise, and deploys through `pnpm dlx telbase deploy --local --provider vercel --auto`.
+- `telbase init` also wrote a `CLAUDE.md`, a `TELBASE.md`, a command, an MCP config and a line in `.gitignore`
+  that would have hidden the tracked `.claude/launch.json`. All of it removed; only the link was wanted.
+- `README.md`: *Run it* names the site and the deploy.
+
+**Measured.** 841e9bd deployed: 53 files, 7.2 MB, 11 s, the host's health check answered in 286 ms. The live
+page in the pane: ready, 587,568 strokes, built in 2,317 ms, the nine scripts fetched at their stamped
+addresses (`src/main.js?v=b4bed2a832` and the rest), the two records and the region map plain. The World's
+project is listed still running, untouched.
+
+**Still visible.** The site's frame rate is not measured (the author's Chrome was still running the local
+page). The project has no description in the host's catalogue and no domain of its own; both are the
+author's to give.
