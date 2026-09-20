@@ -14,8 +14,11 @@ Our sky is three fields, one round each of his eyes, each at the depth his own s
 the colour his own night is, because his three nights are not one colour — and they never disagreed: the Rhone's
 sky is 1 to 18 degrees above the horizontal and the terrace's 19 to 35, bands that do not touch. Where his canvas
 ends the sky goes on in ours, made of nothing but what was measured from his; every light lays a column of marks
-on the river, in the hand of the ones the Rhone paints; and above it all is bare linen. `DESIGN.md` is the design,
-written before the build; `BUILD.md` is the plan and, under **Progress**, the log of what each milestone found.
+on the river, in the hand of the ones the Rhone paints; and above it all is bare linen. The river and the shore
+carry his own two grounds' colours at his own two shares of the light — his Rhone's water is 0.554 of its sky and
+his village at Saint-Remy 0.424 of his — and what that is a share of is not chosen but measured, by rendering our
+own sky from the floor it stands over. `DESIGN.md` is the design, written before the build; `BUILD.md` is the plan
+and, under **Progress**, the log of what each milestone found.
 
 Its sibling, *The World of Van Gogh* (github.com/Victor-EU/the-world-of-van-gogh), is a walk along a road through
 fourteen of his paintings. This piece is built clean beside it, from the same stroke records.
@@ -33,8 +36,9 @@ which says what is his, what is ours, which of it was measured, and his own line
 the dream fades and begins again. Address flags for looking at one thing at a time: `?nowind`, `?nopart`, `?nocurl`,
 `?noStrokes`, `?nosky`, `?nostars`, `?nomotes`, `?nosea`, `?noshore`, `?noreflections`, `?nosound`, `?nocaption`,
 `?sky=0.5` (our sky at half his density), `?water=0.5` (a column at half his count of marks), `?sea=0.5` and
-`?shore=0.5` (the river's and the shore's own marks at half), `?wet=` and `?dry=` (how light the two floors are),
-`?nonight` (our sky in the Starry Night's colour everywhere, as it was before D4.5), `?sharp=`, `?shoulder=` and
+`?shore=0.5` (the river's and the shore's own marks at half), `?d3floor` (the floor on the reference D3 gave it,
+which is what D4.6 measured its way off), `?nonight` (our sky in the Starry Night's colour everywhere, as it was
+before D4.5), `?sharp=`, `?shoulder=` and
 `?behind=` (how purely a standpoint is its own night: by distance, by the band of sky he painted, and by which way
 his canvas faces), `?only=sky|stars|motes|sea|shore|reflections|his|starry|rhone|cafeterrace` (one thing alone), `?nocones`
 (the rule of §5.1 off, so that what it hides can be seen), `?ledger` (ours tinted), `?debug`, `?test` and
@@ -57,6 +61,7 @@ python3 -m venv .venv && .venv/bin/pip install numpy scipy pillow playwright && 
 .venv/bin/python tools/hand.py rhone --only water,star     # his water's own marks -> hand/rhone-water.json
 .venv/bin/python tools/hand.py cafeterrace --only water --water pavement   # the shore's marks -> hand/cafeterrace-pavement.json
 .venv/bin/python tools/nights.py              # his three nights, band by band up each sky -> hand/nights.json
+.venv/bin/python tools/bank.py --out shots/bank.png   # can the bank be seen from the air? -> the floor's profile across it
 .venv/bin/python tools/lines.py               # his four lines, checked against the edition -> letters/letters.json
 .venv/bin/python tools/shot.py --flight swoop --out shots/swoop.png
 ```
@@ -72,8 +77,9 @@ The harness on `window.dream` has the tests: `dream.glance(30, 0.5)`, `dream.fli
 parting test, `dream.eddy(0)` to let go inside the great eddy, `dream.seam()` and `dream.density()` for the two
 numbers D2 pre-registers, `dream.water()`, `dream.column(i, eye)` and `dream.floor()` for the three D3
 pre-registers, `dream.current(n)` for D4's, `dream.night()`, `dream.floorOf()` and `dream.nightAt(p)` for D4.5's,
-`dream.cones()` and `dream.clipped()` for the three cones and what the
-rule of §5.1 hides, `dream.sea()`, `dream.counts()`, `dream.sound()`, `dream.wait(secs)` for a shot at a time of the
+`dream.light(p)` for D4.6's — our own sky rendered from a place, five faces of a cube and the upper hemisphere of
+them, which is the light the floor there stands under — `dream.cones()` and `dream.clipped()` for the three cones
+and what the rule of §5.1 hides, `dream.sea()`, `dream.counts()`, `dream.sound()`, `dream.wait(secs)` for a shot at a time of the
 piece's own clock, and `dream.sim(secs)` to run the body forward without drawing, for a renderer too slow to show
 what it can still measure.
 

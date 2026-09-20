@@ -268,6 +268,50 @@ the street to the square. Is it one night?
 
 ---
 
+## D4.6 — The floor, seen  *(the author's word on §15.10; 1 day)*
+
+**Why there is a milestone here.** D4.5 closed §15.10 in the numbers and left it open to the eye, and the author's
+answer was: *fix it.* The two ways out that D4.5 named were re-opening D3's measured floor or putting lights on a
+town he never painted, which §2 forbids. So it is the floor. Three measurements, taken before any of it was built:
+
+- **The two sides of the bank are already 22% and 27% apart, and that is not the trouble.** `tools/bank.py`
+  stands the eye 100 m over the river, looks across a bank, and reads the frame along a line of world points
+  from the shore out into the water. Near bank: land 0.001975, water 0.002538. Far bank: 0.001758 and 0.002408.
+  In the frame a person is shown that is **6.5 against 8.4 of 255, and 5.8 against 7.9** — the step is there in
+  ratio and gone in level. You cannot see a thing that is two parts in 255 from its neighbour.
+- **The floor stands under a night ten and a half times darker than the one over it.** D3 takes his ground's
+  share of his sky — his Rhone's water is 0.5541 of its own sky, his village at Saint-Remy 0.4235 of his — and
+  applies it to `lum('#0f1d44')`, 0.0140, the dark the dome stands on. His own sky at Saint-Remy is 0.1479.
+  D3 wrote the factor down in the source and left a flag on it: *?wet= ... at about ten the plane is as bright
+  against this night's sky as his paint is against his.*
+- **And our sky's own light can simply be measured.** `dream.light` renders our sky from a place — five faces of
+  a cube, the upper hemisphere of them, at a pinned focal and with parting off — and returns the solid-angle
+  mean of everything that arrives. Over the floor under his three standpoints: **0.0412, 0.0169, 0.0275**,
+  against his own three skies' 0.1479, 0.0562, 0.0646. Our night is between a quarter and a half of his.
+
+**Scope.** The floor's reference, and nothing else. D3's rule is kept word for word — his hue exactly, his
+brightness as his own ratio — and only what the ratio is taken against changes, from a colour chosen by hand to
+our own sky measured from the floor. The three measurements are taken once, a few frames in, and between them
+the floor takes the same weights the night's colour does (D4.5). The marks lying on the floor dim with the floor
+they lie on, each against the night its own canvas was painted under, so that his paint and his ground keep the
+ratio his canvas has. `?wet` and `?dry` go.
+
+**Exit criteria.** Measured before the build as well as after, and both numbers logged.
+
+| | target | before | why this number |
+|---|---|---|---|
+| the bank, seen | across each bank from 100 m up, the two sides of the floor differ by ≥ 4 levels of 255 in the frame and by ≥ 20% in luminance | 1.9 and 2.1 levels; 22% and 27% | four levels is the difference at which a straight edge across a dark frame stops being a thing you have to know is there. The measured light predicts 4 to 5; if his own ratio will not reach it, that is the answer and it is logged, not tuned |
+| the bank, where it is | the step in the profile falls within 5 m of the bank | 1.25 m, both banks | it is the bank that is seen and not something else |
+| his two shares, kept | the water is 0.5541 of the light over it and the shore 0.4235, within 1%, and the hue of each is unchanged | exactly, of a colour chosen by hand | D3's rule is not overturned; it is given the reference it asked for |
+| the reference, measured | the number the floor stands on comes from `dream.light`, and no flag is left on it | `#0f1d44`, with `?wet=` and `?dry=` open | Rule 3, for the floor as for everything else |
+| the standpoint test, all three | SSIM ≥ 0.86 / 0.92 / 0.90 against the runtime's own flat; no 32 px cell off by more than 8% | 0.869 / 0.928 / 0.908, 0 cells | a floor you can see may not cost the piece its paintings |
+| the night, untouched | the counts and the twelve compass bins within 1% of D4.5's | 254,011; 8,787 / 10,581 / 9,467 a steradian | this milestone is the floor's and nothing else's |
+| §5.2 stands | no surface, no shading, no light on the floor: a colour, and marks lying on it | | a lit floor is not a modelled one |
+
+**The gate.** From a hundred metres up over the river: is it one world to look at?
+
+---
+
 ## D5 — The opening, the edge, the sound  *(1 week)*
 
 **Scope.** `veil.js` harvested and wired: the Starry Night paints itself, the eye goes into it, and the explosion of
@@ -309,11 +353,14 @@ either closed with a pointer into this log, or moved to **Deferred** with a trig
 | D2 our sky | 5 | 13 |
 | D3 water | 4 | 17 |
 | D4 the night of Arles | 8 | 25 |
-| D5 opening, edge, sound | 5 | 30 |
-| D6 measure, ship | 5 | 35 |
+| D4.5 one night | 4 | 29 |
+| D4.6 the floor, seen | 1 | 30 |
+| D5 opening, edge, sound | 5 | 35 |
+| D6 measure, ship | 5 | 40 |
 
-Seven weeks of days, and the plan expects D0 to be re-run once and D4 to overrun, because depth authoring is the
-one thing here that a person does by hand, three times.
+Eight weeks of days. D4.5 and D4.6 were not in the plan — the author added them at the D4 gate and on §15.10 —
+and they are counted here because they happened. The plan expected D0 to be re-run once and D4 to overrun,
+because depth authoring is the one thing here that a person does by hand, three times.
 
 ---
 
@@ -1357,3 +1404,141 @@ to answer.
 - **`tools/seam.py` has not been run on the three.** It was fixed here (the yaw, and the canvas read from the
   record) but the seam number itself is D2's and has not been taken again with three canvases in the air.
 - **Nothing is committed.** The folder's git remote still points at the sibling's repository; that is D6's.
+
+---
+
+### D4.6 — The floor, seen
+
+**What was built.** One number, and the way to it. D3's rule for the floor is kept word for word — *his hue
+exactly, and his brightness as his own ratio* — and what that ratio is taken against stops being a colour chosen
+by hand and becomes our own sky, measured from the floor. `dream.light(p)` renders the piece from a place into a
+float target, five faces of a cube at ninety degrees, keeps the upper hemisphere of them and returns the
+solid-angle mean of everything in it: our ribbons, his canvas where a cone opens overhead, the dome behind both.
+It is taken once, a few frames in, over the floor under each of his three standpoints; between the three the
+floor takes the same weights the night's colour does, so the floor is one field and not three steps. `tools/bank.py`
+is the new test: it stands the eye a hundred metres over the river, looks across a bank, asks the runtime itself
+where a line of world points falls on the screen, and reads the frame there.
+
+**Seven decisions, and why.**
+
+1. **D3 was not wrong about the rule, only about the reference — and it said so at the time.** D3 named the two
+   references it had to choose between: his ground over his sky's *paint*, which on a sky as sparse as ours gives
+   a floor brighter than the sky above it, or over the *dark that paint stands on*, which is what it took. Our
+   sky is neither. It is his paint at a coverage, and what a ground stands under is what arrives. The factor
+   between the two was already written in the source with a flag on it — *?wet= ... at about ten the plane is as
+   bright against this night's sky as his paint is against his* — and it turns out to be **10.6**:
+   `lum('#0f1d44')` is 0.0140 and his own sky at Saint-Remy is 0.1479.
+2. **The light is rendered, not modelled.** Nothing here computes how bright a night ought to be. It draws the
+   sky the piece actually has, from where the floor actually is, and averages it. That keeps §2: the floor's
+   brightness comes from our own paint, which comes from his.
+3. **Our night is a quarter to a half of his, and the floor says so.** Over the floor under his three
+   standpoints the light is **0.0412, 0.0169 and 0.0275**, against his own three skies' 0.1479, 0.0562 and
+   0.0646 — 28%, 30%, 43%. So his water, which is 0.5541 of its own sky, lands at 0.0228 of a unit here, and his
+   village, 0.4235 of his, at 0.0174. The floor is as bright as the night we actually give it and no brighter,
+   which is why this is a measurement and not a dial.
+4. **Two pins, and they are stated.** A stroke under eight tenths of a pixel is not drawn (`src/strokes.js`), so
+   the light a place has depends on the frame it is seen in: at the focal of an 800 × 600 window it reads 0.050,
+   and at 3,200 it settles at 0.041 and stops moving. The measurement is pinned at 3,200, high enough that
+   nothing of his is lost to it, so that the floor is the sky as it stands and not as one window shows it. And
+   parting — the tunnel the paint opens round a body in flight — is turned off for it, because the light over
+   the quay is the same whether anyone is flying over it or not. With parting left on the same place reads
+   0.0855 against 0.0412: **flying through our sky halves the light in front of you**, which is a true thing
+   about the piece and no business of the floor's.
+5. **The measurement waits five frames.** Taken at boot it read twice what it reads later, for the reason above
+   and others like it: the first frames are not yet the piece. It is taken on the sixth frame, before
+   `dream.ready`, and the floor is provisional until then — which no one sees.
+6. **A mark lying on the floor dims with the floor it lies on.** The sea's marks are his Rhone water's own paint
+   and the shore's are his village's colour, and each is now scaled by the light here against the night its own
+   canvas was painted under (0.0645 and 0.1479). So his paint and his ground keep the ratio his canvas has:
+   before D4.6 the plane was a tenth of his and the marks were his in full, which is glints on a void.
+7. **`?wet` and `?dry` are gone, and `?d3floor` takes their place.** The two flags were judgements on a number;
+   the flag that replaces them is a comparison with no number in it — the floor on the reference D3 gave it, so
+   that the two can be looked at side by side. Every before-picture in this log is `?d3floor` at the same camera.
+
+**What it measures.**
+
+| | target | before | after |
+|---|---|---|---|
+| the bank, seen — near | ≥ 4 levels of 255, ≥ 20% | 6.5 v 8.4: **1.9 levels**, 22.2% | 20.3 v 24.7: **4.4 levels**, 25.1% — **pass** |
+| the bank, seen — far | ≥ 4 levels of 255, ≥ 20% | 5.8 v 7.9: **2.1 levels**, 27.0% | 20.2 v 23.9: **3.7 levels**, 21.9% — **fail on the levels, pass on the ratio** |
+| the bank, where it is | the step within 5 m of the bank | 1.25 m, both | 1.25 m, both — **pass** |
+| his two shares, kept | water 0.5541, shore 0.4235, within 1%; hue unchanged | exactly, of a colour chosen by hand | 0.5541 and 0.4235 of the light there, to four figures; hue identical to five — **pass** |
+| the reference, measured | from `dream.light`, no flag left on it | `#0f1d44`, `?wet=`, `?dry=` | measured; both flags gone — **pass** |
+| the standpoint test | ≥ 0.86 / 0.92 / 0.90, no cell over 8% | 0.869 / 0.928 / 0.908, 0 cells | **0.865 / 0.921 / 0.905, 0 cells** — pass |
+| the night, untouched | counts and bins within 1% | 254,011; 8,787 / 10,581 / 9,467 a sr | 254,011; 8,787 / 10,581 / 9,467 — **identical** |
+| §5.2 stands | a colour and marks, no surface, nothing modelled | | nothing was added to the floor — **pass** |
+
+**The floor, in the world's own units.** Under Saint-Remy the water is (0.0164, 0.0245, 0.0252) and the shore
+(0.0117, 0.0184, 0.0250) — his water's hue to five figures and his village's to five, at 0.5541 and 0.4235 of the
+0.0412 our sky gives that place. Before D4.6 they were (0.0056, 0.0083, 0.0086) and (0.0040, 0.0062, 0.0085)
+before the night's factor, which at Saint-Remy is 0.857: **3.4 times darker there, 2.8 over the quay and 6.1 over
+the square**, the last because D4.5's field said the square was the darkest of the three and the measurement says
+it is the second brightest — his own lamp hangs in that sky.
+
+**The thing this was not asked to do, and did.** Against *the record's flat* — the test D0 pre-registered and has
+failed on texture since D0 — all three standpoints moved toward his canvas: starry 0.482 → **0.490** (44 cells
+over the limit → 33), rhone 0.464 → **0.521** (27 → 18), cafeterrace 0.387 → **0.405** (96 → 87). Nothing was
+done to his paint. A floor at his own ground's brightness simply agrees with his painting better than a floor at
+a tenth of it, which is independent evidence that the reference was wrong and is now right.
+
+**The gate.** *From a hundred metres up over the river: is it one world to look at?* The bank is there now, on
+both sides, where the bank is, and the floor reads as ground and water instead of as a hole. The far bank is 3.7
+levels and not the four asked for, and that is logged as a fail and not tuned: it is 21.9% in ratio, and what
+holds it down is that our night is a third of his, not anything about the floor.
+
+**What D3 measured and left.** D3's own table carries the line: *our water in a frame — **6.5%** of our sky's
+brightness where his is 54% of his, because our sky is denser paint and our water is bare; `?wet=10` is the other
+reading.* The number that closes D4.6 is that one. Our water is now his own **55.4%** of the light measured over
+it, because that share is what his canvas says and the light is what ours gives. And the reason D3 gave turns out
+to be half right: our sky *was* denser and brighter paint than his Rhône's — until D4.5 every stroke of ours was
+Saint-Rémy's colour, 2.6 times his Rhône's — but a sky is paint at a coverage, and as a sky ours gives the quay
+0.0169 where his gives 0.0562. D4.5 fixed the colour of a stroke; D4.6 measures what the strokes add up to.
+
+**Still visible.**
+
+- **The far bank is 3.7 levels of 255 and the milestone asked for four.** It is 21.9% in ratio, which passes, and
+  it is short in level for one reason: our night is 28 to 43% of his. That is the sky's density, not the floor's
+  rule, and it is D6's or the author's. Nothing here was turned up to reach the four.
+- **The floor and the sky are one decision now, and it is a cheaper one than it looks.** Because the floor is a
+  share of the light our sky gives, `?sky=` moves the ground as well as the air. At **0.45**, the lever D4.5 left
+  for the ribbon count, the light goes 0.0412 / 0.0169 / 0.0275 → **0.0384 / 0.0149 / 0.0237**: 7, 12 and 14 per
+  cent down for 45% of the strokes and 139,732 ribbons instead of 254,011. A sky's coverage overlaps, so halving
+  it does not halve what it gives. The author's choice about the ribbons costs the ground about a tenth of its
+  light.
+- **The shore's 452 marks are mottling now, not glints.** They were given his village's *mean* colour in D4.5,
+  and the shore plane now carries that same mean, so a mark differs from the ground it lies on only by the spread
+  his pavement's bins have. The sea's marks do not have this: `hand/rhone-water.json` holds his water's *marks*,
+  which are 1.56 times his water's mean, so they still read as glitter. The measurement that would settle it is a
+  hand walked over the Starry Night's village region (`tools/hand.py starry --only village`), which nobody has
+  taken. It is a mark's colour and not the floor's, so it was left.
+- **The measurement costs fifteen renders of the whole scene, once.** Five faces at three places, at 64 px, on
+  the sixth frame. On a real renderer that is tens of milliseconds; under swiftshader, where the harness runs, it
+  is most of a minute, and the tools' readiness timeouts were raised to match. If a renderer has no float target
+  to read, the piece keeps D3's floor rather than a black one.
+- **`?d3floor` is exact.** It reproduces D4.5's floor to five figures — water (0.00736, 0.01099, 0.01132) at the
+  opening camera against D4.5's own (0.00556, 0.00831, 0.00856) times that place's 1.3232 — and it restores
+  D4.5's factor on the marks as well, so the comparison is D4.5 whole and not the new floor with an old number.
+- **From high up you look through our sky at the ground, not at the ground.** At 180 m over Saint-Remy, and at
+  300 m anywhere, what is between you and the floor is two hundred thousand ribbons; the floor reads where you
+  look *along* the world rather than down through it. That is the sky doing what §5.3 asks of it and is not a
+  fault of the floor's, but it is the reason the picture that answers the gate is the one down the river.
+
+**Pictures.** Every one is a pair at one camera: the name alone is D4.6, and `-d3` beside it is the same frame
+with `?d3floor`, which is D4.5's floor exactly. `d46-the-river` — 120 m over the river looking down it toward
+Arles, and the picture that answers the gate: the river runs away as a lighter band between two darker shores,
+both banks converging. Beside it `d46-the-river-d3` is one black plain under a hard horizon, with everything
+above that horizon identical. `d46-the-shore` — 90 m up west of the river looking across it: the quay's lights
+and their reflections lying on the water, the shore band, the near bank and the far one. `d46-the-bank` — the
+view `tools/bank.py` measures, 100 m up and 120 m out, looking across the near bank at 32° down.
+`d46-down-to-the-quay` — D4.5's own view from 180 m, where the floor shows only at the bottom of the frame and
+the rest is our sky between you and it. `d46-one-world` — 150 m over Saint-Remy, inside the paint, where no
+floor is visible before or after; it is kept because it is the honest answer to *one world from the air* over a
+standpoint. And `shots/rhone-standpoint.png`, his canvas from his own eye, unharmed.
+
+**The author's answers, taken at this gate.** Two decisions D4.5 left standing were put to the author with the
+numbers above and answered. **The ribbons: wait.** The 130,000 budget is a guess about a frame rate nobody has
+measured on a real graphics card — every number in this log was taken under swiftshader — so the choice between
+254,011 and `?sky=0.45`'s 139,732 is deferred to D6, which flies it on hardware and on a phone. Nothing is turned
+down in the meantime. **The cone: leave it strict.** §5.1 stands as D4 wrote it and `?conedepth` stays a flag: a
+cone is his alone, the hole it cuts in the night is the price, and the standpoint test is not to be spent on the
+view from outside.

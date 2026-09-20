@@ -68,7 +68,7 @@ def main():
         b = p.chromium.launch(headless=True, args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
         pg = b.new_page(viewport={'width': a.width, 'height': a.height})
         pg.goto(a.url)
-        pg.wait_for_function('window.dream && window.dream.ready', timeout=60000)
+        pg.wait_for_function('window.dream && window.dream.ready', timeout=300000)
         # the clock stops, so that two frames differ only by the column; and parting is off, because a mark five
         # metres from the eye is pushed aside by DESIGN 6.5 and this test is about where it was laid, not that
         pg.evaluate('dream.freeze(3); dream.part(0)')

@@ -153,6 +153,30 @@ word and each pointing at the entry in `BUILD.md` that records what was found.*
 > the wave's line it lies, its paint, its bow, its curl -- at a density that is ours, and the ledger calls it
 > ours, exactly as §5.3 does for the motes. The rest of §4, §5, §9 and §15 stands.
 
+> **Changed by the author on §15.10, D4.6 (20 September 2026).** §15.10 closed D4.5 as answered in the numbers and
+> open to the eye: one shore, one river, and a bank between them that from a hundred metres up cannot be seen. The
+> author's word was to fix it, and of the two ways §15.10 named -- measuring D3's floor again, or putting lights on
+> a town he never painted -- the second is the line §2 draws. So it is the first, and D3's rule is not overturned
+> but finished. **The floor keeps his hue exactly and his own ratio of brightness; what that ratio is taken against
+> is no longer chosen by hand, it is measured.** D3 had two references to pick between and said which it took: his
+> ground over his sky's *paint*, which on a sky as sparse as ours gives a floor brighter than the sky over it, or
+> over the *dark that paint stands on*, which is what it took. Our sky is neither of those. It is his paint at a
+> coverage, and what a ground stands under is what actually arrives there -- which can be rendered and read.
+> `dream.light` takes five faces of a cube from a place, keeps the upper hemisphere of them, and returns the
+> solid-angle mean of everything in it: our ribbons, his canvas where a cone opens overhead, the dome behind both.
+> Over the floor under his three standpoints it is **0.0412, 0.0169 and 0.0275**, against his own three skies'
+> 0.1479, 0.0562 and 0.0646 -- our night is between a quarter and a half of his -- and the dark D3 took its ratio
+> against was 0.0140, ten and a half times under his own sky. That factor was already written down in the source,
+> with a flag on it: *?wet= ... at about ten the plane is as bright against this night's sky as his paint is
+> against his.* Three things follow. (1) `?wet` and `?dry`, the two judgements left open on the floor, are gone,
+> and there is no authored number in it. (2) The three measurements are taken once, a few frames in and not at
+> boot, and between them the floor takes the same weights the night's colour does, so the floor is one field and
+> not three steps. (3) A mark lying on the floor dims with the floor it lies on -- each against the night its own
+> canvas was painted under -- so that his paint and his ground keep the ratio his canvas has. §5.2's own sentence
+> is untouched: the floor is still not a thing you see, still no surface and nothing modelled, a colour and marks
+> lying at its height. It is the right colour now. What it costs and what it is measured by is under D4.6 in
+> `BUILD.md`.
+
 ---
 
 **What this is.** A second piece, built clean, from the same stroke records as its sibling *The World of Van Gogh*
@@ -689,11 +713,13 @@ Each with what would settle it, and where the plan expects the answer.
 7. **The Night Café's door.** Deferred, with the trigger in the plan.
 8. **A phone.** Nothing here has been measured on one. Deferred, with the trigger in the plan.
 9. **The couple on the quay.** Two flat shells at four metres. Accepted, and looked at in D4.
-10. **The floor, seen.** Closed in D4.5 as far as the numbers go and open to the eye. All three of his grounds lie
-    on one shore now, exactly, and the river runs between his own two banks; but §5.2's *not a thing you see*
-    holds for the shore as it does for the water, so from a few hundred metres up the two are both near black and
-    the bank between them cannot be seen. What settles it is either measuring D3's floor again, or putting lights
-    on the shore, which would be paint of a town he never painted (§2). The pictures are in the D4.5 log.
+10. **The floor, seen.** Answered in D4.6, on the author's word, by the first of the two ways: D3's reference was
+    measured again rather than chosen, and the floor is his ground's own share of the light our sky actually gives
+    it. From a hundred metres up the near bank now steps **4.4 levels of 255** and the far bank 3.7, against 1.9
+    and 2.1 before, and both steps fall within 1.25 m of the bank. Nothing was added to the floor and §5.2 stands.
+    What is left over is not the floor's: the far bank is short of the four levels the milestone asked for because
+    our night is between a quarter and a half of his, which is the sky's density and D6's. The before and after
+    are in the D4.6 log, and `?d3floor` shows the two side by side.
 
 ---
 

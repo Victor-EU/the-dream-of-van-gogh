@@ -261,20 +261,24 @@ async function boot() {
             +(R.eye.x + R.laws.regions.farbank.law.d).toFixed(3)];
     U.uBand.value.set(BANK[0], BANK[1]);
   }
-  // his hue, at his share of the dome's horizon. ?wet= opens the one judgement in it: at about ten the plane is
-  // as bright against this night's sky as his paint is against his, which is a floor and not a dark water
+  // His hue, at his own share of the light that stands over the floor (DESIGN 5.2 as D4.6 amends it). Both
+  // shares are measured and both are his: his Rhone's water is 0.554 of its own sky and his village at
+  // Saint-Remy is 0.4235 of his. What changes in D4.6 is what they are a share *of*. D3 had two references to
+  // choose between -- his ground over his sky's paint, or over the dark that paint stands on -- and chose the
+  // dark, because our sky is his paint at a coverage and his is a canvas painted solid, so his ratio on his
+  // paint gives a floor brighter than the sky over it. But our sky is neither of those two things, and it can
+  // simply be measured: see `lightAt` below. The dark D3 chose, lum('#0f1d44'), is 0.0140; his own sky at
+  // Saint-Remy is 0.1479; and the floor stood under a night ten and a half times darker than the one over it,
+  // which is what `?wet=` was for and why at about ten it looked right. These two are now the hue and the
+  // share alone, at a light of one, and `paintNight` multiplies in the light the place actually has
   const ZEN = lin('#060b22'), HOR = lin('#0f1d44');
-  const wet = +(Q.get('wet') ?? 1);
-  const waterCol = wat.colour(HOR).map(c => c * wet);
-  // the shore, by the same rule (DESIGN 5.2, D3 (2), D4.5): his village's hue at Saint-Remy, which is the only
-  // ground he painted at night away from a lamp, and its brightness as a ratio against the night's own sky
-  const shoreCol = nights.floor(nightSpec.shore, HOR).map(c => c * +(Q.get('dry') ?? 1));
+  const waterCol = wat.colour([1, 1, 1]);
+  const shoreCol = nights.floor(nightSpec.shore, [1, 1, 1]);
   const floorMat = (col, side) => new THREE.ShaderMaterial({
     vertexShader: 'varying vec3 vW; void main() { vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: WATER_FRAG, side: THREE.DoubleSide,
     uniforms: { uCol: { value: new THREE.Color(...col) }, uEdge: U.uEdge, uBand: U.uBand, uSide: { value: side } } });
   const waterMat = floorMat(waterCol, 1), shoreMat = floorMat(shoreCol, -1), wallMat = floorMat(shoreCol, 0);
-  domeU.uWater.value.setRGB(...waterCol);                       // under the horizon the dome is the water's own
   const water = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), waterMat);
   water.rotation.x = -Math.PI / 2;
   water.position.y = -0.6;                            // his water lies on the plane; the plane is a little under it
@@ -285,11 +289,13 @@ async function boot() {
   scene.add(land);
   // the two quay walls, so that the shore has a thickness when you fly along the water and do not look through
   // the land from under it. Nothing is modelled here either: it is the floor, seen edge on
+  const floorParts = [water, land];
   for (const [x, sgn] of [[BANK[0], 1], [BANK[1], -1]]) {
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(40000, SHORE), wallMat);
     wall.rotation.y = sgn * Math.PI / 2;
     wall.position.set(x, SHORE / 2 - 0.6, 0);
     scene.add(wall);
+    floorParts.push(wall);
   }
 
 
@@ -340,6 +346,75 @@ async function boot() {
                                  uSide: { value: 1 } });
   const buildMs = Math.round(performance.now() - t0build);
 
+  // The light the floor stands under, measured (DESIGN 5.2 as D4.6 amends it). `measureLight` renders our own
+  // sky from a place -- five faces of a cube at ninety degrees, and the upper hemisphere of them -- and gives
+  // back the solid-angle mean of everything that arrives there: our ribbons, his canvas where a cone opens
+  // overhead, the dome behind both. His `over_sky` is a share of a sky region's mean on a canvas painted
+  // solid; this is that same quantity for ours, which is his paint at whatever coverage our ribbons reach.
+  // It is taken once, a few frames in (see the loop), over the floor under each of his three standpoints, and
+  // between the three the floor takes the same weights the night's colour does: one field, three measurements
+  const floorAt = x => (x > BANK[0] && x < BANK[1] ? 0 : SHORE);
+  const FOCAL = 3200;
+  let LIT = null, tried = false;
+  const wbuf = [0, 0, 0], kbuf = [0, 0, 0];
+  // ?d3floor puts the floor back on the reference D3 gave it, the dark the dome stands on, so that the two can
+  // be looked at side by side in one page. It is a comparison and not a setting: there is no number in it
+  const d3 = has('d3floor');
+  const lightAt = p => {
+    // D3's own reference, which is what the floor stands on until the measurement is taken -- and stays on if it
+    // cannot be: a renderer with no float target to read gives the piece its old floor and not a black one
+    if (d3 || !LIT) { const k = nights.ratioAt(p, 2, kbuf); return lum([HOR[0] * k[0], HOR[1] * k[1], HOR[2] * k[2]]); }
+    const w = nights.weights(p, wbuf);
+    let s = 0;
+    for (let i = 0; i < w.length; i++) s += w[i] * LIT[i];
+    return s;
+  };
+  function measureLight(q, N = 64, focal = FOCAL) {
+    const rt = new THREE.WebGLRenderTarget(N, N, { type: THREE.FloatType, samples: 4 });
+    const cam = new THREE.PerspectiveCamera(90, 1, 0.2, 6000);
+    const keep = U.uCam.value.clone(), keepAt = domeU.uAt.value.clone();
+    const keepF = U.uFocalPx.value, keepP = U.uPart.value;
+    U.uCam.value.set(q[0], q[1], q[2]); domeU.uAt.value.set(q[0], q[1], q[2]);
+    // pinned, both of them, so that the same place gives the same light whoever is looking and however fast.
+    // A stroke under eight tenths of a pixel is not drawn (src/strokes.js), so a coarse frame is a darker
+    // night -- true of the piece, and no business of the floor's; the focal here is high enough that nothing
+    // of his is lost to it. And parting opens a tunnel round a body in flight, which is the body's business
+    // and not the place's: the light over the quay is the same whether anyone is flying over it or not
+    U.uFocalPx.value = focal; U.uPart.value = 0;
+    paintNight(q);
+    // the floor is not its own light. Everything whose colour is the floor's is taken out of the frame while
+    // this is read -- the two planes, the two walls, and the marks lying on them -- so that what comes back is
+    // the sky over the place and nothing that waits on the answer
+    const off = floorParts.concat(ours.filter(o => o.name === 'sea' || o.name === 'shore').map(o => o.st.mesh));
+    const was = off.map(m => m.visible);
+    for (const m of off) m.visible = false;
+    const buf = new Float32Array(N * N * 4), d = new THREE.Vector3();
+    const s = [0, 0, 0];
+    let sw = 0;
+    for (const f of [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0]]) {
+      cam.position.set(q[0], q[1], q[2]);
+      cam.up.set(0, f[1] ? 0 : 1, f[1] ? -1 : 0);
+      cam.lookAt(q[0] + f[0], q[1] + f[1], q[2] + f[2]);
+      cam.updateMatrixWorld();
+      renderer.setRenderTarget(rt); renderer.render(scene, cam); renderer.setRenderTarget(null);
+      renderer.readRenderTargetPixels(rt, 0, 0, N, N, buf);
+      for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+        const u = 2 * (i + 0.5) / N - 1, v = 2 * (j + 0.5) / N - 1;
+        d.set(u, v, -1).transformDirection(cam.matrixWorld);
+        if (d.y <= 0) continue;                                    // the floor is not its own light
+        const w = Math.pow(1 + u * u + v * v, -1.5), o = (j * N + i) * 4;
+        s[0] += w * buf[o]; s[1] += w * buf[o + 1]; s[2] += w * buf[o + 2]; sw += w;
+      }
+    }
+    off.forEach((m, i) => { m.visible = was[i]; });
+    U.uCam.value.copy(keep); domeU.uAt.value.copy(keepAt);
+    U.uFocalPx.value = keepF; U.uPart.value = keepP;
+    rt.dispose();
+    const m = s.map(c => c / sw);
+    return { at: q.map(v => +v.toFixed(1)), rgb: m.map(c => +c.toFixed(6)), lum: +lum(m).toFixed(6),
+             focal: focal, sr: +(sw * 4 / (N * N)).toFixed(3) };
+  }
+
   // The colour of the night where the eye is (DESIGN 5.3 as D4.5 amends it). His three nights are three
   // colours, and the dome, the floor and every mark of ours that wraps round the eye take the one the place
   // stands in, so that flying up the river from Saint-Remy to the square is one change and not a line. The
@@ -347,21 +422,31 @@ async function boot() {
   // its brightness, which is a ratio against the sky the place actually stands under
   const tintOf = n => (ours.find(o => o.name === n) || { st: { u: { uTint: { value: null } } } }).st.u.uTint.value;
   const tints = ['motes', 'sea', 'shore'].map(n => [n, tintOf(n)]).filter(t => t[1]);
-  const camPos = [0, 0, 0], hlum = lum(HOR);
-  const kz = [0, 0, 0];
+  const camPos = [0, 0, 0];
+  // each floor mark was painted under its own canvas's night, so each dims by the light here against that one
+  const SEA_SKY = colHand.water.sky_lum, SHORE_SKY = nightSpec.nights[0].lum, hlum = lum(HOR);
+  const kz = [0, 0, 0], wc = [0, 0, 0], sc = [0, 0, 0];
   function paintNight(p) {
     // the horizon at the horizon's own elevation and the zenith at the top of his sky, since a night is not
     // one colour up the sky and all three of his canvases say the same thing about how it changes
     const kn = nights.ratioAt(p, 2);
     const kzz = nights.ratioAt(p, 30, kz);
-    const g = lum([HOR[0] * kn[0], HOR[1] * kn[1], HOR[2] * kn[2]]) / hlum;
+    const L = lightAt(p);
     domeU.uZen.value.setRGB(ZEN[0] * kzz[0], ZEN[1] * kzz[1], ZEN[2] * kzz[2]);
     domeU.uHor.value.setRGB(HOR[0] * kn[0], HOR[1] * kn[1], HOR[2] * kn[2]);
-    domeU.uWater.value.setRGB(waterCol[0] * g, waterCol[1] * g, waterCol[2] * g);
-    waterMat.uniforms.uCol.value.setRGB(waterCol[0] * g, waterCol[1] * g, waterCol[2] * g);
-    for (const m of [shoreMat, wallMat]) m.uniforms.uCol.value.setRGB(shoreCol[0] * g, shoreCol[1] * g, shoreCol[2] * g);
-    for (const [n, v] of tints) n === 'motes' ? v.set(kn[0], kn[1], kn[2]) : v.set(g, g, g);
-    return { kn, g };
+    for (let k = 0; k < 3; k++) { wc[k] = waterCol[k] * L; sc[k] = shoreCol[k] * L; }
+    domeU.uWater.value.setRGB(wc[0], wc[1], wc[2]);            // under the horizon the dome is the water's own
+    waterMat.uniforms.uCol.value.setRGB(wc[0], wc[1], wc[2]);
+    for (const m of [shoreMat, wallMat]) m.uniforms.uCol.value.setRGB(sc[0], sc[1], sc[2]);
+    // a mark lying on the floor dims with the floor it lies on, so that the ratio between his paint and his
+    // ground stays the one his canvas has. The motes are not on the floor and take the night's colour instead
+    for (const [n, v] of tints) {
+      if (n === 'motes') { v.set(kn[0], kn[1], kn[2]); continue; }
+      // under ?d3floor the marks take the factor D4.5 gave them too, so that the comparison is D4.5 whole
+      const t = d3 ? L / hlum : L / (n === 'sea' ? SEA_SKY : SHORE_SKY);
+      v.set(t, t, t);
+    }
+    return { kn, L: +L.toFixed(6) };
   }
   paintNight([layers[0].eye.x, layers[0].eye.y, layers[0].eye.z]);
 
@@ -443,11 +528,15 @@ async function boot() {
       `  the colour of the night itself, canvas by canvas and\n  band by band up the sky (hand/nights.json): his sky\n` +
       `  is ${nightSpec.nights.map(n => n.slug + ' ' + n.lum.toFixed(4)).join(', ')}\n  in brightness, and he painted ` +
       nightSpec.nights.map(n => `${n.slug} from ${n.el_deg[0].toFixed(0)}\u00b0 to ${n.el_deg[1].toFixed(0)}\u00b0`).join(',\n  ') + `\n  above the horizontal -- bands that do not touch\n` +
+      `  and the light our own sky gives the floor, rendered\n  from it (D4.6): ${(LIT || []).map(v => v.toFixed(4)).join(', ') || 'not read here'} under his three\n` +
+      `  standpoints, against his own skies' ${nightSpec.nights.map(n => n.lum.toFixed(4)).join(', ')} --\n` +
+      `  a night between a quarter and a half of his, and the\n  floor is his ground's own share of it and nothing else\n` +
       `\nhis own words, checked against the edition before they\n  shipped (tools/lines.py, letters/letters.json):\n` +
       layers.map(l => { const q = lineOf(l.slug); return q ? `  \u201c${q.text}\u201d\n    letter ${q.letter} to ${q.to}, ${q.date}` : ''; }).filter(Boolean).join('\n') + '\n' +
-      `\nderived, not authored (DESIGN 5.1 as D4.5 amends it):\n  the shore stands ${SHORE} m over the river, which is\n` +
+      `\nderived, not authored (DESIGN 5.1-5.2, D4.5 and D4.6):\n  the shore stands ${SHORE} m over the river, which is\n` +
       `  his Rhone eye at 4.411 m less a standing man at 1.65,\n  and all three of his grounds lie on it exactly;\n` +
-      `  the river runs between his own two banks, ${BANK[0]} and\n  ${BANK[1]} m from his eye, and is ${(BANK[1] - BANK[0]).toFixed(1)} m across\n` +
+      `  the river runs between his own two banks, ${BANK[0]} and\n  ${BANK[1]} m from his eye, and is ${(BANK[1] - BANK[0]).toFixed(1)} m across;\n` +
+      `  the floor's colour, which is his hue and his share of\n  the light over it: water ${wc.map(v => v.toFixed(4)).join(', ')}\n  shore ${sc.map(v => v.toFixed(4)).join(', ')}, here\n` +
       `\nauthored: where the three standpoints stand on that\n  shore (DESIGN 5.1): ` +
       layers.map(l => `${l.slug} ${l.eye.x},${l.eye.y},${l.eye.z} facing ${l.eye.yaw}\u00b0`).join(';\n  ') + `;\n` +
       `  the depths by region for each\n  (depth/*.json, depth/*-mask.png);\n` +
@@ -645,6 +734,17 @@ async function boot() {
     domeU.uAt.value.copy(camera.position);
     camPos[0] = camera.position.x; camPos[1] = camera.position.y; camPos[2] = camera.position.z;
     paintNight(camPos);
+    // the measurement the floor waits on: the light over the floor under each of his three standpoints, where
+    // a person standing there would have their eyes (DESIGN 5.2 as D4.6 amends it). Taken a few frames in and
+    // not at boot, because the first frames are not yet the piece -- the renderer's own state settles over
+    // them, and taken at boot this read twice what it reads five frames later. Until then the floor is D3's,
+    // which is five frames of the old floor and not five frames of a wrong one
+    if (!tried && frames >= 5) {
+      tried = true;
+      const got = layers.map(l => measureLight([l.eye.x, floorAt(l.eye.x) + PERSON, l.eye.z]).lum);
+      if (got.every(v => v > 0 && isFinite(v))) LIT = got;
+      paintNight(camPos);
+    }
     grade.time = time;
     if (has('nopost')) { renderer.setRenderTarget(null); renderer.render(scene, camera); } else post.render([scene], camera, grade);
     if (++frames === 6) { window.dream.ready = true; }
@@ -661,7 +761,7 @@ async function boot() {
                      total: layers.reduce((s, l) => s + l.ex.n, 0) + ours.reduce((s, o) => s + o.ex.n, 0), buildMs }),
     restart: () => restart(),
     // the water (DESIGN 5.2, BUILD.md D3): what the plane is, and where every column stands from this eye
-    water: () => ({ colour: waterCol.map(v => +v.toFixed(5)), of_his_sky: colHand.water.over_sky,
+    water: () => ({ colour: wc.map(v => +v.toFixed(5)), of_his_sky: colHand.water.over_sky,
                     slope_deg: +(wat.slope / DEG).toFixed(3), lights: lit.length, marks: cols.n,
                     by: lit.reduce((a, l) => (a[l.of] = (a[l.of] || 0) + 1, a), {}) }),
     // one column, measured: where its light is, where the still water would put it, where it actually lies, and
@@ -936,7 +1036,11 @@ async function boot() {
       const F = x => x * Math.sqrt(Math.max(0, E * E - x * x)) + E * E * Math.asin(Math.max(-1, Math.min(1, x / E)));
       return { shore_m: SHORE, bank_m: BANK, river_m: +band.toFixed(1),
                water_share: +((F(b) - F(a)) / (Math.PI * E * E)).toFixed(4),
-               water_rgb: waterCol.map(v => +v.toFixed(5)), shore_rgb: shoreCol.map(v => +v.toFixed(5)),
+               water_rgb: wc.map(v => +v.toFixed(6)), shore_rgb: sc.map(v => +v.toFixed(6)),
+               of_his_sky: [+(colHand.water.lum / colHand.water.sky_lum).toFixed(4), nightSpec.shore.over_sky],
+               // the light over the floor under each of his three standpoints, and the light where the eye is
+               light: LIT && LIT.map(v => +v.toFixed(6)), light_here: +lightAt(camPos).toFixed(6),
+               his_sky: [+SEA_SKY.toFixed(5), +SHORE_SKY.toFixed(5)],
                shore_of: nightSpec.shore.of, shore_hand: nightSpec.shore.hand,
                shore_marks: shore.n, sea_marks: sea.n,
                // his own ground under each of his standpoints, against the floor this world puts there. The
@@ -955,6 +1059,8 @@ async function boot() {
     nightAt: (p) => { const q = p || flight.pos, w = [...nights.weights(q)], r = [...nights.ratio(q)];
                       return { at: q.map(v => +v.toFixed(1)), of: Object.fromEntries(nightSpec.nights.map((n, i) => [n.slug, +w[i].toFixed(4)])),
                                ratio: r.map(v => +v.toFixed(4)), sky: nights.sky(q).map(v => +v.toFixed(5)) }; },
+    // the light the floor stands under at a place, measured (D4.6, and `measureLight` above for what it does)
+    light: (p = null, N = 96, f) => measureLight(p || [flight.pos[0], flight.pos[1], flight.pos[2]], N, f),
     // the three cones on one water (DESIGN 5.1): where each stands, how wide it opens, and how far apart they are
     cones: () => layers.map(l => ({ slug: l.slug, at: l.cone.at, yaw: l.eye.yaw, pitch: l.eye.pitch, hfov: l.eye.hfov,
       half_deg: [+(Math.atan(l.cone.hw) / DEG).toFixed(2), +(Math.atan(l.cone.hh) / DEG).toFixed(2)],

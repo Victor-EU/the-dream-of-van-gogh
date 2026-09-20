@@ -37,7 +37,7 @@ def main():
         pg.on('pageerror', lambda e: errors.append(str(e)))
         pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
         pg.goto(a.url)
-        pg.wait_for_function('window.dream && window.dream.ready', timeout=60000)
+        pg.wait_for_function('window.dream && window.dream.ready', timeout=a.timeout * 1000)
         for js in a.js:
             pg.evaluate(js)
         for ex in a.eval:
