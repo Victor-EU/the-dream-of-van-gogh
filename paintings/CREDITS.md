@@ -265,3 +265,11 @@ Public domain throughout — Van Gogh died in 1890. The Met and the Art Institut
 Yale and the Getty are open access; the Van Gogh Museum publishes downloads of its collection. The Commons files are
 mirrors of museum or Google Art Project photography of public-domain works. Nothing here is redistributed by this
 project: `ref/` is local working material, and only the derived stroke data (`strokes/*.bin`) is committed.
+
+## Used by *The Dream of Van Gogh*, D5.5
+
+*Sunflowers*, Van Gogh Museum, Amsterdam, `s0031V1962` (the January 1889 repetition, as the correction above says):
+its stroke record `strokes/sunflowers-canvas.bin` and flat rendering are copied whole from the sibling's
+`strokes/s05/`, unchanged. Eight of its heads, cut out by circles drawn on the flat (`src/flowers.js`), stand on the
+shore round the Starry Night's village on the author's word. Nothing was re-extracted; if the record is ever
+rebuilt it is rebuilt there and copied again.

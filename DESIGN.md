@@ -187,6 +187,27 @@ word and each pointing at the entry in `BUILD.md` that records what was found.*
 > starts again from nothing and from the author's word, not from this section. The D3 log keeps what was measured
 > about his water, which was never only about sound.
 
+> **Changed by the author at the user test, D5.5 (20 September 2026).** The author opened the page cold, touched
+> nothing, watched, and answered every gate at once: *this is absolutely terrible ... The overall feeling is just
+> so bad, I have no idea what this is. It's so far away from the design.* The six things in that answer are quoted
+> under D5.5 in `BUILD.md`, each with what it was measured to be, and four sections go with them. **§6 is
+> replaced.** Two controls still, look and go, but nothing pressed is nothing -- *no up arrow, no movement* -- so
+> there is no glide, no wind on the body, no let go, no bank, and no lag between where the eye looks and the way
+> the body goes; §6.1's eight sensations are no longer promised. The arrows go where you look, go back, and turn;
+> `Shift` is faster; `1` `2` `3` stay; `Space` and `Z` go. §6.4's current carries the paint and not you, and
+> §6.5's parting still opens the paint round a body that moves. **§7.1's opening ends still.** The body stays at
+> his eye, which is the one place in the piece where the ground is the town and the sky is the sky, and waits for
+> a key. Untouched, the old opening let the wind carry the eye 57 m up and 153 m forward into the sky in half a
+> minute, and the picture the author was answering was that one: paint at arm's length, pale because it is seen
+> from inside, and no ground. **§2 is amended.** *Only what he painted here* becomes *only what he painted*: the
+> author asked for sunflowers, and they are his -- the heads of the Van Gogh Museum's *Sunflowers* (s0031V1962,
+> the sibling's stroke record, copied whole), cut out by eight circles a person drew on its flat rendering and
+> stood on the shore round his village at the size of a sunflower, on a stem in the colour of his own stems. The
+> placing is ours and the ledger says so. **§15.1 is answered by the author, and the answer is not chills.** A sky
+> that is a volume reads, from inside it, as paint at arm's length, and from the ground its near shell is a wall of
+> strokes 250 m off. The body no longer goes there on its own; whether the sky should be a volume at all is the
+> next question, and it is left under *still visible* in D5.5.
+
 ---
 
 **What this is.** A second piece, built clean, from the same stroke records as its sibling *The World of Van Gogh*

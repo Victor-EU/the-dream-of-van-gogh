@@ -7,6 +7,7 @@ import { Strokes } from './strokes.js';
 import { Sky } from './sky.js';
 import { Water, lights, makeSea } from './water.js';
 import { Flight } from './flight.js';
+import { makeFlowers } from './flowers.js';
 import { Wind } from './wind.js';
 import { Post } from './post.js';
 import { Nights, lum } from './night.js';
@@ -113,7 +114,7 @@ async function boot() {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const cv = renderer.domElement;
   cv.tabIndex = 0;
-  cv.setAttribute('aria-label', 'The Dream of Van Gogh. Drag to look; you fly where you look. W is faster, S slower, Shift a swoop, Space lets go, Z turns you onto your back.');
+  cv.setAttribute('aria-label', 'The Dream of Van Gogh. Drag to look. The up arrow goes where you look, the down arrow back, left and right turn; Shift is faster. Nothing pressed, nothing moves.');
   document.getElementById('stage').appendChild(cv);
   const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.2, 6000);
   let hfov = HFOV;
@@ -345,6 +346,14 @@ async function boot() {
                                      rgb: nightSpec.shore.rgb, drift: [wind.fl.drift[0], wind.fl.drift[1]] });
   addOurs('shore', shore, { uWrap: { value: shore.cell }, uWrapLow: { value: -1 }, uWrapY: { value: 0 },
                             uSide: { value: -1 }, uTint: { value: new THREE.Vector3(1, 1, 1) } });
+  // Sunflowers (BUILD.md D5.5, the author's word): his own heads from the Sunflowers record, standing on the shore
+  // round his village, each the size of a sunflower. Exempt from the rule of 5.1 -- they stand inside his cone,
+  // in front of his village, and the standpoint test says what that costs
+  const e0 = layers[0].eye, fw0 = layers[0].cone.Fw, NF = +(Q.get('flowers') ?? 80);
+  const flowers = NF > 0 ? await makeFlowers({ count: NF, size: +(Q.get('flowersize') ?? 0.4), floor: SHORE, bank: BANK[0],
+                                                centre: [e0.x + fw0[0] * 80, SHORE, e0.z + fw0[2] * 80], radius: 150, seed: 8888 })
+                         : { n: 0, flowers: 0, heads: [], stem: [] };
+  addOurs('flowers', flowers, { uConeFree: { value: 1 } });
   // the reflections: one column under every light in the dream, his and ours (DESIGN 5.2), on the river only --
   // a reflection needs water under it, and past the bank there is none
   const lit = lights({ layers, ours, eye: wind.eye, link: +(Q.get('link') ?? 0.014) });
@@ -460,7 +469,7 @@ async function boot() {
 
   const flight = new Flight(cv);
   const at = has('at') || has('test') ? clamp(parseInt(Q.get('at') || Q.get('test'), 10) || 1, 1, layers.length) : 1;
-  const eyeOf = n => { const e = layers[n - 1].eye; flight.go({ pos: [e.x, e.y, e.z], yaw: e.yaw, pitch: e.pitch, speed: 3 }); };
+  const eyeOf = n => { const e = layers[n - 1].eye; flight.go({ pos: [e.x, e.y, e.z], yaw: e.yaw, pitch: e.pitch, speed: 0 }); };
   eyeOf(at);
   if (has('test')) { hfov = layers[at - 1].eye.hfov; flight.script = { speed: 0, dx: 0, dy: 0 }; flight.speed = 0; wind.on = 0; }
 
@@ -474,7 +483,7 @@ async function boot() {
   // the flight's seventy degrees and the body begins to glide at three metres a second. Once, at the start,
   // never explained, and never again -- flying into the linen returns you to the air and not to the canvas.
   const veil = window.veil || { up: false, painted: true, status() {}, lift() {}, skip() {} };
-  const BURST = 4.0, GLIDE = 3, PART0 = U.uPart.value;
+  const BURST = 4.0, PART0 = U.uPart.value;
   const veilBox = document.getElementById('veil-canvas');
   let opening = veil.up && !has('test') && !has('at') && !has('burst') ? 'wait' : null, openT = 0;
   // ?hold keeps the painting up until dream.holdOpen(false), so tools/opening.py can take the veil's frame and
@@ -539,9 +548,8 @@ async function boot() {
       U.uBurst.value = e;
       hfov = hfov + (HFOV - hfov) * Math.min(1, dt / 0.9);
       resize();
-      flight.target = GLIDE * e;
       U.uPart.value = PART0 * e;
-      if (t >= 1) { U.uBurst.value = 1; U.uPart.value = PART0; hfov = HFOV; resize(); flight.target = GLIDE; opening = null;
+      if (t >= 1) { U.uBurst.value = 1; U.uPart.value = PART0; hfov = HFOV; resize(); flight.target = 0; opening = null;
                     if (!looked && !capT) line.classList.add('on'); }
     }
   }
@@ -578,16 +586,16 @@ async function boot() {
   }
   let looked = false;
   flight.on('look', () => { looked = true; line.classList.remove('on'); cv.focus({ preventScroll: true }); });
-  flight.on('letgo', () => { flight.letgo = !flight.letgo; });
-  flight.on('back', () => flight.back());
+  flight.on('go', () => { looked = true; line.classList.remove('on'); });
   flight.on('eye', n => { if (n >= 1 && n <= layers.length) currentTo(n); });
   flight.on('fullscreen', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}));
-  const KEYS = 'drag        look; you fly where you look\nW  ↑        faster\nS  ↓        slower\nShift       a swoop\nSpace       let go; the wind has you\nZ           onto your back\n1           to his eye\nL           the ledger\nF           full screen';
-  const NAMED = { sky: 'our sky   ', stars: 'our stars ', motes: 'the motes ', reflections: 'reflections', sea: 'the sea   ' };
+  const KEYS = 'drag        look\n↑           go where you look\n↓           back\n← →         turn\nShift       faster\n1 2 3       to his eyes\nL           the ledger\nF           full screen\n\nnothing pressed, nothing moves';
+  const NAMED = { sky: 'our sky   ', stars: 'our stars ', motes: 'the motes ', reflections: 'reflections', sea: 'the sea   ', flowers: 'sunflowers' };
   const NOTE = { sky: 'outside his cone, at his density', stars: `${sky.nStars} unnamed, where the eddies are not`,
                  motes: `a lattice ${sky.mote.cell} m wide, round you`,
                  reflections: `${lit.length} lights, his and ours, on the water`,
-                 sea: `a lattice ${sea.cell} m wide on the water, ${sea.per_m2}/m\u00b2` };
+                 sea: `a lattice ${sea.cell} m wide on the water, ${sea.per_m2}/m\u00b2`,
+                 flowers: `${flowers.flowers} of them, his own heads from the Sunflowers, stood on the shore by us` };
   const LEDGER = () => {
     const his = layers.reduce((s, l) => s + l.ex.n, 0);
     const mine = ours.reduce((s, o) => s + o.ex.n, 0);
@@ -762,7 +770,7 @@ async function boot() {
   let fade = 0, fading = 0, faded = 0;
   const outside = () => flight.pos[1] > CEIL || Math.hypot(flight.pos[0], flight.pos[2]) > EDGE;
   function restart() {
-    eyeOf(1); flight.letgo = false; flight.onBack = false; flight.gazeTo = null; faded++;
+    eyeOf(1); faded++;
   }
   let time = 0, frozen = has('t') ? parseFloat(Q.get('t')) : null, fps = 60, frames = 0;
   let dprCur = renderer.getPixelRatio(), slow = 0, quick = 0;
@@ -833,7 +841,7 @@ async function boot() {
     grade.time = time;
     if (has('nopost')) { renderer.setRenderTarget(null); renderer.render(scene, camera); } else post.render([scene], camera, grade);
     if (++frames === 6) { window.dream.ready = true; }
-    if (dbg && frames % 15 === 0) { const s = flight.state(); dbg.textContent = `${fps.toFixed(0)} fps  dpr ${dprCur.toFixed(2)}\n${s.x} ${s.y} ${s.z}\nyaw ${s.yaw} pitch ${s.pitch} speed ${s.speed} roll ${s.roll}\nwind ${s.wind.join(' ')}${s.letgo ? '  let go' : ''}${s.onBack ? '  on your back' : ''}`; }
+    if (dbg && frames % 15 === 0) { const s = flight.state(); dbg.textContent = `${fps.toFixed(0)} fps  dpr ${dprCur.toFixed(2)}\n${s.x} ${s.y} ${s.z}\nyaw ${s.yaw} pitch ${s.pitch} speed ${s.speed} roll ${s.roll}\nwind ${s.wind.join(' ')}${s.pressed ? '  going' : ''}`; }
     requestAnimationFrame(frame);
   }
   if (has('debug')) dbg.hidden = false;
@@ -845,6 +853,8 @@ async function boot() {
                      ...Object.fromEntries(ours.map(o => [o.name, o.ex.n])),
                      total: layers.reduce((s, l) => s + l.ex.n, 0) + ours.reduce((s, o) => s + o.ex.n, 0), buildMs }),
     restart: () => restart(),
+    // the sunflowers (D5.5): how many, of what, and where the first dozen stand: x, y of the head, z, its width, the way it faces
+    flowers: () => ({ count: flowers.flowers, ribbons: flowers.n, heads: flowers.heads, stem: flowers.stem, at: flowers.at }),
     // the water (DESIGN 5.2, BUILD.md D3): what the plane is, and where every column stands from this eye
     water: () => ({ colour: wc.map(v => +v.toFixed(5)), of_his_sky: colHand.water.over_sky,
                     slope_deg: +(wat.slope / DEG).toFixed(3), lights: lit.length, marks: cols.n,
@@ -994,7 +1004,6 @@ async function boot() {
     speed: v => { flight.speed = flight.target = v; },
     hold: () => { flight.script = { speed: 0, dx: 0, dy: 0 }; flight.speed = 0; },
     free: () => { flight.script = null; },
-    letgo: () => { flight.letgo = true; },
     back: () => flight.back(),
     freeze: t => { frozen = t; },
     wait: secs => new Promise(res => pending.push({ t: time + secs, f: () => res(dream.state()) })),
@@ -1207,7 +1216,7 @@ async function boot() {
       const D = o.depth || M.depth_rim_m || 400, rw = ax.r * D / ax.f, off = (o.frac ?? 1 / 3) * rw;
       const pos = [0, 1, 2].map(k => wind.eye[k] + ax.dir[k] * D + ax.Rp[k] * off);
       flight.go({ pos, yaw: o.yaw ?? 0, pitch: o.pitch ?? 8, speed: 0 });
-      flight.script = null; flight.letgo = true;
+      flight.script = null;   // void since D5.5: the wind no longer carries the body, so this measures a body standing still
       const y0 = pos[1], t0 = time; let lastA = null, lastP = [...pos], turned = 0, rmin = 1e9, rmax = 0, al0 = null, al = 0, vmax = 0;
       watchers.push(dt => {
         const rel = [0, 1, 2].map(k => flight.pos[k] - wind.eye[k]);

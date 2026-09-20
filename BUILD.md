@@ -345,6 +345,50 @@ partway through the milestone; what replaced it is nothing, and the piece is sil
 
 ---
 
+## D5.5 — The author's user test  *(the author's word on the whole; 1 day)*
+
+**Why there is a milestone here.** The author opened the page cold, touched nothing, watched, and answered every
+gate at once: *this is absolutely terrible ... The overall feeling is just so bad, I have no idea what this is. It's
+so far away from the design.* Six things in the answer, quoted, each with what it was measured to be before
+anything was changed:
+
+1. *The painting and the stars should be smaller, meaning you should be having the sense of in the dream of starry
+   night.* Measured on a real GPU: untouched for 30 s after the opening, the wind carries the body **57 m up and
+   153 m forward** into the sky (`y 99.6, z -152.8`), so a sky that begins 250 m from his eye is seen from a hundred
+   metres inside it; the strokes double, the ground leaves the frame, and what is left is paint at arm's length.
+2. *Color should be more vivid like van gogh's painting.* Measured: at his eye, on the same GPU, the frame is the
+   record's own colour (the standpoint test reads 0.865 against the runtime's own flat). The pale picture is the
+   same paint seen from inside it -- sampled soft past a hand's breadth of pixels (`vBig`) and lit on its relief
+   from every side -- which is the same cause as 1.
+3. *We should add some random sunflowers.*
+4. *The user vision movement is so bad. Simplify, arrow keys decide the movement, no up arrow, no movement.*
+5. *Where is the river, the town.* Behind and below the place the wind carries you to.
+6. *You have a ground, which is the town, then you have the sky.* Which is his composition, from his eye, and the
+   one place in the piece where it holds.
+
+**What changes, on the author's word.** §6 is replaced. (a) Nothing pressed is nothing: no glide, no wind on the
+body, no let go, no bank, and no lag between where the eye looks and the way the body goes. (b) The arrows: `↑`
+goes where you look, `↓` back, `←` `→` turn; `Shift` faster; drag looks; `1` `2` `3` stay; `H` `L` `F` stay;
+`Space` and `Z` go. (c) After the opening the body stays at his eye and waits, which is the one place the ground
+is the town and the sky is the sky. (d) Sunflowers: his own heads from the *Sunflowers* record (Van Gogh Museum
+s0031V1962, the sibling's record, copied), cut out by eight circles a person drew on the flat, standing on the
+shore round his village. §2 is amended on the author's word: his paint from a fourth canvas, placed by us, and
+the ledger calls the placing ours.
+
+**Pre-registered.**
+
+| | target | why this number |
+|---|---|---|
+| nothing pressed, nothing moves | 30 s untouched after the opening: the body within 0.05 m of his eye | before: 57 m up, 153 m forward |
+| a key released stops you | `↑` held 2 s then released: under 0.5 m/s within 1 s, under 3 m travelled after the release | *no up arrow, no movement* |
+| `↑`, `Shift`, a turn | 8 m/s, 30 m/s, 50°/s | a town 767 m off in a minute and a half; a full turn in seven seconds |
+| the standpoint, with sunflowers | logged as it comes; `?noflowers` returns 0.865 / 0 cells | his heads stand in front of his village from his eye, and the test says by how much |
+| sunflowers | 80 by default, heads 0.3–0.5 m across at 1.1–1.7 m over the shore, in a disc 150 m round a point 80 m ahead of his eye; ribbons counted | sunflower-sized, where the eye first looks down |
+| frame rate | the three flights on the real GPU pane ≥ 47 | the governor's floor |
+| the gate | the author's six, again | |
+
+---
+
 ## D6 — Measure, polish, ship  *(1 week)*
 
 **Scope.** The resolution governor. A phone flown once and its numbers written down, with nothing promised. The
@@ -369,9 +413,10 @@ either closed with a pointer into this log, or moved to **Deferred** with a trig
 | D4.5 one night | 4 | 29 |
 | D4.6 the floor, seen | 1 | 30 |
 | D5 opening, edge, sound | 5 | 35 |
-| D6 measure, ship | 5 | 40 |
+| D5.5 the author's user test | 1 | 36 |
+| D6 measure, ship | 5 | 41 |
 
-Eight weeks of days. D4.5 and D4.6 were not in the plan — the author added them at the D4 gate and on §15.10 —
+Eight weeks of days. D4.5, D4.6 and D5.5 were not in the plan — the author added them at the D4 gate and on §15.10 —
 and they are counted here because they happened. The plan expected D0 to be re-run once and D4 to overrun,
 because depth authoring is the one thing here that a person does by hand, three times.
 
@@ -1636,3 +1681,77 @@ what is glimpsed round the edges of a painting you are going into ought to be wh
   finished and waiting, which is what the status line is for.
 - **The opening is not on a phone yet.** D6's.
 - **Silence.** The piece makes no sound at all now. If that is wrong it is one line of the author's to say so.
+
+### D5.5 — The author's user test
+
+**What was built.** The author's six answers, taken as the word on the whole (the plan block above quotes them), and
+four things follow. (1) **`flight.js` is replaced.** Two controls, look and go: a drag looks, `↑` goes where you
+look at 8 m/s, `↓` back, `←` `→` turn at 50°/s, `Shift` makes it 30; the body reaches its speed and loses it with a
+time constant of a fifth of a second; nothing pressed is nothing. The wind is still read at the body for the ledger
+and is no longer added to it; the heading is the gaze; the roll is nought; `Space` and `Z` are gone with the let-go
+and the lying-down; the floor of §6.3 stays. The touch of §6.6 keeps its two thumbs, the left one going and the
+right one looking. (2) **The opening ends still.** After the explosion the body stays at his eye at speed nought
+until a key is held, and so does the restart out of the linen and the current of `1` `2` `3` when it arrives. (3)
+**Sunflowers**, `src/flowers.js`: the Sunflowers record is copied whole from the sibling (`strokes/sunflowers-
+canvas.bin`, 12,478 strokes), eight circles a person drew on its flat cut out eight heads (297 to 629 of his strokes
+each; the circles are in `docs/`'s pictures and in the file), and eighty flowers stand on the shore in a disc 150 m
+round a point 80 m ahead of his eye, each one head at 0.3–0.5 m across, facing a random way and nodding back three to eleven degrees, on a stem
+1.1–1.7 m tall in the mean colour and width of his own stem strokes. Every stroke of a head is his -- arc, colour, width, impasto, curl -- scaled by
+one number as §3.1 scales everything. They stand inside his cone, in front of his village, exempt from the rule of
+§5.1 by one uniform (`uConeFree`), and the standpoint test says what that costs. `?flowers=`, `?flowersize=`,
+`?noflowers`, `?only=flowers`, `dream.flowers()`, a row in the ledger, a line in the credits. (4) The keys panel,
+the corner line and the README say the new controls.
+
+**What was found, before anything was changed.**
+
+- **Where the wind took you.** On a real GPU, untouched for 30 s after the opening: the body at `y 99.6, z -152.8`
+  -- 57 m up and 153 m forward of his eye, inside a sky whose near shell is 250 m from it. That is the author's
+  screenshot: the swirl at twice its size, pale, no ground.
+- **The pale is the same paint seen from inside.** Five frames at his eye on the same GPU -- `?test`, `?nocurl`,
+  `?nopart`, `?nomotes&nosky&nostars`, and nothing -- are all the record's own colour, and the standpoint test
+  reads 0.865 there as it did. Nothing in the grade is changed: `sat` stays 1.0, so the colour cells of §4.4 stand.
+  A stroke ten metres long passed at arm's length is sampled soft past a hand's breadth of pixels (`vBig`) and lit
+  on its relief from every side, and that is what the author saw. The cure was 1 and not a curve.
+- **From the ground our sky is a wall.** At 3 m over the shore, 60 m north of his eye, looking back: a mass of
+  big blue strokes low over the horizon on the left. `?only=sky` has it, `?only=motes,stars` does not, `?only=his`
+  does not: it is our sky's near shell at 250 m, seen from below its band. Left, and named under *still visible*.
+- **Sunflowers from his eye are dots.** A 0.4 m head at 90 to 230 m is under a pixel at 512 px.
+
+**What it measures.**
+
+| | target | measured |
+|---|---|---|
+| nothing pressed, nothing moves | 30 s untouched after the opening: within 0.05 m of his eye | **0.00 m** at 38.8 s (`x -700, y 42.76, z 0`, speed 0) -- pass; before, 57 m up and 153 m forward |
+| a key released stops you | `↑` held 2 s then released: under 0.5 m/s within 1 s, under 3 m travelled | at a third of a second: 0.62 m/s and 2.12 m -- fail on the first by 0.12; at a fifth: **0.05 m/s and 1.52 m** after 1 s (stepped at 60 Hz by `dream.sim`; held 2 s it reaches 8.0 m/s and 14.5 m) -- pass |
+| `↑`, `Shift`, a turn | 8 m/s, 30 m/s, 50°/s | `↑` 2.0 s: **7.9 m/s**, 8.2 m; `→` 1.0 s: **50.2°** -- pass |
+| the standpoint, with sunflowers | logged; `?noflowers` 0.865 / 0 cells | **0.865, worst cell 4.9%, 0 cells** with them and without -- identical |
+| sunflowers | 80, heads 0.3–0.5 m at 1.1–1.7 m, disc 150 m | **80, 32,261 ribbons** (403 a flower: 386 of his and a stem); heads 0.35–0.49 m across in the first dozen; the record's colour, unlit |
+| ribbons in the air | -- | 286,272 (254,011 + 32,261), against D6's 130,000 |
+| frame rate, the three flights | ≥ 47 on the real GPU pane, 1024 × 768 at dpr 1.5 | glide **82** (dips to 13), swoop **83** (24), village **73** (5), dpr 1.5 -- the means pass and the dips are the headless renderer that was making the pictures on the same machine at the time |
+| the gate | the author's six | open |
+
+**Pictures.** `d55-before` -- the eye where the wind took it in half a minute, which is the picture the author
+answered. `d55-standpoint` -- where it now stays. `d55-from-the-ground` -- a standing eye on the shore under his sky.
+`d55-the-field` -- the sunflowers from 12 m up. `d55-a-sunflower` -- one of them at 8 m. All headless.
+
+**The gate.** *The author's six, again.* Open the page cold, touch nothing, and then the arrows. Is it smaller, is
+it vivid, are the sunflowers there, does it move as you say, where are the river and the town, is the ground the
+town and the sky the sky?
+
+**Still visible.**
+
+- **The sky as a volume.** From inside, paint at arm's length; from the ground, a wall of strokes 250 m off. The
+  body no longer goes there on its own, but it can. If *smaller* means a sky that stays a sky from everywhere, that
+  is a dome and not a volume, and §3.1's one licence -- the sky put far so that its strokes are huge -- goes with it.
+  That is a decision with a number in it: how wide the swirl should be from the ground. Not taken here.
+- **The sunflowers are sunflower-sized**, so from his eye they are dots, and a head is a flat disc that reads as a
+  feather when it is tilted. If they are to be seen from the air they have to be bigger than sunflowers, which is
+  the author's number (`?flowersize=`).
+- **The town from the ground.** His village is painted from forty metres up and lies flat on the shore, so from a
+  standing eye it is a carpet of marks and not a town; the only town with walls is the terrace's square, 800 m off
+  (`3`). *Where is the river, the town* is answered from his eye and not from the shore.
+- **D1's two tests are void**: the glance (the heading is the gaze) and the eddy (the wind does not carry the
+  body). Both stay on the harness and say so.
+- **The frame rate** was taken with a headless renderer running beside it, and on the author's screen at 2× the
+  governor decides; both D6's.
+- **The count**: 286,272 ribbons against the budget's 130,000, and the ribbon decision is still the author's to wait on.

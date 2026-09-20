@@ -24,7 +24,9 @@ It opens on the painting. *The Starry Night* paints itself on primed linen from 
 world is built behind it; then the eye goes into it, and behind the veil the same canvas is already standing in
 three dimensions with every stroke slid back up its ray to where the ray crosses his picture plane — the canvas
 whole, which the standpoint test reads at 0.998. When the veil has gone, what is left is the painting, and it
-explodes: four seconds down the rays to their depths, and you are in the air over Saint-Remy. It makes no sound.
+explodes: four seconds down the rays to their depths, and you are in the air over Saint-Remy, still, at his eye,
+until you press a key. It makes no sound. On the shore round his village stand eighty sunflowers, his own heads from
+the Van Gogh Museum's *Sunflowers*, placed by us (D5.5, on the author's word).
 
 Its sibling, *The World of Van Gogh* (github.com/Victor-EU/the-world-of-van-gogh), is a walk along a road through
 fourteen of his paintings. This piece is built clean beside it, from the same stroke records.
@@ -35,18 +37,18 @@ fourteen of his paintings. This piece is built clean beside it, from the same st
 python3 -m http.server 8712
 ```
 
-Then <http://127.0.0.1:8712/>. Drag to look; you fly where you look. `W` is faster, `S` slower, `Shift` a swoop,
-`Space` lets go and the wind has you, `Z` turns you onto your back, `1` `2` `3` let a current carry you to one of
+Then <http://127.0.0.1:8712/>. Drag to look. `↑` goes where you look, `↓` back, `←` `→` turn, `Shift` is faster,
+and nothing pressed is nothing: the body stands until a key is held. `1` `2` `3` let a current carry you to one of
 his three eyes in eight to twelve seconds — touch the controls and it lets you go — `H` the keys, `L` the ledger,
 which says what is his, what is ours, which of it was measured, and his own line at each canvas. Fly into the linen and
-the dream fades and begins again. Address flags for looking at one thing at a time: `?nowind`, `?nopart`, `?nocurl`,
+the dream fades and begins again. Address flags for looking at one thing at a time: `?nowind`, `?nopart`, `?nocurl`, `?noflowers`, `?flowers=40` and `?flowersize=0.4` (how many sunflowers and how wide a head is, m),
 `?noStrokes`, `?nosky`, `?nostars`, `?nomotes`, `?nosea`, `?noshore`, `?noreflections`, `?nocaption`,
 `?sky=0.5` (our sky at half his density), `?water=0.5` (a column at half his count of marks), `?sea=0.5` and
 `?shore=0.5` (the river's and the shore's own marks at half), `?d3floor` (the floor on the reference D3 gave it,
 which is what D4.6 measured its way off), `?nonight` (our sky in the Starry Night's colour everywhere, as it was
 before D4.5), `?sharp=`, `?shoulder=` and
 `?behind=` (how purely a standpoint is its own night: by distance, by the band of sky he painted, and by which way
-his canvas faces), `?only=sky|stars|motes|sea|shore|reflections|his|starry|rhone|cafeterrace` (one thing alone), `?nocones`
+his canvas faces), `?only=sky|stars|motes|sea|shore|reflections|flowers|his|starry|rhone|cafeterrace` (one thing alone), `?nocones`
 (the rule of §5.1 off, so that what it hides can be seen), `?ledger` (ours tinted), `?debug`, `?test` and
 `?at=1|2|3` (a canvas's eye, its field of view, the body still), `?flat`, `?dull`, `?nopost`, `?t=` (the clock
 frozen), `?flight=glide|swoop|village`, `?burst=0` (the opening's explosion held anywhere between his canvas on
@@ -87,7 +89,7 @@ numbers D2 pre-registers, `dream.water()`, `dream.column(i, eye)` and `dream.flo
 pre-registers, `dream.current(n)` for D4's, `dream.night()`, `dream.floorOf()` and `dream.nightAt(p)` for D4.5's,
 `dream.light(p)` for D4.6's — our own sky rendered from a place, five faces of a cube and the upper hemisphere of
 them, which is the light the floor there stands under — `dream.opening()` and `dream.holdOpen(v)` for D5's,
-`dream.cones()` and `dream.clipped()` for the three cones
+`dream.flowers()` for where the sunflowers stand, `dream.cones()` and `dream.clipped()` for the three cones
 and what the rule of §5.1 hides, `dream.sea()`, `dream.counts()`, `dream.wait(secs)` for a shot at a time of the
 piece's own clock, and `dream.sim(secs)` to run the body forward without drawing, for a renderer too slow to show
 what it can still measure.

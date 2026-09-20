@@ -51,6 +51,7 @@ const VERT = /* glsl */`
   uniform vec3 uCam, uHead, uEye, uWave;
   uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uCeil, uEdge, uUnder;
   uniform float uColumn, uColWidth, uOnly, uMine, uWrapLow, uSide, uWrapY;
+  uniform float uConeFree;                      // one for what may stand inside his cone: the sunflowers (D5.5)
   // the opening (DESIGN 7.1): nought puts a canvas back on its own picture plane, one is the world. uFocalM is
   // this canvas's focal length in metres and uFw the way its eye looks; both are nought for anything of ours
   uniform float uBurst, uFocalM; uniform vec3 uFw;
@@ -168,7 +169,7 @@ const VERT = /* glsl */`
     if (uSide != 0.0 && ((iQ1.x > uBand.x && iQ1.x < uBand.y) != (uSide > 0.0))) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     // Between the cones there is the sea, our sky over it, and the reflections (DESIGN 5.1). Inside one there is
     // only what was painted there, which is what keeps every standpoint test standing with all three in the air
-    if (inSomeoneElses(iQ1)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+    if (uConeFree < 0.5 && inSomeoneElses(iQ1)) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
     float chord = max(length(iQ2 - iQ0), 1e-3);
     float slide = uCurl * crl * sin(uTime * 0.42 + iMeta.z) / chord;
     float t = clamp(aUV.x + slide, -0.2, 1.2), mt = 1.0 - t;
@@ -255,7 +256,7 @@ export class Strokes {
     g.instanceCount = ex.n;
     this.u = { ...U, uReveal: { value: 2 }, uMine: { value: -1 }, uWrapLow: { value: 2 },
                uSide: { value: 0 }, uWrapY: { value: 1 }, uTint: { value: new THREE.Vector3(1, 1, 1) },
-               uFocalM: { value: 0 }, uFw: { value: new THREE.Vector3(0, 0, -1) }, ...(ov || {}) };
+               uFocalM: { value: 0 }, uFw: { value: new THREE.Vector3(0, 0, -1) }, uConeFree: { value: 0 }, ...(ov || {}) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.u,
       side: THREE.DoubleSide, alphaToCoverage: true }));
     this.mesh.frustumCulled = false;
