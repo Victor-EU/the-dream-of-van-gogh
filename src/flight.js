@@ -1,16 +1,15 @@
-// Flight (DESIGN 6, as D5.5 replaces it on the author's word). Two controls: look, and go. Drag looks; the arrows
-// go -- up goes where you look, down goes back, left and right turn -- and nothing pressed is nothing: the body
-// stands where it is until a key is held, and stops when it is let go. There is no glide, no wind on the body, no
-// let go, no bank and no lag between the eye and the way. The wind still moves the paint (wind.js), not you.
-// The author's words, at the user test: *simplify, arrow keys decide the movement, no up arrow, no movement.*
-// There is no walking, no landing, no gravity and no collision; the floor of DESIGN 6.3 stays.
+// Flight. Two controls: look, and go. Drag looks; the arrows go -- up goes where you look, down goes back, left
+// and right turn -- and nothing pressed is nothing: the body stands where it is until a key is held, and stops
+// when it is let go. No glide, no wind on the body, no bank, no lag between the eye and the way. The author's
+// words, at the user test: *simplify, arrow keys decide the movement, no up arrow, no movement.* There is no
+// gravity and no collision, but there is a ground: `floor(x, z)` is the height under you, and you go over it.
 import { clamp, DEG } from './util.js';
 
 const LOOK = 0.0028;                        // radians a pixel
 const MOVE = 8, FAST = 30;                  // m/s: an arrow, and an arrow with Shift
 const TURN = 50 * DEG;                      // rad/s: a full turn in seven seconds
 const T_SPEED = 0.2;                        // the body reaches its speed, and loses it, in a fifth of a second
-const FLOOR = 1.0, FLOOR_A = 15;            // a metre over the water, and how hard it may take to stop you: 1.5 g
+const FLOOR = 1.0, FLOOR_A = 15;            // over the ground, and how hard it may take to stop you: 1.5 g
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
 export class Flight {
@@ -25,7 +24,7 @@ export class Flight {
     this.gaze = { yaw: 0, pitch: 0 };      // where the eye looks
     this.head = { yaw: 0, pitch: 0 };      // the way the body goes: the same, now
     this.speed = 0; this.target = 0; this.roll = 0; this.yawRate = 0;
-    this.current = [0, 0, 0];              // the wind at the body, m/s (wind.js), read for the ledger and not added
+    this.floor = null; this.ceil = 0; this.edge = 0;   // the ground under you, the sky over you, the edge of the world
     this.script = null;                    // a hand the harness holds
     this.carry = null;                     // a current carrying the body to a standpoint (DESIGN 6.4)
     addEventListener('keydown', e => {
@@ -154,9 +153,13 @@ export class Flight {
     // The floor (DESIGN 6.3): a soft floor a metre over the water. Not a wall and not a cushion that scales with
     // your own speed -- the descent is held to the speed a constant deceleration could still stop from here, so
     // however fast you come down you are slowed at the same rate and arrive at a walking pace
-    const h = Math.max(this.pos[1] - FLOOR, 0);
+    const fl = this.floor ? this.floor(this.pos[0], this.pos[2]) : FLOOR;
+    const h = Math.max(this.pos[1] - fl, 0);
     if (vy < 0) vy = Math.max(vy, -(Math.sqrt(2 * FLOOR_A * h) + 0.4));
-    this.pos[0] += vx * dt; this.pos[1] = Math.max(FLOOR, this.pos[1] + vy * dt); this.pos[2] += vz * dt;
+    this.pos[0] += vx * dt; this.pos[1] = Math.max(fl, this.pos[1] + vy * dt); this.pos[2] += vz * dt;
+    // the ground under you rises and falls; and the sky and the edge of the world are as far as you go
+    if (this.ceil) this.pos[1] = Math.min(this.ceil, this.pos[1]);
+    if (this.edge) { const r = Math.hypot(this.pos[0], this.pos[2]); if (r > this.edge) { this.pos[0] *= this.edge / r; this.pos[2] *= this.edge / r; } }
     this.roll = 0;
     return { vx, vy, vz };
   }
@@ -175,7 +178,6 @@ export class Flight {
              yaw: +(this.gaze.yaw / DEG).toFixed(2), pitch: +(this.gaze.pitch / DEG).toFixed(2),
              headYaw: +(this.head.yaw / DEG).toFixed(2), headPitch: +(this.head.pitch / DEG).toFixed(2),
              speed: +this.speed.toFixed(2), roll: 0, pressed: this.pressed(),
-             carried: !!this.carry,
-             wind: this.current.map(c => +c.toFixed(2)) };
+             carried: !!this.carry };
   }
 }

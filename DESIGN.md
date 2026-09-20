@@ -3,6 +3,18 @@
 *Written before the build, on 19 September 2026. Later changes, if any, go at the top, dated, each on the author's
 word and each pointing at the entry in `BUILD.md` that records what was found.*
 
+> **Set aside by the author, E0 (20 September 2026).** At the second user test the author's word was: *the app
+> still misses the point — the painting is still a flat painting. You are not in the world of Van Gogh to see his
+> painting floating in the sky. The point is the world is the painting. Take the elements of the painting,
+> reproduce them in 3D, make the sky like the Starry Night. Make it fascinating, vivid. The sunflowers should be
+> more prominent, floating around. Forget about the design.* So this document is no longer the design of the
+> piece; it is the record of the one it grew out of. What replaced it is described at the top of `README.md` and
+> logged under E0 in `BUILD.md`: one world built out of his strokes' colours, region by region — a turning dome of
+> his sky, hills, a river, a village with lit windows and a spire, a cypress, and his sunflowers in the air. Of the
+> rules below, what survives is the brush, the one shader for every stroke, the arrows, and the opening on the
+> painting; §2 (only what he painted exists), §3 (the explosion), §4.4 (the standpoint test), §5.1 (the cones) and
+> everything measured from the `hand/` files are set aside.
+
 > **Changed in the build, D0 (19 September 2026).** Three things, each recorded under D0 in `BUILD.md`. (1) The
 > standpoint test of §4.4 fails as written: the record's flat is drawn by a different brush, and SSIM against it is
 > 0.44 by texture alone. The geometry is tested against the runtime's own flat instead, where it passes at 0.87, and

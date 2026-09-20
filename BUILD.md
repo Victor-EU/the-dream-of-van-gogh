@@ -414,7 +414,8 @@ either closed with a pointer into this log, or moved to **Deferred** with a trig
 | D4.6 the floor, seen | 1 | 30 |
 | D5 opening, edge, sound | 5 | 35 |
 | D5.5 the author's user test | 1 | 36 |
-| D6 measure, ship | 5 | 41 |
+| E0 the world is the painting | 1 | 37 |
+| D6 measure, ship | 5 | 42 |
 
 Eight weeks of days. D4.5, D4.6 and D5.5 were not in the plan — the author added them at the D4 gate and on §15.10 —
 and they are counted here because they happened. The plan expected D0 to be re-run once and D4 to overrun,
@@ -1755,3 +1756,105 @@ town and the sky the sky?
 - **The frame rate** was taken with a headless renderer running beside it, and on the author's screen at 2× the
   governor decides; both D6's.
 - **The count**: 286,272 ribbons against the budget's 130,000, and the ribbon decision is still the author's to wait on.
+
+
+## E0 — The world is the painting  *(the author's word on the whole, again; 1 day)*
+
+**The author's word, after D5.5.** *The app still misses the point — the painting is still a flat painting. You are
+not in the world of Van Gogh to see his painting floating in the sky, like wearing a Vision Pro. The point is the
+world is the painting. You should take the elements of the painting, reproduce them in 3D and make the sky like
+the Starry Night. Make it fascinating, vivid, like what people would say about Van Gogh's work. The sunflowers
+should be more prominent, floating around and give the sense of the craziness. Forget about DESIGN.md, use the
+imagination, think a lot.*
+
+That sets the design aside, and with it the four rules of this plan as they were written: Rule 2 (nothing
+modelled) and Rule 3 (nothing of ours except from a `hand/*.json`) cannot hold in a world whose houses have walls.
+What survives of the build is the brush and its relief, one shader for every stroke, the arrows of D5.5, the
+opening on the painting, and the stroke records themselves. The letter changes: this is E0, not D6, because it is
+the first milestone of a different piece. The log culture stays — what was built, what was decided, what was
+measured, what is still visible.
+
+**What was built.**
+
+- **`src/world.js`**, new: everything in the world, out of his colours. `loadHisColours` reads the Starry Night's
+  record and `hand/starry-region.bin` (which region of his canvas each stroke lies in, from D0's mask) and sorts
+  each region's colours by brightness, so that a thing of ours takes a colour by asking for *the sky at this
+  brightness*, *the village's darkest tenth*, *the moon's middle*. Then, each in its own generator: the **sky** —
+  a dome of radius 1,500 m, 98,002 strokes laid along a flow of seven swirls and a level band between them, the
+  swirls with pale spiral arms winding into a pale eye, the band with pale ribbons a few degrees apart; every
+  stroke carries an axis and a rate, and the shader turns it about that axis forever, so a swirl turns rigidly on
+  its own circles and never comes apart (2.2°/s for the great one, up to 3.6°/s for the small ones, opposite
+  ways). The **stars**: nineteen, each a core and four rings, and the **moon**, a crescent with six rings, all in
+  his star and moon colours, each ring turning at its own rate the opposite way from the next. The **ground**: a
+  heightfield (`ground(x, z)` — a valley with the village in it, hills to the north and both sides, a knoll to the
+  south the eye stands on, a bed for the river) under 58,710 strokes laid along the contours in his hills'
+  colours, brighter with height and on the slopes that face the moon. The **river**: a path across the valley,
+  16,148 strokes of his sky's blues laid along it, and under each low star and the moon a column of gold dashes
+  toward the eye, which is his Rhone's idea. The **village**: 71 houses on a main street, a cross street and the
+  lanes off them, each a box of horizontal wall strokes with a gabled roof and lit windows, 21 round trees, and
+  the church with its tower and a spire 26 m tall. The **cypress**, two: a flame of his near-black greens on a
+  wavy profile, licks leaning round the trunk, swaying by a bend in the shader that grows with height. The
+  **sunflowers**: his own heads from the Sunflowers record (the eight circles of D5.5), 90 standing on the slope
+  in front of the eye and 150 loose in the air, each its own mesh on a slow ellipse, bobbing, turning and
+  spinning, a tenth of them within 25 m of the knoll so that they pass close; 2 to 9 m across. And the
+  **motes**, kept, for the speed.
+- **`src/paint.js`**, new, replacing `strokes.js`: the one shader without the cones, the columns, the linen, the
+  ledger tint and the explosion, and with three things added — the mesh's own matrix (so a flower can drift
+  whole), the spin, and the sway. The reveal is by turn: each stroke has a place in the order and grows in over
+  six hundredths of it.
+- **`src/main.js`**, rewritten: one canvas's colours, no cones, no water plane, no nights, no wind. The heightfield
+  as a mesh under the strokes, the river as a strip. The opening keeps the veil: it paints, it lifts, and the
+  world paints itself in over seven seconds, sky first, sunflowers last. The keys: `1` the knoll, `2` over the
+  village, `3` into the great swirl. `L` says how many strokes each thing is.
+- **`src/flight.js`**: the floor is now `floor(x, z)`, the ground under you; a ceiling at 620 m and an edge at
+  1,150 m.
+- **Removed**: `sky.js`, `water.js`, `wind.js`, `night.js`, `explode.js`, `strokes.js`, `flowers.js`. The tools
+  of D0–D5.5 stay in `tools/` as the record and are not run; `tools/shot.py` still works.
+- The grade: saturation 1.22, bloom 0.9 at a threshold of 0.8, exposure 1.12, the paint's own values (no tone
+  curve). *Colour should be more vivid* was the author's word in D5.5 and it is answered here, not by the grade
+  alone but by the paint: every stroke of the sky is one of his brightest sky colours or one of his darkest, laid
+  in bands, which is what his canvas does.
+
+**What was decided, and by whom.** All of it by the author's word above; the shapes by us. The standpoint is 32 m
+up on the knoll, looking north over the village at +9°, so that the frame holds the cypress at the left, the
+village below, the great swirl and the moon above — his composition, from inside it. The great swirl is at
+azimuth −6°, elevation 35°, 24° across; the moon at azimuth 46°, elevation 31°.
+
+**What was measured.**
+
+| what | value |
+|---|---|
+| strokes in the air | **328,350**: sky 98,002 · stars 8,697 · ground 58,710 · river 16,148 · village 34,345 · cypress 13,640 · field 35,022 · flowers 61,387 (150 meshes) · motes 2,400 |
+| build | 609 ms on this machine, after the records are read |
+| frame rate | **not measured on a visible window**: the in-app Browser pane was hidden for the whole session, so the page throttled and every number it gave is void; the headless renderer's is software. The pixel-ratio governor of D0 is on and takes the ratio down to 0.75 if a frame runs under 47. D6's |
+| the eye, untouched | stays at the knoll: the arrows of D5.5 are unchanged |
+
+**Pictures.** `e0-standpoint` — the knoll, cold, after the opening. `e0-the-swirl` — looking up at the great
+swirl beside the cypress. `e0-the-cypresses` — from the right of the knoll, both cypresses against the sky.
+`e0-over-the-village` — from 95 m up. `e0-in-the-street` — a standing eye in the village. All headless.
+
+**Found.** The village's windows were built with the whole lamp pool where one colour was meant, so 633 window
+strokes carried NaN for a colour: the GPU drew them black and the headless renderer white, and the first headless
+pictures had a white blaze across the whole village where the pane showed nothing wrong. Found by the pictures,
+confirmed by counting the non-finite values in the buffer (2,532, four a stroke), fixed. The rule it makes: a
+count of non-finite values in every instance buffer is cheap and the harness should take it before a picture.
+
+**The gate.** The author's: *the world is the painting*. Open it cold and say whether you are in it.
+
+**Still visible.**
+
+- **The ground from the air is confetti.** Strokes lie flat on a heightfield; from 100 m up they are dots on a
+  dark plane and not a rolling hill. His hills are drawn with long strokes along the contours; ours are, but too
+  short at that distance. A number to sweep: the ground stroke's length against its distance.
+- **Up close, a stroke is a slab.** From the street a tree's strokes and the ground's are flat plates the size of a
+  door; the brush print goes soft past a hand's breadth of pixels (`vBig`), which was made for his paint seen at
+  a metre and not for ours at a footstep. Standing eyes are D6's.
+- **The village walls are a mixture.** His village colours run from near-black to warm ochre and the walls take
+  the whole range house by house; at 200 m it reads as a village, at 20 m as boxes of dashes. Doors, streets and
+  a square are not built.
+- **The cypress is a tower with licks**, not yet a flame: the profile is a surface of revolution. The sway is a
+  bend, not a wind.
+- **The frame rate** is unmeasured on a visible window (above), and the flowers are 150 draw calls.
+- **The sunflowers in the air have stems**, which the author may not want on a thing that floats.
+- **The river is seen from the knoll only as a band** 330 m off; from the air it is a river. The columns of gold
+  under the stars are fixed on the water and not laid from the eye, as the Rhone's were in D3.
