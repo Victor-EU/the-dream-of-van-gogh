@@ -163,9 +163,13 @@ async function boot() {
   say('The sunflowers');
   const SF = await W.loadHeads();
   const NF = +(Q.get('flowers') ?? 150);
-  // the field (E1.2): sunflowers between the knoll and the village, facing the knoll
-  const field = W.makeField({ SF, centre: [30, 0], radius: 90, spacing: 1.6, eye: eyeAt.toArray(), avoid: village.houses, face: [0, 1] });
-  add('field', field, { uEye: { value: eyeAt.clone() } });
+  // the field (E1.2, E1.3): a plot of sunflowers in rows between the knoll and the village, facing the knoll. Its
+  // far form is built here, two dabs a flower; its near forms are pools of slots that follow you (FieldDetail)
+  const field = W.makeField({ SF, centre: [30, 8], size: [140, 125], yaw: -8 * DEG, avoid: village.houses, face: [0, 1] });
+  const detail = new W.FieldDetail(field, SF, { budget: +(Q.get('budget') ?? 1500) });
+  const fieldSt = add('field', field, { uEye: { value: eyeAt.clone() } });
+  const tierSt = detail.tiers.map(T => add('field', T.ex, { uEye: { value: eyeAt.clone() } }));
+  if (fieldSt) detail.bind(fieldSt.mesh.geometry, tierSt.map(st => st && st.mesh.geometry));
   const floating = [];
   {
     const rr = rng(8888);
@@ -184,7 +188,8 @@ async function boot() {
                       bob: 2 + 6 * rr(), spin: (rr() < 0.5 ? 1 : -1) * (0.08 + 0.4 * rr()), yawRate: (rr() - 0.5) * 0.3, tilt: 0.2 + 0.4 * rr() });
     }
   }
-  add('motes', W.makeMotes({ pools, n: +(Q.get('motes') ?? 2400) }), { uWrap: { value: 60 }, uWrapLow: { value: 0 }, uWrapHigh: { value: REACH + 100 } });
+  add('motes', W.makeMotes({ pools, n: +(Q.get('motes') ?? 2400) }), { uWrap: { value: 60 }, uWrapLow: { value: 0 }, uWrapHigh: { value: REACH + 100 },
+                                                                           uWrapNear: { value: 1.5 }, uWrapAng: { value: 0.04 } });
   const buildMs = Math.round(performance.now() - t0build);
   const total = parts.reduce((s, p) => s + p.n, 0);
   say('The night between them');
@@ -253,7 +258,7 @@ async function boot() {
   const NOTE = { sky: 'his sky, 830 to 2,250 m out, seven swirls turning, each a well', stars: `${W.STARS.length} stars and the moon, wells of turning rings`,
                  ground: 'the hills, along their own contours', river: 'the water, and the stars in it',
                  village: `${village.houses.length} houses, ${village.trees.length} trees, the church`, cypress: 'two, swaying',
-                 field: `${field.flowers} standing between the knoll and the village (${field.count.full} whole, ${field.count.close} in thirds, ${field.count.mid} in eighths, ${field.count.far} dabs)`, flowers: `${floating.length} loose in the air`, motes: 'round you, for the speed' };
+                 field: `${field.flowers.length} standing in rows between the knoll and the village, two dabs each, and room for ${detail.tiers.map(T => T.slots).join(', ')} near you whole, in thirds, in eighths`, flowers: `${floating.length} loose in the air`, motes: 'round you, for the speed' };
   const LEDGER = () => `strokes in the air   ${total}\n` + parts.map(p => `  ${p.name.padEnd(10)}${String(p.n).padStart(7)}   ${NOTE[p.name] || ''}`).join('\n') +
     `\n\nall of it in his colours: the sky's, the stars', the moon's,\n  the hills', the village's and the cypress's from\n  The Starry Night; the sunflowers whole from Sunflowers\n  (Van Gogh Museum, Amsterdam)\nbuilt in ${buildMs} ms`;
   let panelOn = null;
@@ -353,6 +358,7 @@ async function boot() {
     moveFlowers(time);
     flight.applyTo(camera);
     U.uCam.value.copy(camera.position);
+    if (fieldSt) detail.update(camera.position, sdt);
     grade.time = time;
     post.render([scene], camera, grade);
     frames++;
@@ -388,12 +394,13 @@ async function boot() {
         stepFlight(d);
         for (let i = pending.length - 1; i >= 0; i--) if (time >= pending[i].t) pending.splice(i, 1)[0].f();
         for (let i = watchers.length - 1; i >= 0; i--) if (watchers[i](d)) watchers.splice(i, 1);
-      } return state(); },
+      } flight.applyTo(camera); if (fieldSt) { detail.since = 1e9; detail.update(camera.position, d); } return state(); },
+    field: () => ({ flowers: field.flowers.length, held: detail.count(), queued: detail.queue.length, built: detail.built, builtStrokes: detail.builtStrokes, ms: +detail.ms.toFixed(1) }),
     ground: (x, z) => W.ground(x, z),
     project: q => { const v = new THREE.Vector3(q[0], q[1], q[2]).project(camera); return [(v.x * 0.5 + 0.5) * innerWidth, (0.5 - v.y * 0.5) * innerHeight, +v.z.toFixed(4)]; },
     village: () => ({ houses: village.houses.length, trees: village.trees.length, spire: village.spire.map(v => +v.toFixed(1)) }),
     flowers: () => floating.slice(0, 12).map(f => ({ D: +f.D.toFixed(2), at: f.mesh.position.toArray().map(v => +v.toFixed(1)) })),
-    _: { renderer, scene, camera, post, parts, U, flight, floating, cypresses, pools },
+    _: { renderer, scene, camera, post, parts, U, flight, floating, cypresses, pools, field, detail },
   };
   pending.push({ t: 0.5, f: () => { if (!opening) caption(); else watchers.push(() => (opening ? false : (caption(), true))); } });
   if (has('flight')) runFlight(Q.get('flight'));

@@ -595,40 +595,149 @@ function dab(SF, which, D, rr, opts = {}) {
   rows.put([0, 0, 0.01 * D], [1, 0, 0], [0, 1, 0], 0, D * 0.42, D * 0.4, 0.01, 0.02, jit(H.heart, rr, 0.08), 0, rev, rr() * 6.2832, null, 0);
   return rows.done();
 }
-// the ones that stand: a field of them, facing where they are told to. A field (E1.2): one flower every
-// `spacing` metres, its edge rough, and four levels of it from the knoll's eye -- every stroke of his head
-// within `near` metres, one in three to `close`, one in eight to `mid`, each wider, and beyond that two dabs,
-// petals and heart, on one stroke of stem. Not on the river and not in a house
-export function makeField({ SF, seed = 71, centre = [0, 0], radius = 60, spacing = 1.6, height = 2.8, D = 0.9, face = [0, 1], rev = 0.8,
-                            eye = [0, 32, 100], near = 12, close = 28, mid = 60, avoid = [] }) {
+// the ones that stand: a field of them (E1.2, E1.3): a plot, `size` metres across and along, turned by `yaw`, its
+// edge a little wavy, planted in rows `row` metres apart with a flower every `along` metres down the row, all of
+// them facing where they are told to. Not on the river and not in a house. What is built here is the far form of
+// every flower: two dabs, the head's petal colour and its heart, on one stroke of stem; the near forms live in
+// the pools of FieldDetail, which follow the eye. Each flower keeps its own seed, so that its head is the same
+// head every time it is built
+export function makeField({ SF, seed = 71, centre = [30, 8], size = [140, 125], yaw = -8 * DEG, row = 2.0, along = 1.35, height = 2.8, D = 0.9,
+                            face = [0, 1], rev = 0.8, avoid = [] }) {
   const rr = rng(seed);
-  const n = Math.floor(Math.PI * radius * radius / (spacing * spacing));
-  const rows = new Rows(Math.min(600000, n * 8 + 120000));
-  const at = [], count = { full: 0, close: 0, mid: 0, far: 0 };
-  for (let i = 0; i < n; i++) {
-    const d = radius * Math.sqrt(rr()), a = rr() * 6.2832;
-    const x = centre[0] + d * Math.sin(a) + (rr() - 0.5) * spacing * 0.6, z = centre[1] - d * Math.cos(a) + (rr() - 0.5) * spacing * 0.6;
-    if (d > radius * (0.7 + 0.6 * fbm2(x * 0.012 + 3, z * 0.012 + 8, 2))) continue;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const flowers = [];
+  const nr = Math.floor(size[0] / row), na = Math.floor(size[1] / along);
+  for (let r = 0; r < nr; r++) for (let a = 0; a < na; a++) {
+    const u = (r + 0.5) * row - size[0] / 2 + (rr() - 0.5) * row * 0.35, v = (a + 0.5) * along - size[1] / 2 + (rr() - 0.5) * along * 0.5;
+    if (Math.abs(u) > size[0] / 2 - 3 + 3 * fbm2(v * 0.03 + 1.7, u > 0 ? 4.1 : 9.3, 2)) continue;
+    if (Math.abs(v) > size[1] / 2 - 3 + 3 * fbm2(u * 0.03 + 6.2, v > 0 ? 2.8 : 7.5, 2)) continue;
+    const x = centre[0] + u * cy + v * sy, z = centre[1] - u * sy + v * cy;
     if (riverAt(x, z).d < RIVER_W) continue;
     if (avoid.some(H => Math.abs(x - H.x) < H.w * 0.75 + 1.5 && Math.abs(z - H.z) < H.d * 0.75 + 1.5)) continue;
-    if (rows.n > rows.cap - 600) break;
     const y0 = ground(x, z), h = height * (0.75 + 0.5 * rr()), dd = D * (0.8 + 0.5 * rr());
-    const yaw = Math.atan2(face[0], face[1]) + (rr() - 0.5) * 1.2, tilt = 0.15 + 0.3 * rr();
-    const de = Math.hypot(x - eye[0], y0 + h - eye[1], z - eye[2]);
-    const f = de < near ? (count.full++, flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12 }))
-            : de < close ? (count.close++, flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12, lod: 1 / 3 }))
-            : de < mid ? (count.mid++, flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12, lod: 1 / 8 }))
-            : (count.far++, dab(SF, Math.floor(rr() * 8), dd, rr, { rev, glow: 0.12, stem: h - dd * 0.35 }));
-    // into the world: the head at the top of the stem, turned to its yaw and nodded forward
-    const cy = Math.cos(yaw), sy = Math.sin(yaw), ct = Math.cos(tilt), st = Math.sin(tilt);
-    const M = p => { const x1 = p[0], y1 = p[1] * ct - p[2] * st, z1 = p[1] * st + p[2] * ct; return [x + x1 * cy + z1 * sy, y0 + h + y1, z + -x1 * sy + z1 * cy]; };
-    for (let j = 0; j < f.n; j++) {
-      const i2 = rows.n++;
-      for (let c = 0; c < 3; c++) { const p = M([f.P[c][j * 3], f.P[c][j * 3 + 1], f.P[c][j * 3 + 2]]); for (let m = 0; m < 3; m++) rows.P[c][i2 * 3 + m] = p[m]; }
-      for (let m = 0; m < 4; m++) { rows.size[i2 * 4 + m] = f.size[j * 4 + m]; rows.col[i2 * 4 + m] = f.col[j * 4 + m]; rows.meta[i2 * 4 + m] = f.meta[j * 4 + m]; }
-    }
-    if (de < mid) at.push([+x.toFixed(1), +(y0 + h).toFixed(1), +z.toFixed(1)]);
+    flowers.push({ x, y: y0 + h, z, yaw: Math.atan2(face[0], face[1]) + (rr() - 0.5) * 1.2, tilt: 0.15 + 0.3 * rr(), h, dd,
+                   which: Math.floor(rr() * 8), seed: Math.floor(rr() * 1e9), rev });
   }
-  const ex = rows.done(); ex.at = at; ex.count = count; ex.flowers = count.full + count.close + count.mid + count.far;
+  // the far form of each, into the world
+  const rows = new Rows(flowers.length * 3), dabRev = new Float32Array(flowers.length * 3);
+  for (const F of flowers) {
+    const f = dab(SF, F.which, F.dd, rng(F.seed ^ 0x5bd1e995), { rev: F.rev, glow: 0.12, stem: F.h - F.dd * 0.35 });
+    const i0 = rows.n;
+    placeFlower(rows, f, F);
+    for (let j = 0; j < 3; j++) dabRev[i0 + j] = rows.meta[(i0 + j) * 4];
+  }
+  const ex = rows.done(); ex.flowers = flowers; ex.dabRev = dabRev; ex.plot = { centre, size, yaw };
   return ex;
+}
+// a flower in its own frame, into the world at F: the head at the top of the stem, turned to its yaw and nodded forward
+function placeFlower(rows, f, F) {
+  const cy = Math.cos(F.yaw), sy = Math.sin(F.yaw), ct = Math.cos(F.tilt), st = Math.sin(F.tilt);
+  const M = p => { const x1 = p[0], y1 = p[1] * ct - p[2] * st, z1 = p[1] * st + p[2] * ct; return [F.x + x1 * cy + z1 * sy, F.y + y1, F.z + -x1 * sy + z1 * cy]; };
+  for (let j = 0; j < f.n; j++) {
+    const i2 = rows.n++;
+    for (let c = 0; c < 3; c++) { const p = M([f.P[c][j * 3], f.P[c][j * 3 + 1], f.P[c][j * 3 + 2]]); for (let m = 0; m < 3; m++) rows.P[c][i2 * 3 + m] = p[m]; }
+    for (let m = 0; m < 4; m++) { rows.size[i2 * 4 + m] = f.size[j * 4 + m]; rows.col[i2 * 4 + m] = f.col[j * 4 + m]; rows.meta[i2 * 4 + m] = f.meta[j * 4 + m]; }
+  }
+}
+// The near forms of the field (E1.3): pools of slots that follow the eye. A tier is a level of detail -- every
+// stroke of his head, one in three, one in eight -- with so many slots, each slot room for one flower at that
+// level; the flowers nearest the eye take the slots of the first tier, the next nearest the second, and so on,
+// and a flower in a slot has its far form hidden. A stroke is hidden by a turn in the reveal it never gets (9).
+// The work is paced: so many strokes built a frame, nearest first, so that the flowers come up around a walker
+// in a step or two and a flier's field is never rebuilt in one hitch
+const HIDDEN = 9;
+export class FieldDetail {
+  constructor(field, SF, { tiers = [{ lod: 1, to: 12, slots: 60 }, { lod: 1 / 3, to: 28, slots: 260 }, { lod: 1 / 8, to: 60, slots: 1300 }], budget = 2500, glow = 0.12 } = {}) {
+    this.field = field; this.SF = SF; this.budget = budget; this.glow = glow;
+    const maxHead = Math.max(...SF.heads.map(H => H.list.length));
+    this.tiers = tiers.map(T => {
+      const every = Math.max(1, Math.round(1 / T.lod)), per = Math.ceil(maxHead / every) + (every > 1 ? 24 : 48);
+      const rows = new Rows(T.slots * per); rows.n = rows.cap;
+      for (let i = 0; i < rows.cap; i++) rows.meta[i * 4] = HIDDEN;
+      const ex = rows.done();
+      return { lod: T.lod, to: T.to, slots: T.slots, per, rows, ex, hold: new Int32Array(T.slots).fill(-1), free: Array.from({ length: T.slots }, (_, k) => T.slots - 1 - k), geo: null, attrs: null };
+    });
+    const n = field.flowers.length;
+    this.tier = new Int8Array(n).fill(-1); this.slot = new Int32Array(n).fill(-1); this.want = new Int8Array(n).fill(-1);
+    this.dist = new Float32Array(n); this.queue = []; this.last = [1e9, 1e9, 1e9]; this.since = 1e9;
+    this.built = 0; this.builtStrokes = 0; this.ms = 0;
+  }
+  bind(dabGeo, geos) {
+    const attrs = g => { const A = g.attributes; const a = [A.iP0, A.iP1, A.iP2, A.iSize, A.iCol, A.iMeta]; for (const x of a) x.setUsage(35048); return a; };
+    this.dabAttrs = attrs(dabGeo);
+    this.tiers.forEach((T, t) => { T.geo = geos[t]; T.attrs = geos[t] ? attrs(geos[t]) : null; });
+  }
+  // the far form of flower i shown or hidden
+  dab(i, show) {
+    const meta = this.dabAttrs[5], R = this.field.dabRev;
+    for (let j = 0; j < 3; j++) meta.array[(i * 3 + j) * 4] = show ? R[i * 3 + j] : HIDDEN;
+    meta.addUpdateRange(i * 3 * 4, 12); meta.needsUpdate = true;
+  }
+  release(i) {
+    const t = this.tier[i]; if (t < 0) return;
+    const T = this.tiers[t], k = this.slot[i], meta = T.rows.meta;
+    for (let j = 0; j < T.per; j++) meta[(k * T.per + j) * 4] = HIDDEN;
+    if (T.attrs) { T.attrs[5].addUpdateRange(k * T.per * 4, T.per * 4); T.attrs[5].needsUpdate = true; }
+    T.hold[k] = -1; T.free.push(k); this.tier[i] = -1; this.slot[i] = -1;
+    this.dab(i, true);
+  }
+  // flower i built into a slot of tier t
+  build(i, t) {
+    const T = this.tiers[t], F = this.field.flowers[i];
+    if (!T.free.length) {
+      let far = -1, fd = -1;
+      for (let k = 0; k < T.slots; k++) { const j = T.hold[k]; if (j >= 0 && this.want[j] !== t && this.dist[j] > fd) { far = j; fd = this.dist[j]; } }
+      if (far < 0) return 0;
+      this.release(far);
+    }
+    if (this.tier[i] >= 0) this.release(i);
+    const k = T.free.pop();
+    const f = flower(this.SF, F.which, F.dd, rng(F.seed), { rev: F.rev, stem: F.h - F.dd * 0.35, glow: this.glow, lod: T.lod });
+    const rows = T.rows, i0 = k * T.per;
+    rows.n = i0; placeFlower(rows, f, F);
+    for (let j = f.n; j < T.per; j++) rows.meta[(i0 + j) * 4] = HIDDEN;
+    if (T.attrs) for (let a = 0; a < 6; a++) { const c = a < 3 ? 3 : 4; T.attrs[a].addUpdateRange(i0 * c, T.per * c); T.attrs[a].needsUpdate = true; }
+    T.hold[k] = i; this.tier[i] = t; this.slot[i] = k;
+    this.dab(i, false);
+    this.built++; this.builtStrokes += f.n;
+    return f.n;
+  }
+  // each frame: plan when the eye has moved a step, then build what is planned, nearest first, within the budget
+  update(cam, dt = 0) {
+    const t0 = performance.now();
+    const moved = Math.hypot(cam.x - this.last[0], cam.y - this.last[1], cam.z - this.last[2]);
+    this.since += dt;
+    if (moved > 0.5 && this.since > 0.15) this.plan(cam);
+    let n = 0;
+    while (this.queue.length && n < this.budget) {
+      const i = this.queue.shift(), t = this.want[i];
+      if (t < 0) { this.release(i); continue; }
+      if (this.tier[i] !== t) n += this.build(i, t) || 1;
+    }
+    this.ms += performance.now() - t0;
+    return n;
+  }
+  plan(cam) {
+    const FL = this.field.flowers, tiers = this.tiers, far = tiers[tiers.length - 1].to * 1.15;
+    this.last = [cam.x, cam.y, cam.z]; this.since = 0;
+    const cand = [];
+    for (let i = 0; i < FL.length; i++) {
+      const F = FL[i], d = Math.hypot(F.x - cam.x, F.y - cam.y, F.z - cam.z);
+      this.dist[i] = d;
+      if (d < far) cand.push(i); else if (this.tier[i] >= 0) this.release(i);
+      this.want[i] = -1;
+    }
+    cand.sort((a, b) => this.dist[a] - this.dist[b]);
+    const used = tiers.map(() => 0);
+    for (const i of cand) {
+      const d = this.dist[i], held = this.tier[i];
+      let w = -1;
+      for (let t = 0; t < tiers.length; t++) if (d < tiers[t].to * (held === t ? 1.15 : 1) && used[t] < tiers[t].slots) { w = t; break; }
+      this.want[i] = w;
+      if (w >= 0) used[w]++;
+    }
+    this.queue = cand.filter(i => this.want[i] !== this.tier[i]);
+    for (const i of cand) if (this.want[i] < 0 && this.tier[i] >= 0) this.release(i);
+  }
+  count() { return this.tiers.map(T => T.slots - T.free.length); }
 }

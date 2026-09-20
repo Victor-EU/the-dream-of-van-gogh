@@ -2015,3 +2015,48 @@ Down from 120 at the knoll: the field is in the knoll's view whole.
 with a brown heart on a stem, and in the middle field heads of a few wide strokes. From the air the field is
 still nearly round. A mote at arm's length from the eye is a white streak the size of a boat (an old thing,
 the motes'). The E1.1 list.
+
+### E1.3 — The field, followed  *(the author's word: "fix" the E1.2 list -- the walker's dabs, the round field, the mote at arm's length; the same day)*
+
+**What it was.** Three things left visible at the end of E1.2. The field's four levels of detail were laid
+down once, from the knoll's eye, so a walker who went out into it stood among dab flowers, a yellow disc with
+a brown heart on a stem, and only the flowers near the knoll ever showed his heads whole. The field was a disc
+with a rough edge, and from the air a disc is a disc. And a mote that came within arm's length of the eye was
+a white plate across the view, the size of a boat lying in the field, because a mote is half a metre long and
+the eye was a hand from it.
+
+**The field follows you** (`FieldDetail`, `src/world.js`). The field is built once in its far form only: two
+dabs and a stroke of stem a flower, 18,561 strokes for 6,187 flowers. The near forms live in three pools of
+slots that follow the eye -- 60 slots with room for a whole head (every stroke of his, 679 a slot), 260 for
+heads in thirds (235 a slot), 1,300 for heads in eighths (103 a slot) -- and each frame the flowers nearest
+the eye take the first pool's slots, the next nearest the second's, out to 12, 28 and 60 m, with a fifteenth
+of slack so a flower on a line does not flicker across it. A flower in a slot has its dabs hidden; a stroke is
+hidden by a turn in the reveal it never gets (9). Each flower keeps its own seed, so its head is the same head
+every time it is built. The work is paced: 1,500 strokes a frame, nearest first (`?budget=`), and a slot that
+is needed before its holder has moved out is taken from the holder farthest off, who shows dabs until his own
+turn. The buffers hold 235,740 slot strokes, most of them hidden at the vertex; the ledger counts them.
+
+**The field is a plot** (`makeField`). 140 m across and 125 m along, centred at (30, 8), turned 8°, its edges
+wavy by 3 m, planted in rows 2.0 m apart with a flower every 1.35 m down the row -- from the knoll the rows run
+away toward the village, as in the author's picture; from the air it is a field. 6,187 flowers, from 7,900 in
+the disc.
+
+**A mote is never wider than a mote** (`paint.js`, `uWrapNear`, `uWrapAng`). None within 1.5 m of the eye,
+and one nearer than its length over 0.04 rad is shrunk about its middle to that angle -- 2.3°, some 25 px --
+and faded in from 1.5 to 3 m. The near motes still stream past; they are just not plates.
+
+**Measured.** Building a flower's strokes: 1.8 µs a stroke, transform and upload included (188,924 strokes in
+157 ms). A full fill after a jump, 235,740 strokes, takes 2.6 s at 60 fps. A walk of 10 m north through the
+thick of the field, simulated frame by frame at 3 m/s: 71,161 strokes rebuilt, 7,100 a metre, 0.25 ms a frame
+on the mean and up to 2.7 ms on the frame a plan lands (the plan is made each half metre: 4,400 flowers
+within 69 m sorted by distance). From the knoll the pools hold 0 / 0 / 577
+(the field's near edge is 30 m off); standing in the field, 60 / 260 / 1,300, full. Frame rates could not be
+measured: the author's own Chrome was running the piece throughout (two helpers at 30% each), and the pane
+gave 16--32 fps for every view, with the field hidden as well as shown. To be measured on a free GPU; the
+one cost added is the 235,740 hidden instances' vertex early-outs.
+
+**Still visible.** The pools fill nearest first, so after a jump (a place key, or landing from a fast flight)
+the far flowers stay dabs for a second or two while the near ones come up whole -- a visible ripple outward.
+A flower crossing 12 m pops between its whole head and its thirds, as in E1.2 it popped in space rather than
+in time. The plot's edges are still straight enough to read as a field only from the air; from the ground the
+wave is invisible. The motes are still white dashes at 25 px. The E1.1 list.

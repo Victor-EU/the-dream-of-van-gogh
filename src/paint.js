@@ -44,7 +44,7 @@ const VERT = /* glsl */`
   attribute vec3 iP0, iP1, iP2;
   attribute vec4 iSize, iCol, iMeta, iSpin;
   uniform vec3 uCam, uHead, uEye, uSpinC;
-  uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uWrapY, uWrapLow, uWrapHigh, uUnder, uSway, uLie;
+  uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uWrapY, uWrapLow, uWrapHigh, uWrapNear, uWrapAng, uUnder, uSway, uLie;
   uniform vec3 uUp;
   varying vec2 vST; varying vec3 vCol, vP, vT, vB, vN; varying float vRow, vEmit, vBig, vUnder;
   vec3 spin(vec3 p, vec3 k, float a) {
@@ -75,6 +75,14 @@ const VERT = /* glsl */`
       if (uWrapY < 0.5) o.y = 0.0;
       iQ0 += o; iQ1 += o; iQ2 += o;
       if (iQ1.y < uWrapLow || iQ1.y > uWrapHigh) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+      // a mote at arm's length would be a plate across the eye (E1.3): none within uWrapNear, and one nearer than
+      // its length over uWrapAng is shrunk about its middle to that angle, so that a mote is never wider than a mote
+      float dm = length(iQ1 - uCam);
+      if (dm < uWrapNear) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+      if (uWrapAng > 0.0) {
+        float kk = min(1.0, dm * uWrapAng / max(length(iQ2 - iQ0), 1e-3)) * smoothstep(uWrapNear, 2.0 * uWrapNear, dm);
+        iQ0 = iQ1 + (iQ0 - iQ1) * kk; iQ2 = iQ1 + (iQ2 - iQ1) * kk; wid *= kk;
+      }
     }
     float chord = max(length(iQ2 - iQ0), 1e-3);
     float slide = uCurl * crl * sin(uTime * 0.42 + iMeta.z) / chord;
@@ -156,7 +164,7 @@ export class Paint {
     add('iSize', ex.size, 4); add('iCol', ex.col, 4); add('iMeta', ex.meta, 4);
     add('iSpin', ex.spin || new Float32Array(ex.n * 4), 4);
     g.instanceCount = ex.n;
-    this.u = { ...U, uReveal: { value: 2 }, uWrap: { value: 0 }, uWrapY: { value: 1 }, uWrapLow: { value: -1e9 }, uWrapHigh: { value: 1e9 },
+    this.u = { ...U, uReveal: { value: 2 }, uWrap: { value: 0 }, uWrapY: { value: 1 }, uWrapLow: { value: -1e9 }, uWrapHigh: { value: 1e9 }, uWrapNear: { value: 0 }, uWrapAng: { value: 0 },
                uSpinC: { value: new THREE.Vector3() }, uSway: { value: 0 }, uLie: { value: 0 }, uUp: { value: new THREE.Vector3(0, 1, 0) }, uTint: { value: new THREE.Vector3(1, 1, 1) },
                uEye: { value: new THREE.Vector3(0, 30, 0) }, ...(ov || {}) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.u,
