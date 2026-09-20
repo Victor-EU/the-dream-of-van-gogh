@@ -5,7 +5,8 @@ his strokes: the sky is a dome of his sky, seven swirls turning in it, his stars
 its rings, and each ring turning at its own rate; the hills roll down to a river with the stars laid in it; the
 village has houses with lit windows and a church with a spire; a cypress stands beside you, a flame of his
 near-black greens, swaying; and his sunflowers — the heads whole, out of the Van Gogh Museum's *Sunflowers* —
-stand on the slope in front of you and drift loose through the air, big, spinning, some passing close. The
+fill a field between you and the village, thousands of them facing you, and drift loose through the air, big,
+spinning, some passing close. The
 arrows go where you look.
 
 Every colour is his, region by region of *The Starry Night*'s stroke record: the sky's blues and the swirl's pale
