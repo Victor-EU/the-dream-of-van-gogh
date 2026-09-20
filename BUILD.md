@@ -1985,3 +1985,33 @@ So E1's logarithmic depth at the vertex costs nothing against E0.1's 75--112, an
 
 **Still visible.** From inside a well the perspective opens a dark gap between the core and the first ring,
 which the knoll does not see. The E1 list.
+
+### E1.2 — The field  *(the author's word, with a picture of sunflowers under a swirling sky: "put somewhere on the ground a field of sunflowers, not everywhere, but pick a field that's visible near the village"; the same day)*
+
+**Where.** The flat between the knoll and the village, as in the picture: the knoll stands at z = 100 and the
+village runs north from z = −60, so the field is centred at (30, 0), 90 m in radius with a rough edge, and from
+the knoll it is the foreground, a yellow carpet with the village and the hills beyond. Not on the river and not
+in a house. The flowers face the knoll.
+
+**How** (`makeField`, `dab`, `flower`, `src/world.js`). One flower every 1.6 m -- 9,900 places, of which
+7,900 are in the field. A whole head of his is 400 strokes, so the field is in four levels from the knoll's
+eye: every stroke of the head within 12 m; one stroke in three, each wider, to 28 m; one in eight to 60 m; and
+beyond that two dabs, the head's petal colour and its heart, on one stroke of stem. 103,033 strokes, from the
+old slope's 35,022 for 90 flowers. The 90 on the slope are gone into it.
+
+**Measured**, dpr 1.5, 436,300 strokes:
+
+| where | fps |
+|---|---|
+| the knoll, looking north | 60--79 |
+| the knoll, looking at the field | 79 |
+| standing in the field, near the knoll | 89 |
+| standing in the far field | 99 |
+| over the village, looking back | 81 |
+
+Down from 120 at the knoll: the field is in the knoll's view whole.
+
+**Still visible.** The levels are set from the knoll, so a walker in the far field sees dabs, a yellow disc
+with a brown heart on a stem, and in the middle field heads of a few wide strokes. From the air the field is
+still nearly round. A mote at arm's length from the eye is a white streak the size of a boat (an old thing,
+the motes'). The E1.1 list.

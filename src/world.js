@@ -538,7 +538,10 @@ export async function loadHeads() {
       if (Math.hypot((u - cu) * Wm, (v - cv) * Hm) > r * Wm) continue;
       list.push(i);
     }
-    return { cu, cv, r: r * Wm, list };
+    // and the head's two colours, for the far ones: its petals (the brighter half) and its heart (the darkest third)
+    const cols = list.map(i => [rec.rgb[i * 3], rec.rgb[i * 3 + 1], rec.rgb[i * 3 + 2]]).sort((a, b) => lum(a) - lum(b));
+    const mean = arr => arr.reduce((m, c) => [m[0] + c[0] / arr.length, m[1] + c[1] / arr.length, m[2] + c[2] / arr.length], [0, 0, 0]);
+    return { cu, cv, r: r * Wm, list, petal: mean(cols.slice(Math.floor(cols.length * 0.5))), heart: mean(cols.slice(0, Math.floor(cols.length * 0.3))) };
   });
   // the green of his stems and leaves
   const greens = [];
@@ -548,16 +551,19 @@ export async function loadHeads() {
 }
 // one flower in its own frame: the head a disc in the xy plane facing +z, centred at the origin, D across; a
 // stem down from it and leaves off the stem. The whole is one mesh, moved whole
+// opts.lod (E1.2): 1 is every stroke of his head; less is one in so many, each wider, for a flower seen far
 export function flower(SF, which, D, rr, opts = {}) {
   const H = SF.heads[which % SF.heads.length], k = D / (2 * H.r), rec = SF.rec;
   const rows = new Rows(H.list.length + 80);
   const glow = opts.glow ?? 0.25;
+  const every = Math.max(1, Math.round(1 / (opts.lod ?? 1))), wk = every > 1 ? Math.sqrt(every) * 0.9 : 1;
+  let jj = 0;
   for (const i of H.list) {
-    const u = rec.p[i * 6 + 2], v = rec.p[i * 6 + 3];
+    if (every > 1 && (jj++ % every)) continue;
     const q = [0, 1, 2].map(c => [((rec.p[i * 6 + c * 2] - H.cu) * SF.Wm) * k, (-(rec.p[i * 6 + c * 2 + 1] - H.cv) * SF.Hm) * k, 0.02 * (rr() - 0.5)]);
     const j = rows.n++;
     for (let c = 0; c < 3; c++) for (let m = 0; m < 3; m++) rows.P[c][j * 3 + m] = q[c][m];
-    const w = rec.w[i] * SF.short * k;
+    const w = rec.w[i] * SF.short * k * wk;
     rows.size[j * 4] = w; rows.size[j * 4 + 1] = rec.h[i] * rec.heightMm / 1000 * k; rows.size[j * 4 + 2] = (j * 7) % 8; rows.size[j * 4 + 3] = rec.curl[i] * SF.short * k;
     const c = [rec.rgb[i * 3], rec.rgb[i * 3 + 1], rec.rgb[i * 3 + 2]];
     rows.col[j * 4] = c[0]; rows.col[j * 4 + 1] = c[1]; rows.col[j * 4 + 2] = c[2]; rows.col[j * 4 + 3] = glow * (0.5 + lum(c) * 2);
@@ -566,12 +572,13 @@ export function flower(SF, which, D, rr, opts = {}) {
   // the stem, and two leaves
   const G = SF.greens, stemL = opts.stem ?? D * 1.6;
   const gc = () => jit(G[Math.floor(rr() * G.length)], rr, 0.1);
-  for (let s = 0; s < stemL; s += D * 0.22) {
-    rows.put([0.02 * D * Math.sin(s * 3 / D), -D * 0.35 - s, -0.02 * D], [0.05, -1, 0], [1, 0, 0], 0.05, D * 0.3, D * 0.07, 0.01, 0.02, gc(), 0, (opts.rev ?? 0.86) + 0.05, rr() * 6.2832, null, 0);
+  const step = D * 0.22 * (every > 1 ? 2.2 : 1);
+  for (let s = 0; s < stemL; s += step) {
+    rows.put([0.02 * D * Math.sin(s * 3 / D), -D * 0.35 - s, -0.02 * D], [0.05, -1, 0], [1, 0, 0], 0.05, D * 0.3 * (every > 1 ? 2.2 : 1), D * 0.07, 0.01, 0.02, gc(), 0, (opts.rev ?? 0.86) + 0.05, rr() * 6.2832, null, 0);
   }
   for (const sgn of [1, -1]) {
     const y = -D * (0.7 + 0.4 * rr());
-    for (let k2 = 0; k2 < 5; k2++) {
+    for (const k2 of every > 1 ? [1, 3] : [0, 1, 2, 3, 4]) {
       const s = (k2 + 0.5) / 5, L = D * 0.28 * (1 - Math.abs(s - 0.5)) + D * 0.1;
       rows.put([sgn * D * 0.32 * s, y - D * 0.15 * s, 0.01], norm3([sgn, -0.35, 0]), [0, 0, 1], 0, L, D * 0.12, 0.01, 0.02, gc(), 0, (opts.rev ?? 0.86) + 0.05, rr() * 6.2832, null, 0);
     }
@@ -579,17 +586,39 @@ export function flower(SF, which, D, rr, opts = {}) {
   const ex = rows.done(); ex.D = D;
   return ex;
 }
-// the ones that stand: a field of them on the slope, facing where they are told to
-export function makeField({ SF, n = 90, seed = 71, centre = [0, 0], radius = 60, height = 2.8, D = 0.9, face = [0, -1], rev = 0.8 }) {
-  const rr = rng(seed), rows = new Rows(n * 700);
-  const at = [];
+// a flower seen far: two dabs, the head's petal colour and its heart, in its frame like flower()
+function dab(SF, which, D, rr, opts = {}) {
+  const H = SF.heads[which % SF.heads.length], rows = new Rows(3), rev = (opts.rev ?? 0.86) + 0.1 * rr();
+  const G = SF.greens, stemL = opts.stem ?? D * 1.6;
+  rows.put([0, -D * 0.35 - stemL * 0.5, -0.02 * D], [0.03, -1, 0], [1, 0, 0], 0.03, stemL, D * 0.08, 0.01, 0.02, jit(G[Math.floor(rr() * G.length)], rr, 0.1), 0, rev, rr() * 6.2832, null, 0);
+  rows.put([0, 0, 0], [1, 0, 0], [0, 1, 0], 0, D, D * 0.9, 0.01, 0.02, jit(H.petal, rr, 0.08), (opts.glow ?? 0.12) * 1.2, rev, rr() * 6.2832, null, 0);
+  rows.put([0, 0, 0.01 * D], [1, 0, 0], [0, 1, 0], 0, D * 0.42, D * 0.4, 0.01, 0.02, jit(H.heart, rr, 0.08), 0, rev, rr() * 6.2832, null, 0);
+  return rows.done();
+}
+// the ones that stand: a field of them, facing where they are told to. A field (E1.2): one flower every
+// `spacing` metres, its edge rough, and four levels of it from the knoll's eye -- every stroke of his head
+// within `near` metres, one in three to `close`, one in eight to `mid`, each wider, and beyond that two dabs,
+// petals and heart, on one stroke of stem. Not on the river and not in a house
+export function makeField({ SF, seed = 71, centre = [0, 0], radius = 60, spacing = 1.6, height = 2.8, D = 0.9, face = [0, 1], rev = 0.8,
+                            eye = [0, 32, 100], near = 12, close = 28, mid = 60, avoid = [] }) {
+  const rr = rng(seed);
+  const n = Math.floor(Math.PI * radius * radius / (spacing * spacing));
+  const rows = new Rows(Math.min(600000, n * 8 + 120000));
+  const at = [], count = { full: 0, close: 0, mid: 0, far: 0 };
   for (let i = 0; i < n; i++) {
     const d = radius * Math.sqrt(rr()), a = rr() * 6.2832;
-    const x = centre[0] + d * Math.sin(a), z = centre[1] - d * Math.cos(a);
+    const x = centre[0] + d * Math.sin(a) + (rr() - 0.5) * spacing * 0.6, z = centre[1] - d * Math.cos(a) + (rr() - 0.5) * spacing * 0.6;
+    if (d > radius * (0.7 + 0.6 * fbm2(x * 0.012 + 3, z * 0.012 + 8, 2))) continue;
     if (riverAt(x, z).d < RIVER_W) continue;
+    if (avoid.some(H => Math.abs(x - H.x) < H.w * 0.75 + 1.5 && Math.abs(z - H.z) < H.d * 0.75 + 1.5)) continue;
+    if (rows.n > rows.cap - 600) break;
     const y0 = ground(x, z), h = height * (0.75 + 0.5 * rr()), dd = D * (0.8 + 0.5 * rr());
     const yaw = Math.atan2(face[0], face[1]) + (rr() - 0.5) * 1.2, tilt = 0.15 + 0.3 * rr();
-    const f = flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12 });
+    const de = Math.hypot(x - eye[0], y0 + h - eye[1], z - eye[2]);
+    const f = de < near ? (count.full++, flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12 }))
+            : de < close ? (count.close++, flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12, lod: 1 / 3 }))
+            : de < mid ? (count.mid++, flower(SF, Math.floor(rr() * 8), dd, rr, { rev, stem: h - dd * 0.35, glow: 0.12, lod: 1 / 8 }))
+            : (count.far++, dab(SF, Math.floor(rr() * 8), dd, rr, { rev, glow: 0.12, stem: h - dd * 0.35 }));
     // into the world: the head at the top of the stem, turned to its yaw and nodded forward
     const cy = Math.cos(yaw), sy = Math.sin(yaw), ct = Math.cos(tilt), st = Math.sin(tilt);
     const M = p => { const x1 = p[0], y1 = p[1] * ct - p[2] * st, z1 = p[1] * st + p[2] * ct; return [x + x1 * cy + z1 * sy, y0 + h + y1, z + -x1 * sy + z1 * cy]; };
@@ -598,8 +627,8 @@ export function makeField({ SF, n = 90, seed = 71, centre = [0, 0], radius = 60,
       for (let c = 0; c < 3; c++) { const p = M([f.P[c][j * 3], f.P[c][j * 3 + 1], f.P[c][j * 3 + 2]]); for (let m = 0; m < 3; m++) rows.P[c][i2 * 3 + m] = p[m]; }
       for (let m = 0; m < 4; m++) { rows.size[i2 * 4 + m] = f.size[j * 4 + m]; rows.col[i2 * 4 + m] = f.col[j * 4 + m]; rows.meta[i2 * 4 + m] = f.meta[j * 4 + m]; }
     }
-    at.push([+x.toFixed(1), +(y0 + h).toFixed(1), +z.toFixed(1)]);
+    if (de < mid) at.push([+x.toFixed(1), +(y0 + h).toFixed(1), +z.toFixed(1)]);
   }
-  const ex = rows.done(); ex.at = at;
+  const ex = rows.done(); ex.at = at; ex.count = count; ex.flowers = count.full + count.close + count.mid + count.far;
   return ex;
 }

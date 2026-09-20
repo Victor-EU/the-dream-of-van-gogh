@@ -163,7 +163,9 @@ async function boot() {
   say('The sunflowers');
   const SF = await W.loadHeads();
   const NF = +(Q.get('flowers') ?? 150);
-  add('field', W.makeField({ SF, centre: [0, 60], radius: 55, n: 90 }), { uEye: { value: eyeAt.clone() } });
+  // the field (E1.2): sunflowers between the knoll and the village, facing the knoll
+  const field = W.makeField({ SF, centre: [30, 0], radius: 90, spacing: 1.6, eye: eyeAt.toArray(), avoid: village.houses, face: [0, 1] });
+  add('field', field, { uEye: { value: eyeAt.clone() } });
   const floating = [];
   {
     const rr = rng(8888);
@@ -251,7 +253,7 @@ async function boot() {
   const NOTE = { sky: 'his sky, 830 to 2,250 m out, seven swirls turning, each a well', stars: `${W.STARS.length} stars and the moon, wells of turning rings`,
                  ground: 'the hills, along their own contours', river: 'the water, and the stars in it',
                  village: `${village.houses.length} houses, ${village.trees.length} trees, the church`, cypress: 'two, swaying',
-                 field: 'standing on the slope', flowers: `${floating.length} loose in the air`, motes: 'round you, for the speed' };
+                 field: `${field.flowers} standing between the knoll and the village (${field.count.full} whole, ${field.count.close} in thirds, ${field.count.mid} in eighths, ${field.count.far} dabs)`, flowers: `${floating.length} loose in the air`, motes: 'round you, for the speed' };
   const LEDGER = () => `strokes in the air   ${total}\n` + parts.map(p => `  ${p.name.padEnd(10)}${String(p.n).padStart(7)}   ${NOTE[p.name] || ''}`).join('\n') +
     `\n\nall of it in his colours: the sky's, the stars', the moon's,\n  the hills', the village's and the cypress's from\n  The Starry Night; the sunflowers whole from Sunflowers\n  (Van Gogh Museum, Amsterdam)\nbuilt in ${buildMs} ms`;
   let panelOn = null;
