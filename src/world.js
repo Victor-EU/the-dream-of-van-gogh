@@ -50,6 +50,16 @@ export async function loadHisColours() {
   // his lit windows: the warm bright strokes of the village
   pools.lamp = pools.village.filter(c => lum(c) > 0.12 && c[0] > c[2] * 1.5);
   if (pools.lamp.length < 20) pools.lamp = pools.moon.slice(Math.floor(pools.moon.length * 0.4));
+  // his stars (E1.1): the star region's record is mostly halo -- pale greens and whites -- and only one stroke in
+  // thirteen is his chrome yellow; the moon's is nearly all yellow, with his oranges. So the yellows of both
+  // regions are one pool for the cores and the inner halo, the oranges another for the heart of the biggest,
+  // and the star region's pale strokes a third for the outer halo
+  const yel = c => Math.min(c[0], c[1]) - c[2];
+  const both = pools.star.concat(pools.moon);
+  pools.starYellow = both.filter(c => yel(c) > 0.12 && lum(c) > 0.16).sort((a, b) => lum(a) - lum(b));
+  pools.starOrange = both.filter(c => c[0] > c[1] * 1.15 && c[0] > c[2] * 2 && lum(c) > 0.1).sort((a, b) => lum(a) - lum(b));
+  pools.starPale = pools.star.filter(c => yel(c) <= 0.12 && lum(c) > 0.3);
+  if (pools.starOrange.length < 10) pools.starOrange = pools.starYellow;
   return { rec, pools };
 }
 // a colour out of a pool at a quantile of its brightness, with a little scatter along the pool
@@ -229,11 +239,14 @@ function flowAt(d) {
 // drifts from 0.55 R to 1.45 R; a swirl is a well, its rim at 0.62 R and its eye at 1.47 R, so that flying into it
 // the arms wind round you and close ahead; and in a star's direction the sky keeps behind the star (which is a
 // well of rings down to its core at R, star()). The far hills are a ring at 1.35 R, beyond the ground's edge.
-const HILLS_F = 1.35, STAR_F = 1.0, RING_STEP = 0.06;
-export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars = STARS, moon = MOON }) {
+// A ring's step is 0.05 R: nine rings put the mouth at 0.55 R, the moon's ten at 0.5 R.
+const HILLS_F = 1.35, STAR_F = 1.0, RING_STEP = 0.05;
+// A star's well runs along the line from the knoll's eye to the core, not from the middle of the world: the
+// picture is seen from the knoll, and a well seen 4 degrees off its axis is a crescent (E1.1).
+export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars = STARS, moon = MOON, eye = [0, 32, 100] }) {
   for (const V of VORTICES) V.dir = dirAzEl(V.az, V.el);
   const rr = rng(seed), rows = new Rows(n), P = pools.sky, PH = pools.hills;
-  const wells = stars.concat(moon ? [moon] : []).map(S => ({ dir: dirAzEl(S.az, S.el), th: 4.6 * S.s * DEG }));
+  const wells = stars.concat(moon ? [moon] : []).map(S => { const a = dirAzEl(S.az, S.el); return { b: norm3([a[0] * R - eye[0], a[1] * R - eye[1], a[2] * R - eye[2]]), th: 5.4 * S.s * DEG }; });
   const lo = Math.sin(-7 * DEG);
   for (let i = 0; i < n; i++) {
     const y = lo + (1 - lo) * rr(), az = rr() * 6.2832, cs = Math.sqrt(Math.max(0, 1 - y * y));
@@ -279,10 +292,13 @@ export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars 
       const well = 0.62 + 0.85 * Math.pow(1 - clamp(th / V.r, 0, 1), 1.3) + 0.06 * (rr() - 0.5);
       f = lerp(f, well, smoothstep(0.1, 0.5, F.bw));
     }
-    for (const Wl of wells) {
-      const th = Math.acos(clamp(dot3(d, Wl.dir), -1, 1));
-      const inWell = smoothstep(Wl.th * 1.15, Wl.th * 0.9, th);
-      if (inWell > 0) f = lerp(f, Math.max(f, STAR_F + 0.08 + 0.3 * rr()), inWell);
+    {
+      const p = [d[0] * R * f - eye[0], d[1] * R * f - eye[1], d[2] * R * f - eye[2]], pe = norm3(p);
+      for (const Wl of wells) {
+        const th = Math.acos(clamp(dot3(pe, Wl.b), -1, 1));
+        const inWell = smoothstep(Wl.th * 1.15, Wl.th * 0.9, th);
+        if (inWell > 0) f = lerp(f, Math.max(f, STAR_F + 0.08 + 0.3 * rr()), inWell);
+      }
     }
     const Rf = R * f, c = [d[0] * Rf, d[1] * Rf, d[2] * Rf];
     const L = Rf * (0.026 + 0.022 * rr()) * (1 + 1.1 * F.bw), w = L * (0.26 + 0.14 * rr()) / (1 + 0.5 * F.bw);
@@ -301,50 +317,65 @@ export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars 
   return rows.done();
 }
 
-// a star: a core, and rings out of it, each ring turning at its own rate. The moon is a star with a crescent.
-// It has depth (E1): the core is at R and each ring is nearer than the one inside it, a step of 0.06 R, so that
-// the star is a well with its widest ring at the mouth, and you fly down it through ring after turning ring to
-// the core, and through the core
-function star(rows, pools, S, R, rr, rev, moon = false) {
+// a star: a core, and a halo of rings out of it, each ring turning at its own rate. The moon is a star with a
+// crescent. It has depth (E1): the core is at R and each ring is nearer than the one inside it, a step of
+// 0.05 R, so that the star is a well with its widest ring at the mouth, and you fly down it through ring after
+// turning ring to the core. Its colour is his (E1.1): the core his chrome yellow, orange at the heart of the
+// biggest and of the moon; the halo dense, yellow next to the core, then his pale yellow-whites and greens,
+// then paler into the sky's own light blues at the rim -- and lit, most at the core, so that a star is a
+// yellow blaze in a yellow-white ring and not a white disc
+function star(rows, pools, S, R, rr, rev, moon = false, eye = [0, 32, 100]) {
   const a = dirAzEl(S.az, S.el), u = perp(a, [0, 1, 0]), v = cross3(a, u);
   const rad = S.s * DEG;
-  const P = moon ? pools.moon : pools.star, sign = rr() < 0.5 ? 1 : -1;
+  // the well's axis: from the knoll's eye to the core. The strokes spin about it (the mesh's uSpinC is the eye)
+  const C = [a[0] * R, a[1] * R, a[2] * R], CE = [C[0] - eye[0], C[1] - eye[1], C[2] - eye[2]];
+  const Dc = Math.hypot(CE[0], CE[1], CE[2]), b = [CE[0] / Dc, CE[1] / Dc, CE[2] / Dc], ub = perp(b, [0, 1, 0]), vb = cross3(b, ub);
+  const Y = pools.starYellow, O = pools.starOrange, Wp = pools.starPale, sign = rr() < 0.5 ? 1 : -1;
   const at = (th, ph) => { const s = Math.sin(th), c = Math.cos(th); return norm3([a[0] * c + (u[0] * Math.cos(ph) + v[0] * Math.sin(ph)) * s, a[1] * c + (u[1] * Math.cos(ph) + v[1] * Math.sin(ph)) * s, a[2] * c + (u[2] * Math.cos(ph) + v[2] * Math.sin(ph)) * s]); };
   // the core: a disc, or a crescent: the disc less a disc set off from it
-  const nc = Math.floor(60 * S.s * S.s + 20);
+  const nc = Math.floor(110 * S.s * S.s + 40), big = moon || S.s >= 2;
   for (let i = 0; i < nc; i++) {
-    const th = rad * Math.sqrt(rr()), ph = rr() * 6.2832;
+    const th = rad * Math.sqrt(rr()), ph = rr() * 6.2832, inner = 1 - th / rad;
     if (moon) { const px = th * Math.cos(ph), py = th * Math.sin(ph); if (Math.hypot(px - rad * 0.55, py - rad * 0.1) < rad * 0.78) continue; }
     const Rk = R * (STAR_F + 0.016 * (rr() - 0.5));
     const d = at(th, ph), c = [d[0] * Rk, d[1] * Rk, d[2] * Rk];
     const circ = norm3(cross3(a, d)), t = norm3([circ[0] + (rr() - 0.5) * 0.6, circ[1] + (rr() - 0.5) * 0.6, circ[2] + (rr() - 0.5) * 0.6]);
-    const L = Rk * (0.006 + 0.008 * rr()) * (0.6 + 0.4 * S.s), w = L * 0.35;
-    rows.put(c, t, d, (rr() - 0.5) * 0.1, L, w, 0.02, L * 0.05, jit(pick(P, moon ? 0.35 + 0.4 * rr() : 0.8 + 0.19 * rr(), rr), rr, 0.05), moon ? 0.4 : 0.5, rev + 0.04 * rr(), rr() * 6.2832, a, sign * (5 + 4 * rr()) * DEG * 0.5);
+    const L = Rk * (0.005 + 0.007 * rr()) * (0.6 + 0.4 * S.s), w = L * 0.4;
+    const col = big && rr() < 0.08 + 0.3 * inner ? pick(O, 0.5 + 0.45 * rr(), rr) : pick(Y, 0.55 + 0.43 * rr(), rr);
+    // lit, but not past the grade's shoulder at 0.85 a channel: a yellow lit twice over is white
+    rows.put(c, t, d, (rr() - 0.5) * 0.1, L, w, 0.02, L * 0.05, jit(col, rr, 0.05), 0.32 * (0.8 + 0.4 * inner), rev + 0.04 * rr(), rr() * 6.2832, b, sign * (5 + 4 * rr()) * DEG * 0.5);
   }
-  // the rings
-  const rings = moon ? [1.35, 1.75, 2.2, 2.75, 3.4, 4.1] : [1.5, 2.0, 2.6, 3.3, 4.2];
-  const qs = moon ? [0.8, 0.65, 0.55, 0.45, 0.4, 0.3] : [0.7, 0.5, 0.35, 0.3, 0.25], sh = moon ? [0.7, 0.5, 0.35, 0.22, 0.12, 0.06] : [0.6, 0.35, 0.2, 0.1, 0.05];
+  // the halo: rings close enough to overlap, yellow inside and pale out
+  const rings = moon ? [1.2, 1.38, 1.6, 1.85, 2.15, 2.5, 2.9, 3.4, 4.0, 4.6] : [1.2, 1.38, 1.6, 1.85, 2.15, 2.5, 2.9, 3.4, 4.0];
   for (let k = 0; k < rings.length; k++) {
-    const fk = STAR_F - (rings.length - k) * RING_STEP;
-    const th = rad * rings[k], L = R * fk * (0.010 + 0.010 * rr()) * (0.6 + 0.4 * Math.min(S.s, 2)), w = L * 0.3;
-    const cnt = Math.floor(6.2832 * Math.sin(th) * R * fk / (L * 0.38));
+    const fk = STAR_F - (rings.length - k) * RING_STEP, fr = k / (rings.length - 1);
+    const th = rad * rings[k], L = R * fk * (0.010 + 0.010 * rr()) * (0.6 + 0.4 * Math.min(S.s, 2)), w = L * 0.42;
+    const cnt = Math.floor(6.2832 * Math.sin(th) * R * fk / (L * 0.24));
     const rate = sign * (k % 2 ? -1 : 1) * (2 + 3 * rr()) * DEG * 0.5;
+    const emit = lerp(0.26, 0.03, Math.pow(fr, 0.8));
     for (let i = 0; i < cnt; i++) {
-      const ph = (i + rr() * 0.8) / cnt * 6.2832, th2 = th * (1 + (rr() - 0.5) * 0.22);
-      const Rk = R * (fk + 0.03 * (rr() - 0.5));
-      const d = at(th2, ph), c = [d[0] * Rk, d[1] * Rk, d[2] * Rk];
-      const circ = norm3(cross3(a, d)), toC = norm3([a[0] - d[0] * dot3(a, d), a[1] - d[1] * dot3(a, d), a[2] - d[2] * dot3(a, d)]);
-      const rc = Rk * Math.sin(th2);
-      const pool = k >= 3 ? pools.sky : P;
-      const q = k >= 3 ? 0.8 + 0.18 * rr() : qs[k] + 0.15 * rr();
-      rows.put(c, circ, toC, clamp(L / (4 * rc), 0, 0.3), L, w, 0.02, L * 0.06, jit(pick(pool, q, rr), rr, 0.06), sh[k] * (0.7 + 0.6 * rr()), rev + 0.02 * k + 0.04 * rr(), rr() * 6.2832, a, rate);
+      const ph = (i + rr() * 0.8) / cnt * 6.2832, th2 = th * (1 + (rr() - 0.5) * 0.16);
+      // along the axis from the eye: the ring's centre, then out to its radius, so that from the knoll it is
+      // the circle of th2 round the core
+      const Dk = Dc - (STAR_F - fk) * R + 0.03 * R * (rr() - 0.5), rc = Dk * Math.tan(th2);
+      const rd = [ub[0] * Math.cos(ph) + vb[0] * Math.sin(ph), ub[1] * Math.cos(ph) + vb[1] * Math.sin(ph), ub[2] * Math.cos(ph) + vb[2] * Math.sin(ph)];
+      const c = [eye[0] + b[0] * Dk + rd[0] * rc, eye[1] + b[1] * Dk + rd[1] * rc, eye[2] + b[2] * Dk + rd[2] * rc];
+      const circ = norm3(cross3(b, rd)), toC = [-rd[0], -rd[1], -rd[2]];
+      // yellow through the inner third of the halo, then his yellow-whites with yellow among them, and the
+      // sky's light blue only among the last rings
+      let col;
+      const u = rr();
+      if (fr < 0.3) col = pick(Y, 0.5 + 0.45 * rr(), rr);
+      else if (fr < 0.75) col = u < 0.62 ? pick(Y, 0.6 + 0.38 * rr(), rr) : pick(Wp, 0.65 + 0.34 * rr(), rr);
+      else col = u < 0.3 ? pick(pools.sky, 0.88 + 0.11 * rr(), rr) : u < 0.65 ? pick(Y, 0.6 + 0.38 * rr(), rr) : pick(Wp, 0.55 + 0.4 * rr(), rr);
+      rows.put(c, circ, toC, clamp(L / (4 * rc), 0, 0.3), L, w, 0.02, L * 0.06, jit(col, rr, 0.06), emit * (0.7 + 0.6 * rr()), rev + 0.02 * k + 0.04 * rr(), rr() * 6.2832, b, rate);
     }
   }
 }
-export function makeStars({ pools, seed = 31, R = SKY_R, stars = STARS, moon = MOON, rev = 0.72 }) {
-  const rr = rng(seed), rows = new Rows(60000);
-  for (const S of stars) star(rows, pools, S, R, rr, rev + 0.12 * rr());
-  if (moon) star(rows, pools, moon, R, rr, rev + 0.1, true);
+export function makeStars({ pools, seed = 31, R = SKY_R, stars = STARS, moon = MOON, rev = 0.72, eye = [0, 32, 100] }) {
+  const rr = rng(seed), rows = new Rows(120000);
+  for (const S of stars) star(rows, pools, S, R, rr, rev + 0.12 * rr(), false, eye);
+  if (moon) star(rows, pools, moon, R, rr, rev + 0.1, true, eye);
   return rows.done();
 }
 

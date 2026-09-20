@@ -1949,3 +1949,39 @@ on a free GPU.
 **Still visible.** Inside the sky a stroke is a plate the size of a house, as it is at your feet; the author may
 want the sky's strokes thinner than the ground's when seen large. Arriving at a star is a white blaze with the
 bloom at 0.9. The far-hill ring at 2,025 m is seen from above as a ring. And the E0.1 list.
+
+### E1.1 — His yellow stars  *(the author's word: "some very yellow vivid van gogh style stars -- see by yourself"; the same day)*
+
+**What it was.** Seen: white discs in rings of white and light-blue dashes. Three causes. The star region's
+record is mostly halo -- pale greens and whites -- and only one stroke in thirteen is his chrome yellow, and the
+cores and inner rings drew from the whole of it by brightness. The outer rings drew from the sky. And a core
+lit twice over is white: the grade's shoulder clips each channel above 0.85, so a strong yellow lit to (1.5,
+1.4, 0.6) came out (1, 1, 0.6).
+
+**What was done** (`loadHisColours`, `star`, `src/world.js`). Three pools from his own paint: the yellows of
+the star and moon regions together (524 strokes) for the cores and the inner halo; the oranges (107) for the
+heart of the biggest star and of the moon; the star region's pale strokes (1,177) for the outer halo. The
+halo is nine rings now (the moon ten), 1.2 to 4.0 core-radii, close enough to overlap, strokes wider and a
+quarter closer: yellow through the inner third, then yellow among his yellow-whites, and the sky's light blue
+only among the last rings. The core is lit at 0.32 and the halo from 0.26 at the core to 0.03 at the rim, under
+the shoulder, so that yellow stays yellow. Star strokes: 19,894, from 8,904.
+
+**Also.** A star's well now runs along the line from the knoll's eye to the core, not from the middle of the
+world: the picture is seen from the knoll, and a well seen 4 degrees off its axis was a crescent (a small star's
+mouth ring is 46 m across and was displaced 47 m). The star strokes spin about that line (the stars' mesh has
+its `uSpinC` at the knoll's eye); the sky keeps behind each star as seen from the knoll; place `4` is 550 m
+down the morning star's well from the knoll.
+
+**Measured**, the GPU free this time (the author's tab closed), dpr 1.5, 368,289 strokes:
+
+| where | fps |
+|---|---|
+| the knoll, looking north | 120 |
+| the knoll, at the moon | 120 |
+| the mouth of the morning star's well | 117 |
+| 1,000 m into the great swirl | 119 |
+
+So E1's logarithmic depth at the vertex costs nothing against E0.1's 75--112, and E1's frame-rate note is closed.
+
+**Still visible.** From inside a well the perspective opens a dark gap between the core and the first ring,
+which the knoll does not see. The E1 list.

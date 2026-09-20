@@ -144,8 +144,8 @@ async function boot() {
   // the sky has depth (E1): its night lies in drifts 830 to 2,250 m out, each swirl is a well with its rim near
   // and its eye deep, and each star a well of rings down to its core; you fly into them. Depth is logarithmic
   // (paint.js), so the strokes sort exactly at any distance and the E0.2 flashing does not come back
-  add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
-  add('stars', W.makeStars({ pools }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
+  add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge, eye: eyeAt.toArray() }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
+  add('stars', W.makeStars({ pools, eye: eyeAt.toArray() }), { uEye: { value: new THREE.Vector3(0, 0, 0) }, uSpinC: { value: eyeAt.clone() } });
   say('Laying the ground');
   add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 80000), radius: 1650 }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
   const lights = W.STARS.filter(s => s.el < 32).map(s => ({ az: s.az, s: s.s })).concat([{ az: W.MOON.az, s: 2.2, moon: true }]);
@@ -196,7 +196,8 @@ async function boot() {
     1: standpoint,
     2: () => ({ x: 10, y: 95, z: -60, yaw: -5, pitch: -28 }),
     3: () => { const V = W.VORTICES[0], d = dirAzEl(V.az, V.el); return { x: d[0] * 1000, y: d[1] * 1000, z: d[2] * 1000, yaw: V.az, pitch: V.el }; },
-    4: () => { const S = W.STARS[0], d = dirAzEl(S.az, S.el); return { x: d[0] * 650, y: d[1] * 650, z: d[2] * 650, yaw: S.az, pitch: S.el }; },
+    4: () => { const S = W.STARS[0], d = dirAzEl(S.az, S.el), e = eyeAt, b = new THREE.Vector3(d[0] * W.SKY_R - e.x, d[1] * W.SKY_R - e.y, d[2] * W.SKY_R - e.z).normalize();
+               return { x: e.x + b.x * 550, y: e.y + b.y * 550, z: e.z + b.z * 550, yaw: Math.atan2(b.x, -b.z) / DEG, pitch: Math.asin(b.y) / DEG }; },
   };
   const goTo = n => { const p = PLACES[n]; if (!p) return; const e = p(); flight.carryTo(e, clamp(4 + Math.hypot(e.x - flight.pos[0], e.y - flight.pos[1], e.z - flight.pos[2]) / 120, 5, 10)); };
   { const e = standpoint(); flight.go({ pos: [e.x, e.y, e.z], yaw: e.yaw, pitch: e.pitch, speed: 0 }); }
