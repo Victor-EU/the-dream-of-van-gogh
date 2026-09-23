@@ -46,6 +46,7 @@ const VERT = /* glsl */`
   uniform vec3 uCam, uHead, uEye, uSpinC;
   uniform float uTime, uCurl, uPart, uPartA, uPartB, uReveal, uFocalPx, uWrap, uWrapY, uWrapLow, uWrapHigh, uWrapNear, uWrapAng, uUnder, uSway, uLie;
   uniform vec3 uUp;
+  uniform vec4 uWells[20]; uniform int uWellN; uniform vec3 uWellEye; uniform float uWellR;
   varying vec2 vST; varying vec3 vCol, vP, vT, vB, vN; varying float vRow, vEmit, vBig, vUnder;
   vec3 spin(vec3 p, vec3 k, float a) {
     vec3 q = p - uSpinC;
@@ -69,6 +70,23 @@ const VERT = /* glsl */`
       iQ0 += off * iQ0.y * iQ0.y; iQ1 += off * iQ1.y * iQ1.y; iQ2 += off * iQ2.y * iQ2.y;
     }
     iQ0 = (modelMatrix * vec4(iQ0, 1.0)).xyz; iQ1 = (modelMatrix * vec4(iQ1, 1.0)).xyz; iQ2 = (modelMatrix * vec4(iQ2, 1.0)).xyz;
+    // The stars' wells (E2). A sky stroke that stands in a star's well as seen from the knoll's eye is put behind the
+    // star -- out along its own ray from the middle of the world to 1.08 to 1.38 R, and widened as far, so that from
+    // the knoll it is exactly where it was -- and the way down the well to the core is open. E1 did this once, at the
+    // build, and the sky turns: within a minute its swirls had carried strokes that were not put back into the wells,
+    // and by ten minutes the morning star was half covered from the knoll. Here it is done where the stroke is now
+    if (uWellN > 0) {
+      vec3 q = normalize(iQ1 - uWellEye);
+      float push = 0.0;
+      for (int i = 0; i < 20; i++) {
+        if (i >= uWellN) break;
+        push = max(push, smoothstep(cos(uWells[i].w * 1.15), cos(uWells[i].w * 0.9), dot(q, uWells[i].xyz)));
+      }
+      if (push > 0.0) {
+        float k = mix(1.0, max(1.0, uWellR * (1.08 + 0.3 * fract(iMeta.z * 0.15915)) / length(iQ1)), push);
+        iQ0 *= k; iQ1 *= k; iQ2 *= k; wid *= k;
+      }
+    }
     // the lattice the motes live on: one cell, carried to the eye, so that the field has no end
     if (uWrap > 0.0) {
       vec3 o = uWrap * floor((uCam - iQ1) / uWrap + 0.5);
@@ -156,6 +174,7 @@ const FRAG = /* glsl */`
 `;
 
 // what every mesh shares, and what one may override
+const NO_WELLS = Array.from({ length: 20 }, () => new THREE.Vector4());
 export class Paint {
   constructor(U, ex, ov) {
     const g = ribbon(SEG, U.uUnder && U.uUnder.value > 0.5 ? 2 : 1);
@@ -166,7 +185,8 @@ export class Paint {
     g.instanceCount = ex.n;
     this.u = { ...U, uReveal: { value: 2 }, uWrap: { value: 0 }, uWrapY: { value: 1 }, uWrapLow: { value: -1e9 }, uWrapHigh: { value: 1e9 }, uWrapNear: { value: 0 }, uWrapAng: { value: 0 },
                uSpinC: { value: new THREE.Vector3() }, uSway: { value: 0 }, uLie: { value: 0 }, uUp: { value: new THREE.Vector3(0, 1, 0) }, uTint: { value: new THREE.Vector3(1, 1, 1) },
-               uEye: { value: new THREE.Vector3(0, 30, 0) }, ...(ov || {}) };
+               uEye: { value: new THREE.Vector3(0, 30, 0) }, uWells: { value: NO_WELLS }, uWellN: { value: 0 }, uWellEye: { value: new THREE.Vector3() }, uWellR: { value: 1 },
+               ...(ov || {}) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.u,
       side: THREE.DoubleSide, alphaToCoverage: true }));
     this.mesh.frustumCulled = false;

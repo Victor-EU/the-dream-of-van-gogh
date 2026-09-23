@@ -139,7 +139,7 @@
   const api = window.veil = { up: false, painted: true, stats: null, status() {}, lift() {}, skip() {} };
   if (!V) return;
   const Q = new URLSearchParams(location.search);
-  if (Q.has('notitle') || Q.has('at')) { V.hidden = true; return; }
+  if (Q.has('notitle') || Q.has('at') || Q.get('dream')) { V.hidden = true; return; }   // ?dream=<t>: into the film, no opening
 
   const art = $('veil-art'), box = $('veil-canvas'), cv = $('veil-cv'), under = $('veil-under'), line = $('veil-status');
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;

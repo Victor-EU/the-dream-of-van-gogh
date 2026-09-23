@@ -18,8 +18,32 @@
   #caption b { display: block; font-weight: 500; font-size: 22px; letter-spacing: 0.01em; }
   #caption i { display: block; font-size: 16px; opacity: 0.7; font-style: normal; margin-bottom: 7px; }
   #caption q { quotes: none; font-style: italic; }
-  #panel { position: fixed; right: 24px; top: 22px; font-size: 15px; line-height: 1.5; white-space: pre; opacity: 0.8; background: rgba(6, 8, 18, 0.55); padding: 10px 14px; border-radius: 4px; }
+  #panel { position: fixed; z-index: 5; right: 24px; top: 22px; font-size: 15px; line-height: 1.5; white-space: pre; opacity: 0.8; background: rgba(6, 8, 18, 0.55); padding: 10px 14px; border-radius: 4px; }
   #linen { position: fixed; inset: 0; background: #6d6350; opacity: 0; pointer-events: none; }
+  /* The film (E2, src/film.js). Space, and the dream flies you: two black bands close in, as a film's frame does, and
+     his words come in the lower one, under the picture and never on it. The pointer goes when it is still. */
+  #bars { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
+  #bars .bar { position: absolute; left: 0; right: 0; height: var(--bar, 0px); background: #000;
+    transition: transform 1.7s cubic-bezier(.5, 0, .2, 1); display: flex; align-items: center; justify-content: center; }
+  #bars .top { top: 0; transform: translateY(-101%); }
+  #bars .bot { bottom: 0; transform: translateY(101%); }
+  #bars.on .bar { transform: none; }
+  #reel-title { margin: 0; padding: 0 6vw; max-width: min(820px, 88vw); text-align: center; opacity: 0; transition: opacity 1.8s ease;
+    text-shadow: 0 1px 8px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.8); }   /* on a small screen two lines stand up out of the band */
+  #reel-title.on { opacity: .92; }
+  #reel-title q { display: block; quotes: none; font-style: italic; font-size: clamp(16px, 1.55vw, 22px); line-height: 1.35; }
+  #reel-title span { display: block; margin-top: 7px; font-size: 11px; letter-spacing: .26em; text-transform: uppercase; opacity: .55; }
+  #reel-hint { margin: 0; padding: 0 5vw; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; text-align: center; opacity: 0; transition: opacity 1.4s ease; }
+  #reel-hint.on { opacity: .5; }
+  body.still, body.still #stage canvas { cursor: none; }
+  #dream-btn { position: fixed; right: 26px; bottom: 21px; z-index: 3; background: none; border: 0; padding: 4px 2px; color: inherit;
+    font: italic 19px 'Cormorant Garamond', Georgia, serif; letter-spacing: .02em; text-shadow: 0 1px 6px rgba(0,0,0,.7);
+    cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 1.2s; }
+  #dream-btn.on { opacity: .62; pointer-events: auto; }
+  #dream-btn.on:hover, #dream-btn.on:focus-visible { opacity: .95; outline: none; }
+  #dream-btn kbd { font: 11px/1 'Cormorant Garamond', Georgia, serif; font-style: normal; letter-spacing: .14em; text-transform: uppercase;
+    margin-left: 8px; padding: 2px 6px 3px; border: 1px solid rgba(207,211,220,.35); border-radius: 3px; vertical-align: 2px; }
+  @media (pointer: coarse) { #dream-btn kbd { display: none; } }
   #debug { position: fixed; left: 12px; top: 10px; font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre; opacity: 0.7; }
   /* The opening (DESIGN 7.1). The Starry Night paints itself on primed linen from its own record while the world
      is built behind it (src/veil.js). Then the eye goes into it: the canvas comes towards you until it has
@@ -74,10 +98,15 @@
 </head>
 <body>
 <div id="stage"></div>
-<div id="line" class="corner">the arrows go where you look &middot; drag to look &middot; H for the keys</div>
+<div id="line" class="corner">the arrows go where you look &middot; drag to look &middot; space, the dream &middot; H for the keys</div>
 <div id="caption"></div>
 <div id="linen"></div>
 <div id="panel" hidden></div>
+<div id="bars" aria-live="polite">
+  <div class="bar top"><p id="reel-hint"></p></div>
+  <div class="bar bot"><p id="reel-title"><q></q><span></span></p></div>
+</div>
+<button id="dream-btn" type="button" aria-label="The dream: let the film fly you through the night. Space starts and stops it.">the dream<kbd>space</kbd></button>
 <div id="debug" hidden></div>
 <div id="fail" hidden><div><h1 id="fail-h"></h1><p id="fail-p"></p><code id="fail-c"></code></div></div>
 <div id="veil">

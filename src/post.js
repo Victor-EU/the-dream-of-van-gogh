@@ -1,5 +1,6 @@
 // The last pass: bloom for the stars and the lamps, a tone curve that keeps
-// his yellows yellow, a little vignette and the grain of the cloth.
+// his yellows yellow, a little vignette and the grain of the cloth; and a fade,
+// to a colour, for the film (E2): to the dark, or to the star's own light.
 import * as THREE from 'three';
 
 const VERT = /* glsl */`varying vec2 vUv; void main() { vUv = position.xy * 0.5 + 0.5; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
@@ -35,8 +36,8 @@ const UP = /* glsl */`
   }`;
 const FINAL = /* glsl */`
   uniform sampler2D tScene, tBloom;
-  uniform float uExposure, uBloom, uSat, uContrast, uVignette, uGrain, uTime, uWarm, uBlack, uTone;
-  uniform vec2 uRes;
+  uniform float uExposure, uBloom, uSat, uContrast, uVignette, uGrain, uTime, uWarm, uBlack, uTone, uFade;
+  uniform vec2 uRes; uniform vec3 uFadeCol;
   varying vec2 vUv;
   float h12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
   vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
@@ -58,6 +59,7 @@ const FINAL = /* glsl */`
     s *= 1.0 - uVignette * smoothstep(0.4, 1.15, length(q));
     vec2 px = gl_FragCoord.xy;
     s += sin(px.x * 1.57) * sin(px.y * 1.57) * 0.006 + (h12(px + fract(uTime * 7.1) * 311.0) - 0.5) * uGrain;
+    s = mix(s, uFadeCol, uFade);
     s *= 1.0 - uBlack;
     gl_FragColor = vec4(s, 1.0);
   }`;
@@ -85,7 +87,8 @@ export class Post {
     this.mFinal = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FINAL, depthTest: false, depthWrite: false,
       uniforms: { tScene: { value: null }, tBloom: { value: null }, uExposure: { value: 1 }, uBloom: { value: 0.6 },
         uSat: { value: 1.1 }, uContrast: { value: 1.05 }, uVignette: { value: 0.35 }, uGrain: { value: 0.025 },
-        uTime: { value: 0 }, uWarm: { value: 0 }, uBlack: { value: 0 }, uTone: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) } } });
+        uTime: { value: 0 }, uWarm: { value: 0 }, uBlack: { value: 0 }, uTone: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) },
+        uFade: { value: 0 }, uFadeCol: { value: new THREE.Vector3() } } });
   }
   setSize(w, h) {
     this.w = w; this.h = h;
@@ -119,6 +122,7 @@ export class Post {
     F.tScene.value = this.main.texture; F.tBloom.value = this.lv[0].texture;
     F.uExposure.value = P.exposure; F.uBloom.value = P.bloom; F.uSat.value = P.sat; F.uContrast.value = P.contrast;
     F.uVignette.value = P.vignette; F.uGrain.value = P.grain; F.uTime.value = P.time; F.uWarm.value = P.warm; F.uBlack.value = P.black; F.uTone.value = P.tone ?? 1;
+    F.uFade.value = P.fade || 0; if (P.fadeCol) F.uFadeCol.value.set(...P.fadeCol);
     this.quad.material = this.mFinal;
     r.setRenderTarget(null);
     r.clear(true, true, false);

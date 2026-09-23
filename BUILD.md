@@ -2086,3 +2086,137 @@ project is listed still running, untouched.
 **Still visible.** The site's frame rate is not measured (the author's Chrome was still running the local
 page). The project has no description in the host's catalogue and no domain of its own; both are the
 author's to give.
+
+### E2 — The dream flies you  *(the author's word: "design a auto fly model in the app and think about it as when the user set the auto fly mode, it's like a movie, and the user should have a immersive experience like he or she is in the van gogh's dream, think a lot"; 23 September 2026)*
+
+**What it was.** There was no way to be in the piece without driving it. The last time the body went anywhere on its
+own was D5.5, and the author answered that picture -- the wind had carried the eye 57 m up into a pale sky with no
+ground -- by taking the wind off the body: *nothing pressed is nothing*. So an auto fly is not the drift come back.
+It is a film: composed, not wandered; the ground and his sky in the frame together; and only when asked for.
+Nothing pressed is still nothing. The film does not start on its own unless the URL says so (`?dream`, for a
+screen left running).
+
+**What was built.**
+
+- **`src/film.js`**, new: the film, one take of 3 min 2 s over 2,911 m that goes round until you take the controls
+  back. It runs in five acts. (I) The knoll: the light lifts on his eye and the world paints itself in, under letter
+  777; then down the slope. (II) The sunflowers: along the gap between two rows, just over the heads, toward the
+  spire. (III) The village: up the street between the lit windows, under letter 678; up the spire, the eye on it to
+  its tip and then up at the great swirl, with the clock at 0.3 so that the loose sunflowers hang. (IV) The water:
+  a fall over the roofs to the river, low along it over the stars in it, under letter 691, to the moon's gold, and
+  up from the moon in the water into the moon's own well of rings. (V) The sky: a wide turning climb, clockwise,
+  the valley going round under the eye once; a glide west-north-west into the great swirl's funnel; a wide turn
+  onto the morning star's well and down through its rings to its core, under letter 638. Then the star's light
+  takes the frame, and in it you are on the knoll again with the world unpainted, and it paints itself in round
+  you as it did at the opening.
+  - *How.* The way is a centripetal Catmull-Rom spline through 33 places. Each place says its speed, and the
+    clock is the integral of the way over the speed, so a place can be lingered at without its neighbours
+    knowing. Each place says what the eye looks at -- a point, a direction in the sky, or the way ahead, level or
+    not -- and the look eases between places. It is then smoothed as a hand on a camera would smooth it, a
+    Gaussian over ±1.4 s of the film's own time, so that the eye does not stop at each place and hurry to the
+    next. Each place also sets the lens (60° at the wake, opening to 94° down the star's well so its rings pass
+    through the frame one by one), the world's clock (0.3 at the top of the spire, 3.2 down the star's well), the
+    grade's offsets (warmer in the village, cooler on the water, more bloom toward the star), how far the paint
+    parts for the body (1.8 m in the field, so the flowers bow and are not torn), and whether the eye may be
+    caught by a loose sunflower passing close.
+  - *The body.* It banks into its turns from its own lateral pull, as a bird does, at most 7°. It breathes, a few
+    centimetres and a tenth of a degree. The lens widens with speed.
+  - *The seam.* Every value above is a function of the film's time, so any frame can be had by seeking to it and
+    the loop is exact: the seam is under full light, the star's warm white, and the fade lifts from it on the knoll.
+- **`src/main.js`**: the film's driver.
+  - *Space at his eye:* the film glides in from where you stand, over three seconds.
+  - *Space from anywhere else:* the eyes close (a fade to the night's dark) and open on the knoll at the wake.
+  - *Your eye is yours:* a drag turns it off the film's while the body is carried, and 1.2 s after you let go it
+    goes back.
+  - *An arrow, a place key, `Esc` or `Space`* hands the body back where it is, looking where it looked, going the
+    way it went.
+  - The lens, the clock, the grade and the parting go over to the film's and back through one eased weight.
+  - Two black bands close in to about 2.1 to 1. The lines come in the lower band, a hint for the first seven
+    seconds in the upper. The pointer hides when it is still.
+  - *the dream* in the corner starts the film. It is the only way in on a phone.
+  - `?dream` begins the film when the opening has gone into the painting; `?dream=<t>` goes straight to `t`.
+  - `Space` is in the keys panel and the corner line.
+- **`src/flight.js`**: `Space` and `Escape` are events. A bank the film left goes out of the roll in a third of a
+  second. The film's way at the hand-over, `coast`, dies as a released key's does (`T_SPEED`), so the body comes
+  to rest and does not stop dead.
+- **`src/post.js`**: a fade to a colour, `uFade` and `uFadeCol`, for the eyes closing and for the star's light.
+- **`index.html`**, **`src/veil.js`**: the bands, the line, the hint, the button; the veil stands aside for
+  `?dream=<t>`.
+- **The stars' wells, in the paint** (`src/paint.js`, `src/world.js` `starWells`). This fixes the world, and it
+  was found by the film (below). A sky stroke that stands in a star's well as seen from the knoll's eye is put
+  behind the star in the vertex shader, wherever the sky has turned it. It goes out along its own ray from the
+  middle of the world to 1.08 to 1.38 R, and is widened as far, so from the knoll it is exactly where it was.
+  `makeSky` no longer does this at the build, but still makes the draw it made for it, so every other stroke of
+  the sky is the stroke it was.
+- **The harness**: `dream.film` -- `play(t)`, `stop()`, `seek(t)`, `state()`, `shots()`, `audit()` -- and
+  `dream.render()`, one frame drawn now, for a page that is not being animated. `dream.sim` threw on every call
+  since E1.3: it passed the field its step from outside the loop the step lived in. Fixed.
+
+**What was decided, and by whom.** The author's: that there is an auto fly, and that it is a film. Ours, each the
+author's to send back:
+- The route, and that it is one take: a dream does not cut, and this is one world.
+- That it ends in the morning star. DESIGN 1's line (*we take death to go to a star*) is the film's last line, and
+  the morning star of letter 777 is its first.
+- That it does not start on its own. D5.5 stands.
+- Four lines, from the four the piece already quotes, and none of ours.
+- The bands at 2.1 to 1, never more than an eighth of the height each.
+- The bank's 7°, and the clock's 0.3 and 3.2.
+- The glance: 42% of the way to a loose sunflower within 18 m, only where a place allows it.
+- Silence: D5's word stands.
+
+**What was found.**
+
+- **The stars were being covered by the sky.** E1 put the sky's strokes behind a star at the build, and the sky
+  turns: each swirl turns its strokes on its own axis, and the band between them turns about the vertical. So
+  strokes that were never put back are carried into the wells, and those that were are carried out of them. On
+  the knoll with the clock frozen at 600 s, the morning star was half covered and the star at 22° mostly. Down
+  the morning star's well, the film met a wall of sky strokes at arm's length where the core should be. With the
+  wells in the paint, both stars are whole at 600 s and at 1,800 s. Down the well, the rings stand round the core
+  (158 s in the pictures).
+- **A way through the sky that went out to the moon and then across to the star turned the eye at 167°/s.** Out
+  radially, across tangentially, out again: each change of heading was a whip. The sky act was redrawn as one wide
+  climbing turn, a straight glide and one wide turn onto the star's axis. The moon is now passed, seen up its
+  well from the water, and not entered. The eye's fastest turn in the whole film is now 36°/s, as it lifts from
+  the spire's tip to the sky.
+- **Among the heads the frame was stems.** At 2.5 m, the parting (3 m) tore the nearest flowers into sideways
+  comets. At 4.1 to 4.2 m with the parting at 1.8 m, it is the field, the village and the spire, and the flowers
+  bow.
+- **From above, at night, the ground is dark**, and a frame of it is a map. The climb and the fall look a little
+  up, so that his sky is over the valley in the frame.
+
+**What it measures.**
+
+| what | value |
+|---|---|
+| the film | 181.7 s, 2,911 m, 33 places in 15 shots; the loop exact (the seam under full light) |
+| least room | 1.5 m over the ground (a standing eye, on the knoll); 4.9 m from a house or the church (up the spire); 12.6 m from a cypress (the field) |
+| the most | 60 m/s (the glide); the eye 36°/s (off the spire's tip); bank 7° (the climb); pull 25 m/s², 2.6 g (the fall into the river's turn); 1,393 m from the middle of the world (inside the reach) |
+| cost | 0.008 to 0.017 ms a frame for the film's pose, the eye's smoothing included; nothing non-finite in 1,818 samples |
+| the hand-over | an arrow at 20 m/s on the river: no jump; 3.8 m more in the next second, and at rest |
+| a drag | 40° off the film's eye; back within 4 s of letting go |
+| from anywhere else | the eyes close in 1.1 s; the world repainted by 8 s |
+| `Esc` in the wake | the paint finishes in 1.6 s |
+| the stars, from the knoll | whole at 600 s and at 1,800 s; half covered at 600 s before the fix |
+| frame rate | **not measured**: the in-app pane was hidden throughout, so its page was not animated, and timings of forced frames ran 0.7 to 23 ms at random. The wells add twenty dot products a vertex to the sky's 120,000 strokes. D6's, on a visible window |
+
+**Pictures.** The film at 5, 40, 56, 68, 124, 148, 158 and 179 s: `e2-the-wake`, `e2-the-sunflowers`,
+`e2-the-street`, `e2-the-spire`, `e2-the-moon-in-the-water`, `e2-the-great-swirl`, `e2-the-morning-star`,
+`e2-the-blaze`. All headless, 1200 × 675.
+
+**The gate.** The author's: press `Space` and watch it round twice, touching nothing. Is it a film, and are you in
+his dream?
+
+**Still visible.**
+
+- **Toward the end of the fall** (about 97 s) the frame skims toward the water under the northern hills, and is
+  dark for two seconds.
+- **Down the last hundred metres of the star's well**, even at 94° the rings are outside the frame, and the core is
+  alone in the dark until its light takes the frame.
+- **A ring of a star passed at arm's length is a plate the size of a house** (E1's), for a moment, at 158 s.
+- **From the top of the spire**, a star's well seen off its axis shows a dark hole in its rings (E1.1's).
+- **The glance** at a loose sunflower is not in the pictures: where the flowers are depends on the world's clock,
+  not the film's.
+- **`?dream` through the whole opening** was not seen end to end. Headless, the opening's paint takes half an hour
+  at 0.3 fps; it lifted without an error, and the film's start after it is one line.
+- **Letter 777** is the opening's caption and, on the first time round, the film's first line too.
+- The frame rate, above.

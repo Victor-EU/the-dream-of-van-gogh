@@ -5,7 +5,8 @@
 import * as THREE from 'three';
 import { makeBrushAtlas, NOISE } from './brush.js';
 import { Paint, LOG_VERT, LOG_PASS, LOG_FRAG, LOG_DEPTH } from './paint.js';
-import { Flight } from './flight.js';
+import { Flight, LOOK } from './flight.js';
+import { Film, script, LINES, WAKE } from './film.js';
 import { Post } from './post.js';
 import * as W from './world.js';
 import { lin, clamp, lerp, smoothstep, DEG, dirAzEl, rng } from './util.js';
@@ -64,7 +65,7 @@ async function boot() {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const cv = renderer.domElement;
   cv.tabIndex = 0;
-  cv.setAttribute('aria-label', 'The Dream of Van Gogh. Drag to look. The up arrow goes where you look, the down arrow back, left and right turn; Shift is faster. Nothing pressed, nothing moves.');
+  cv.setAttribute('aria-label', 'The Dream of Van Gogh. Drag to look. The up arrow goes where you look, the down arrow back, left and right turn; Shift is faster. Nothing pressed, nothing moves. Space, and the dream flies you.');
   document.getElementById('stage').appendChild(cv);
   const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.2, 9000);
   let hfov = HFOV;
@@ -144,7 +145,10 @@ async function boot() {
   // the sky has depth (E1): its night lies in drifts 830 to 2,250 m out, each swirl is a well with its rim near
   // and its eye deep, and each star a well of rings down to its core; you fly into them. Depth is logarithmic
   // (paint.js), so the strokes sort exactly at any distance and the E0.2 flashing does not come back
-  add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge, eye: eyeAt.toArray() }), { uEye: { value: new THREE.Vector3(0, 0, 0) } });
+  // and the stars' wells, which the paint keeps clear wherever the sky has turned its strokes (paint.js, E2)
+  const wells = W.starWells(eyeAt.toArray()).slice(0, 20).map(w => new THREE.Vector4(...w.b, w.th));
+  add('sky', W.makeSky({ pools, n: Math.round(+(Q.get('sky') ?? 1) * 120000), ridge, eye: eyeAt.toArray() }), { uEye: { value: new THREE.Vector3(0, 0, 0) },
+    uWells: { value: wells.concat(Array.from({ length: 20 - wells.length }, () => new THREE.Vector4())) }, uWellN: { value: wells.length }, uWellEye: { value: eyeAt.clone() }, uWellR: { value: W.SKY_R } });
   add('stars', W.makeStars({ pools, eye: eyeAt.toArray() }), { uEye: { value: new THREE.Vector3(0, 0, 0) }, uSpinC: { value: eyeAt.clone() } });
   say('Laying the ground');
   add('ground', W.makeGround({ pools, n: Math.round(+(Q.get('ground') ?? 1) * 80000), radius: 1650 }), { uEye: { value: eyeAt.clone() }, uLie: { value: 1 } });
@@ -154,8 +158,8 @@ async function boot() {
   const village = W.makeVillage({ pools });
   add('village', village, { uEye: { value: eyeAt.clone() } });
   say('Growing the cypress');
-  const cypresses = [];
-  for (const [x, z, h, base, seed] of [[-28, 55, 78, 6, 61], [-50, 22, 46, 4, 62]]) {
+  const cypresses = [], CYPRESSES = [[-28, 55, 78, 6, 61], [-50, 22, 46, 4, 62]];
+  for (const [x, z, h, base, seed] of CYPRESSES) {
     const ex = W.makeCypress({ pools, height: h, base, seed, n: Math.round(h * 110) });
     const st = add('cypress', ex, { uEye: { value: new THREE.Vector3(0, h * 0.5, 0) }, uSway: { value: 0.0006 } });
     if (st) { st.mesh.position.set(x, W.ground(x, z) - 1.5, z); cypresses.push(st); }
@@ -233,7 +237,7 @@ async function boot() {
     if (opening === 'paint') {
       reveal = clamp((openT - 0.4) / REVEAL_S, 0, 1.1);
       setReveal(reveal);
-      if (reveal >= 1.1) opening = null;
+      if (reveal >= 1.1) { opening = null; showDreamButton(); if (wantDream) begin(); }
     }
   }
 
@@ -241,7 +245,7 @@ async function boot() {
   const capEl = document.getElementById('caption');
   let capT = 0, looked = false;
   function caption() {
-    if (has('nocaption') || has('test') || has('notitle')) return;
+    if (has('nocaption') || has('test') || has('notitle') || reel) return;
     capEl.innerHTML = `<b></b><i></i><q></q>`;
     capEl.children[0].textContent = 'The Starry Night';
     capEl.children[1].textContent = 'Saint-Rémy, June 1889. Museum of Modern Art, New York';
@@ -251,10 +255,12 @@ async function boot() {
     capT = time + 9;
   }
   flight.on('look', () => { looked = true; line.classList.remove('on'); cv.focus({ preventScroll: true }); });
-  flight.on('go', () => { looked = true; line.classList.remove('on'); });
-  flight.on('eye', n => goTo(n));
+  flight.on('go', () => { looked = true; line.classList.remove('on'); if (reel) wake(); });
+  flight.on('eye', n => { if (reel) wake(); goTo(n); });
+  flight.on('dream', () => (reel ? wake() : begin()));
+  flight.on('escape', () => { if (reel) wake(); });
   flight.on('fullscreen', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {}));
-  const KEYS = 'drag        look\n↑           go where you look\n↓           back\n← →         turn\nShift       faster\n1           the knoll\n2           over the village\n3           into the swirl\n4           the morning star\nL           what is here\nF           full screen\n\nnothing pressed, nothing moves';
+  const KEYS = 'drag        look\n↑           go where you look\n↓           back\n← →         turn\nShift       faster\n1           the knoll\n2           over the village\n3           into the swirl\n4           the morning star\nSpace       the dream flies you\n            (an arrow or Esc, and you fly)\nL           what is here\nF           full screen\n\nnothing pressed, nothing moves';
   const NOTE = { sky: 'his sky, 830 to 2,250 m out, seven swirls turning, each a well', stars: `${W.STARS.length} stars and the moon, wells of turning rings`,
                  ground: 'the hills, along their own contours', river: 'the water, and the stars in it',
                  village: `${village.houses.length} houses, ${village.trees.length} trees, the church`, cypress: 'two, swaying',
@@ -265,24 +271,155 @@ async function boot() {
   const show = (k, text) => { if (panelOn === k) { panel.hidden = true; panelOn = null; return; } panel.textContent = text; panel.hidden = false; panelOn = k; };
   flight.on('help', () => show('help', KEYS));
   flight.on('ledger', () => show('ledger', LEDGER()));
-  if (!has('notitle')) setTimeout(() => { if (!looked && !capT && !opening) line.classList.add('on'); }, 800);
+  if (!has('notitle')) setTimeout(() => { if (!looked && !capT && !opening && !reel) line.classList.add('on'); }, 800);
 
   const grade = { exposure: +(Q.get('exposure') || 1.12), bloom: +(Q.get('bloom') || 0.9), sat: +(Q.get('sat') || 1.22), contrast: 1.04,
                   vignette: has('test') ? 0 : 0.28, grain: 0.02, time: 0, warm: 0, black: 0, thresh: 0.8, tone: 0 };
 
+  // the lens: the horizontal field of view, the piece's own (hfov) or the film's, eased between them
+  let lens = hfov;
+  function setLens(h) {
+    lens = h;
+    camera.fov = 2 * Math.atan(Math.tan(h * DEG / 2) / camera.aspect) / DEG;
+    camera.updateProjectionMatrix();
+    U.uFocalPx.value = (innerHeight * renderer.getPixelRatio() / 2) / Math.tan(camera.fov * DEG / 2);
+  }
   function resize() {
     const w = innerWidth, h = innerHeight;
     renderer.setSize(w, h);
     camera.aspect = w / h;
-    camera.fov = 2 * Math.atan(Math.tan(hfov * DEG / 2) / camera.aspect) / DEG;
-    camera.updateProjectionMatrix();
     const pr = renderer.getPixelRatio();
     post.setSize(Math.floor(w * pr), Math.floor(h * pr));
-    U.uFocalPx.value = (h * pr / 2) / Math.tan(camera.fov * DEG / 2);
+    setLens(lens);
+    // the film's bands: the frame closed to about two to one, never more than an eighth of the height a band
+    const b = w > h * 1.15 ? clamp((h - w / 2.1) / 2, h * 0.065, h * 0.13) : h * 0.075;
+    document.getElementById('bars').style.setProperty('--bar', Math.round(b) + 'px');
   }
   addEventListener('resize', resize);
   resize();
   renderer.compile(scene, camera);
+
+  // ---------------------------------------------------------------- the dream flies you (E2, src/film.js)
+  // Space, and the piece is a film: one take through the night, round and round, until you take the controls back.
+  // It begins where you are if you are at his eye; from anywhere else the eyes close, and open on the knoll with the
+  // world painting itself in. Your eye is still yours -- a drag looks round while the dream carries the body, and a
+  // moment after you let go it goes back to the film's -- and it may be caught by a loose sunflower passing close.
+  // An arrow, a place key, Esc or Space hands the body back where it is, looking where it looked, going the way it
+  // went, and it comes to rest as a released key does. The lens, the clock and the grade go over to the film's and
+  // come back eased (fw), so that nothing steps.
+  const film = new Film(script(eyeAt.toArray(), field.plot), { calm: matchMedia('(prefers-reduced-motion: reduce)').matches });
+  const obstacles = {
+    boxes: village.houses.concat(village.church).map(H => { const y0 = W.ground(H.x, H.z) - 0.4; return { x: H.x, z: H.z, yaw: H.yaw, hw: H.w / 2, hd: H.d / 2, y0, y1: y0 + H.h + H.d * 0.36 }; })
+      .concat([{ x: village.spire[0], z: village.spire[2], yaw: 0, hw: 3.5, hd: 3.5, y0: village.spire[1] - 26, y1: village.spire[1] + 0.5 }]),
+    trunks: CYPRESSES.map(([x, z, h, base]) => ({ x, z, h, base, y0: W.ground(x, z) - 1.5 })),
+  };
+  const bars = document.getElementById('bars'), reelTitle = document.getElementById('reel-title'), reelHint = document.getElementById('reel-hint');
+  const dreamBtn = document.getElementById('dream-btn'), coarse = matchMedia('(pointer: coarse)').matches;
+  const JOIN = WAKE + 0.5;                                  // a film begun at his eye begins here, the world already painted
+  const DARK = [0.016, 0.024, 0.06], LIGHT = [1.0, 0.965, 0.84];   // the two fades, as displayed: the night's, and the star's light
+  const smoother = u => { u = clamp(u, 0, 1); return u * u * u * (u * (u * 6 - 15) + 10); };
+  const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+  let reel = null, F = null, fw = 0, leave = false, shownTitle = null, clock = 1, fade = 0, fadeCol = DARK, still = 0, hintTimer = 0;
+  let wantDream = has('dream') && !Q.get('dream');          // ?dream: the film begins when the opening has gone into the painting
+  const own = { yaw: 0, pitch: 0, idle: 9 };                // your own eye, turned from the film's
+  const gl = { w: 0, d: [0, 0, -1] };                       // the glance at a sunflower
+  function showDreamButton() { if (!has('test') && !has('notitle')) dreamBtn.classList.toggle('on', !reel); }
+  function begin(t0 = null) {
+    if (reel) return;
+    if (opening) { wantDream = true; return; }
+    const here = { p: [...flight.pos], yaw: flight.gaze.yaw, pitch: flight.gaze.pitch };
+    const J = film.at(JOIN).p, near = Math.hypot(here.p[0] - J[0], here.p[1] - J[1], here.p[2] - J[2]) < 30;
+    reel = t0 != null ? { mode: 'play', t: clamp(t0, 0, film.T - 0.01), k: 0 } : near ? { mode: 'bridge', t: JOIN, k: 0, here } : { mode: 'close', t: 0, k: 0 };
+    flight.carry = null; flight.coast = [0, 0, 0]; flight.speed = flight.target = 0;
+    own.yaw = own.pitch = 0; own.idle = 9; gl.w = 0; fadeCol = DARK; wantDream = false; looked = true;
+    bars.classList.add('on'); dreamBtn.classList.remove('on');
+    line.classList.remove('on'); capEl.classList.remove('on'); capT = 0; panel.hidden = true; panelOn = null;
+    reelHint.textContent = coarse ? 'drag to look round · touch the left to fly yourself' : 'drag to look round · an arrow, and you fly yourself · F full screen';
+    reelHint.classList.add('on');
+    clearTimeout(hintTimer); hintTimer = setTimeout(() => reelHint.classList.remove('on'), 7000);
+  }
+  function wake() {
+    if (!reel) return;
+    // the body is handed back where the film has it, looking where it looks, and going the way it went
+    if (F && reel.mode !== 'close') { flight.coast = [...F.vel]; flight.roll = F.roll; }
+    flight.speed = flight.target = 0;
+    reel = null; leave = true;
+    bars.classList.remove('on'); reelHint.classList.remove('on'); document.body.classList.remove('still');
+    showTitle(null); showDreamButton();
+  }
+  function showTitle(id) {
+    shownTitle = id;
+    if (id == null || has('nocaption')) { reelTitle.classList.remove('on'); return; }
+    reelTitle.children[0].textContent = LINES[id].text; reelTitle.children[1].textContent = LINES[id].by;
+    reelTitle.classList.add('on');
+  }
+  // a frame of the film: the body and the eye where the film has them, and yours on top
+  function drive(dt) {
+    const dx = flight.dx, dy = flight.dy; flight.dx = flight.dy = 0;
+    if (dx || dy) { own.yaw += dx * LOOK; own.pitch -= dy * LOOK; own.idle = 0; }
+    else if (!flight.drag && flight.look.id < 0 && (own.idle += dt) > 1.2) { const k = 1 - Math.exp(-dt / 1.4); own.yaw -= own.yaw * k; own.pitch -= own.pitch * k; }
+    own.yaw = angDiff(own.yaw, 0);
+    if (reel.mode === 'close') {                           // the eyes close where you are, and open on the knoll
+      reel.k += dt; fadeCol = DARK; fade = Math.max(fade, smoother(reel.k / 1.1));
+      if (reel.k < 1.25) return { vx: 0, vy: 0, vz: 0 };
+      reel.mode = 'play'; reel.t = 0;
+    } else reel.t += dt;
+    if (reel.t >= film.T) reel.t -= film.T;               // round again, in the star's light
+    F = film.at(reel.t);
+    // the glance: a loose sunflower passing close in front of the eye draws it a little, where the film allows
+    if (F.glance > 0.01 || gl.w > 0.002) {
+      let best = null, bd = 18;
+      for (const f of floating) {
+        const q = f.mesh.position, ex = q.x - F.p[0], ey = q.y - F.p[1], ez = q.z - F.p[2], d = Math.hypot(ex, ey, ez);
+        if (d < bd && d > 2.5 && (ex * F.dir[0] + ey * F.dir[1] + ez * F.dir[2]) / d > 0.45) { bd = d; best = [ex / d, ey / d, ez / d]; }
+      }
+      gl.w += ((best ? F.glance * 0.42 * smoothstep(18, 8, bd) : 0) - gl.w) * (1 - Math.exp(-dt / 0.9));
+      if (best) { const k = 1 - Math.exp(-dt / 0.45); gl.d = [0, 1, 2].map(i => gl.d[i] + (best[i] - gl.d[i]) * k); }
+    }
+    const gyaw = gl.w * angDiff(Math.atan2(gl.d[0], -gl.d[2]), F.yaw), gpitch = gl.w * (Math.asin(clamp(gl.d[1] / (Math.hypot(...gl.d) || 1), -1, 1)) - F.pitch);
+    let p = F.p, yaw = F.yaw + gyaw + own.yaw, pitch = F.pitch + gpitch + own.pitch;
+    if (reel.mode === 'bridge') {                          // begun at his eye: from where you were into the film, in three seconds
+      reel.k += dt; const u = smoother(reel.k / 3);
+      p = [0, 1, 2].map(i => lerp(reel.here.p[i], F.p[i], u));
+      yaw = reel.here.yaw + angDiff(yaw, reel.here.yaw) * u; pitch = lerp(reel.here.pitch, pitch, u);
+      if (reel.k >= 3) reel.mode = 'play';
+    }
+    flight.pos[0] = p[0]; flight.pos[1] = p[1]; flight.pos[2] = p[2];
+    flight.gaze.yaw = flight.head.yaw = yaw; flight.gaze.pitch = flight.head.pitch = clamp(pitch, -85 * DEG, 88 * DEG);
+    flight.roll = F.roll; flight.speed = flight.target = 0;
+    // the light and the paint: the fade is the star's from the blaze until the wake has lifted it
+    if (reel.t > film.Tb) fadeCol = LIGHT;
+    fade = F.fade;
+    if (F.reveal !== reveal) { reveal = F.reveal; setReveal(reveal); }
+    if (F.title !== shownTitle) showTitle(F.title);
+    return { vx: F.vel[0], vy: F.vel[1], vz: F.vel[2] };
+  }
+  // each frame, whoever has the body: the lens, the clock and the grade eased between yours and the film's, and what
+  // the film leaves when it lets go -- its light fading, and the paint finishing if the wake was not done
+  function reelStep(dt) {
+    fw += ((reel ? 1 : 0) - fw) * (1 - Math.exp(-dt / 0.7));
+    const lf = hfov + ((F ? F.hfov : hfov) - hfov) * fw;
+    if (Math.abs(lf - lens) > 1e-3) setLens(lf);
+    clock = 1 + ((F ? F.time : 1) - 1) * fw;
+    if (U.uPart.value > 0) U.uPart.value = PART + ((F ? F.part : PART) - PART) * fw;
+    if (leave) {
+      fade *= Math.exp(-dt / 0.35); if (fade < 0.003) fade = 0;
+      if (reveal < 1.1) { reveal = Math.min(1.1, reveal + dt / 1.6); setReveal(reveal); }
+      if (!fade && reveal >= 1.1) leave = false;
+    }
+    if (reel) { still += dt; document.body.classList.toggle('still', still > 2.5); }
+  }
+  addEventListener('pointermove', () => { still = 0; document.body.classList.remove('still'); });
+  dreamBtn.addEventListener('click', () => { dreamBtn.blur(); cv.focus({ preventScroll: true }); begin(); });
+  function graded() {
+    const g = { ...grade, fade, fadeCol };
+    if (F && fw > 1e-3) {
+      const G = F.grade;
+      g.warm += G.warm * fw; g.sat += G.sat * fw; g.bloom += G.bloom * fw; g.exposure *= 1 + G.exposure * fw;
+      g.vignette += (G.vignette + 0.1) * fw; g.grain += 0.012 * fw;        // a film's frame: a little darker at its corners, and its grain
+    }
+    return g;
+  }
 
   // the three fixed flights, for the harness: up from the knoll into the sky; a swoop over the village; a walk
   const FLIGHTS = {
@@ -330,7 +467,7 @@ async function boot() {
     const dt = Math.min(0.05, real);
     last = now;
     fps += (1 / real - fps) * 0.05;
-    time = frozen ?? time + dt;
+    time = frozen ?? time + dt * clock;
     U.uTime.value = time;
     if (frames > 150 && frozen === null && !has('test') && !has('nogov')) {
       if (fps < 47) { slow += dt; quick = 0; } else if (fps > 58.5) { quick += dt; slow = 0; } else { slow = quick = 0; }
@@ -338,7 +475,7 @@ async function boot() {
       if (quick > 8 && dprCur < dprMax) { dprCur = Math.min(dprMax, dprCur + 0.1); renderer.setPixelRatio(dprCur); resize(); quick = 0; }
     }
     const sdt = frozen !== null ? 0 : dt;
-    const v = flight.update(sdt);
+    const v = reel ? drive(sdt) : flight.update(sdt);
     const sp = Math.hypot(v.vx, v.vy, v.vz);
     const dir = sp > 0.3 ? [v.vx / sp, v.vy / sp, v.vz / sp] : flight.heading();
     const kh = 1 - Math.exp(-sdt / 0.25);
@@ -355,22 +492,25 @@ async function boot() {
       stepFlight(dt);
     }
     if (opening) openStep(sdt);
+    reelStep(dt);
     moveFlowers(time);
     flight.applyTo(camera);
     U.uCam.value.copy(camera.position);
     if (fieldSt) detail.update(camera.position, sdt);
     grade.time = time;
-    post.render([scene], camera, grade);
+    post.render([scene], camera, graded());
     frames++;
     if (has('dbg')) {
       dbg.hidden = false;
       const s = flight.state();
-      dbg.textContent = `${s.x} ${s.y} ${s.z}  yaw ${s.yaw} pitch ${s.pitch}  v ${s.speed}  fps ${fps.toFixed(0)} dpr ${dprCur.toFixed(2)}  strokes ${total}  t ${time.toFixed(1)} reveal ${reveal.toFixed(2)}`;
+      dbg.textContent = `${s.x} ${s.y} ${s.z}  yaw ${s.yaw} pitch ${s.pitch}  v ${s.speed}  fps ${fps.toFixed(0)} dpr ${dprCur.toFixed(2)}  strokes ${total}  t ${time.toFixed(1)} reveal ${reveal.toFixed(2)}` +
+        (reel && F ? `\nfilm ${reel.t.toFixed(1)} / ${film.T.toFixed(1)}  ${F.shot}  ${F.speed.toFixed(1)} m/s  lens ${lens.toFixed(1)}  clock ${clock.toFixed(2)}` : '');
     }
     requestAnimationFrame(frame);
   }
 
-  const state = () => ({ ...flight.state(), fps: Math.round(fps), dpr: +dprCur.toFixed(2), hfov: +hfov.toFixed(2), strokes: total, time: +time.toFixed(2), reveal: +reveal.toFixed(2) });
+  const state = () => ({ ...flight.state(), fps: Math.round(fps), dpr: +dprCur.toFixed(2), hfov: +hfov.toFixed(2), strokes: total, time: +time.toFixed(2), reveal: +reveal.toFixed(2),
+                         film: reel ? { mode: reel.mode, t: +reel.t.toFixed(2), shot: F ? F.shot : null } : null });
   const dream = window.dream = {
     ready: true, state, buildMs, total,
     parts: () => parts.map(p => ({ name: p.name, n: p.n, meshes: p.meshes.length })),
@@ -389,21 +529,38 @@ async function boot() {
                    if ('only' in o) for (const p of parts) for (const m of p.meshes) m.visible = p.name === o.only; },
     sim: (secs, step = 1 / 60) => { for (let t = 0; t < secs; t += step) {
         const d = Math.min(step, secs - t);
-        flight.update(d); time += d; U.uTime.value = time;
+        if (reel) drive(d); else flight.update(d);
+        reelStep(d); time += d * clock; U.uTime.value = time;
         if (running) running.sim = true;
         stepFlight(d);
         for (let i = pending.length - 1; i >= 0; i--) if (time >= pending[i].t) pending.splice(i, 1)[0].f();
         for (let i = watchers.length - 1; i >= 0; i--) if (watchers[i](d)) watchers.splice(i, 1);
-      } flight.applyTo(camera); if (fieldSt) { detail.since = 1e9; detail.update(camera.position, d); } return state(); },
+      } flight.applyTo(camera); if (fieldSt) { detail.since = 1e9; detail.update(camera.position, step); } return state(); },
     field: () => ({ flowers: field.flowers.length, held: detail.count(), queued: detail.queue.length, built: detail.built, builtStrokes: detail.builtStrokes, ms: +detail.ms.toFixed(1) }),
     ground: (x, z) => W.ground(x, z),
+    // one frame drawn now, as the loop would draw it: for a pane whose page is not being animated (a hidden tab)
+    render: () => { moveFlowers(time); flight.applyTo(camera); U.uCam.value.copy(camera.position); post.render([scene], camera, graded()); return state(); },
     project: q => { const v = new THREE.Vector3(q[0], q[1], q[2]).project(camera); return [(v.x * 0.5 + 0.5) * innerWidth, (0.5 - v.y * 0.5) * innerHeight, +v.z.toFixed(4)]; },
     village: () => ({ houses: village.houses.length, trees: village.trees.length, spire: village.spire.map(v => +v.toFixed(1)) }),
     flowers: () => floating.slice(0, 12).map(f => ({ D: +f.D.toFixed(2), at: f.mesh.position.toArray().map(v => +v.toFixed(1)) })),
-    _: { renderer, scene, camera, post, parts, U, flight, floating, cypresses, pools, field, detail },
+    // the film (E2): play it (from t, or as Space does), stop it, put it at t for a picture (with dream.freeze to hold
+    // it there), say where it is, list its shots, and audit the whole of it -- the least room it leaves from the
+    // ground, the houses, the church and the cypresses, the fastest, the hardest turn, the most bank
+    film: {
+      play: t => begin(t == null ? null : +t), stop: () => wake(),
+      seek: t => { if (!reel) begin(+t); reel.mode = 'play'; reel.t = clamp(+t, 0, film.T - 0.01); drive(0); reelStep(1); flight.applyTo(camera); return { t: +F.t.toFixed(2), shot: F.shot, speed: +F.speed.toFixed(1) }; },
+      state: () => ({ on: !!reel, mode: reel ? reel.mode : null, t: reel ? +reel.t.toFixed(2) : null, T: +film.T.toFixed(2), shot: reel && F ? F.shot : null,
+                      speed: reel && F ? +F.speed.toFixed(1) : null, lens: +lens.toFixed(1), clock: +clock.toFixed(2), title: shownTitle }),
+      shots: () => film.shots(),
+      audit: () => film.audit(obstacles),
+    },
+    _: { renderer, scene, camera, post, parts, U, flight, floating, cypresses, pools, field, detail, film },
   };
   pending.push({ t: 0.5, f: () => { if (!opening) caption(); else watchers.push(() => (opening ? false : (caption(), true))); } });
   if (has('flight')) runFlight(Q.get('flight'));
+  if (!opening) showDreamButton();
+  if (Q.get('dream')) begin(+Q.get('dream'));               // ?dream=<t>: straight into the film at t, no opening
+  else if (wantDream && !opening && !has('test')) begin();
   requestAnimationFrame(frame);
 }
 

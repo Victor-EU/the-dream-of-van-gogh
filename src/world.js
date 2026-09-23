@@ -243,10 +243,14 @@ function flowAt(d) {
 const HILLS_F = 1.35, STAR_F = 1.0, RING_STEP = 0.05;
 // A star's well runs along the line from the knoll's eye to the core, not from the middle of the world: the
 // picture is seen from the knoll, and a well seen 4 degrees off its axis is a crescent (E1.1).
+// The wells as the knoll sees them: the line from its eye to each core, and how wide round it the sky keeps back
+export function starWells(eye, R = SKY_R, stars = STARS, moon = MOON) {
+  return stars.concat(moon ? [moon] : []).map(S => { const a = dirAzEl(S.az, S.el); return { b: norm3([a[0] * R - eye[0], a[1] * R - eye[1], a[2] * R - eye[2]]), th: 5.4 * S.s * DEG }; });
+}
 export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars = STARS, moon = MOON, eye = [0, 32, 100] }) {
   for (const V of VORTICES) V.dir = dirAzEl(V.az, V.el);
   const rr = rng(seed), rows = new Rows(n), P = pools.sky, PH = pools.hills;
-  const wells = stars.concat(moon ? [moon] : []).map(S => { const a = dirAzEl(S.az, S.el); return { b: norm3([a[0] * R - eye[0], a[1] * R - eye[1], a[2] * R - eye[2]]), th: 5.4 * S.s * DEG }; });
+  const wells = starWells(eye, R, stars, moon);
   const lo = Math.sin(-7 * DEG);
   for (let i = 0; i < n; i++) {
     const y = lo + (1 - lo) * rr(), az = rr() * 6.2832, cs = Math.sqrt(Math.max(0, 1 - y * y));
@@ -292,12 +296,13 @@ export function makeSky({ pools, n = 115000, seed = 21, R = SKY_R, ridge, stars 
       const well = 0.62 + 0.85 * Math.pow(1 - clamp(th / V.r, 0, 1), 1.3) + 0.06 * (rr() - 0.5);
       f = lerp(f, well, smoothstep(0.1, 0.5, F.bw));
     }
+    // (behind the stars: the paint's shader puts a stroke back when it is in a well, wherever the sky has turned it,
+    // since E2 -- here only the draw that was made for it is kept, so that the rest of the sky is the stroke it was)
     {
       const p = [d[0] * R * f - eye[0], d[1] * R * f - eye[1], d[2] * R * f - eye[2]], pe = norm3(p);
       for (const Wl of wells) {
         const th = Math.acos(clamp(dot3(pe, Wl.b), -1, 1));
-        const inWell = smoothstep(Wl.th * 1.15, Wl.th * 0.9, th);
-        if (inWell > 0) f = lerp(f, Math.max(f, STAR_F + 0.08 + 0.3 * rr()), inWell);
+        if (smoothstep(Wl.th * 1.15, Wl.th * 0.9, th) > 0) rr();
       }
     }
     const Rf = R * f, c = [d[0] * Rf, d[1] * Rf, d[2] * Rf];
@@ -444,12 +449,16 @@ function house(rows, rr, pools, H, rev) {
     }
   }
 }
-// the church: a nave, a tower, and the spire the whole valley is drawn to
-function church(rows, rr, pools, x, z, yaw, rev) {
-  house(rows, rr, pools, { x, z, w: 22, d: 10, h: 9, yaw, storeys: 2 }, rev);
+// the church: a nave, a tower, and the spire the whole valley is drawn to. The nave and the tower go into parts, so
+// that the film's audit can keep its distance from them (film.js)
+function church(rows, rr, pools, x, z, yaw, rev, parts = []) {
+  const nave = { x, z, w: 22, d: 10, h: 9, yaw, storeys: 2 };
+  house(rows, rr, pools, nave, rev);
   const cy = Math.cos(yaw), sy = Math.sin(yaw), A = [cy, 0, sy];
   const tx = x + A[0] * 13.5, tz = z + A[2] * 13.5;
-  house(rows, rr, pools, { x: tx, z: tz, w: 6, d: 6, h: 20, yaw, storeys: 3 }, rev);
+  const tower = { x: tx, z: tz, w: 6, d: 6, h: 20, yaw, storeys: 3 };
+  house(rows, rr, pools, tower, rev);
+  parts.push(nave, tower);
   const y0 = ground(tx, tz) + 20 + 6 * 0.36;
   const dark = pick(pools.village, 0.06, rr);
   for (let y = 0; y < 26; y += 0.5) {
@@ -478,7 +487,8 @@ export function makeVillage({ pools, seed = 51, rev = 0.45 }) {
   for (let i = 0; i < 40; i++) add((rr() - 0.5) * 330, -100 - rr() * 190, rr() * 6.2832);
   for (let i = 0; i < 12; i++) add((rr() - 0.5) * 520, -60 - rr() * 260, rr() * 6.2832);
   for (const H of houses) house(rows, rr, pools, H, rev + 0.2 * rr());
-  const spire = church(rows, rr, pools, -30, -160, 0, rev + 0.1);
+  const churchParts = [];
+  const spire = church(rows, rr, pools, -30, -160, 0, rev + 0.1, churchParts);
   // the trees between the houses: round dark crowns in the cypress's greens
   const trees = [];
   for (let i = 0; i < 26; i++) {
@@ -499,7 +509,7 @@ export function makeVillage({ pools, seed = 51, rev = 0.45 }) {
     // and a trunk
     for (let k = 0; k < 4; k++) rows.put([x + (rr() - 0.5) * 0.3, ground(x, z) + 0.5 + k * 0.5, z + (rr() - 0.5) * 0.3], [0.05, 1, 0.02], [1, 0, 0], 0, 0.9, 0.35, 0.006, 0.02, pick(pools.cypress, 0.1, rr), 0, rev + 0.15, rr() * 6.2832, null, 0);
   }
-  const ex = rows.done(); ex.houses = houses; ex.spire = spire; ex.trees = trees;
+  const ex = rows.done(); ex.houses = houses; ex.spire = spire; ex.trees = trees; ex.church = churchParts;
   return ex;
 }
 

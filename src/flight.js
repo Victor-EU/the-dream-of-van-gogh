@@ -5,7 +5,7 @@
 // gravity and no collision, but there is a ground: `floor(x, z)` is the height under you, and you go over it.
 import { clamp, DEG } from './util.js';
 
-const LOOK = 0.0028;                        // radians a pixel
+export const LOOK = 0.0028;                 // radians a pixel
 const MOVE = 8, FAST = 30;                  // m/s: an arrow, and an arrow with Shift
 const TURN = 50 * DEG;                      // rad/s: a full turn in seven seconds
 const T_SPEED = 0.2;                        // the body reaches its speed, and loses it, in a fifth of a second
@@ -28,6 +28,7 @@ export class Flight {
     this.floor = null; this.reach = 0;     // the ground under you, and how far from the middle of the world you may go
     this.script = null;                    // a hand the harness holds
     this.carry = null;                     // a current carrying the body to a standpoint (DESIGN 6.4)
+    this.coast = [0, 0, 0];                // what is left of the film's way when it lets the body go (E2)
     addEventListener('keydown', e => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -37,6 +38,8 @@ export class Flight {
       if (e.code === 'KeyH' || e.code === 'Slash') this.emit('help');
       if (e.code === 'KeyL') this.emit('ledger');
       if (e.code === 'KeyF') this.emit('fullscreen');
+      if (e.code === 'Space') this.emit('dream');
+      if (e.code === 'Escape') this.emit('escape');
       const dm = /^Digit(\d)$/.exec(e.code);
       if (dm) this.emit('eye', +dm[1]);
     });
@@ -92,7 +95,7 @@ export class Flight {
     if (o.yaw != null) { this.gaze.yaw = this.head.yaw = o.yaw * DEG; }
     if (o.pitch != null) { this.gaze.pitch = this.head.pitch = o.pitch * DEG; }
     if (o.speed != null) { this.speed = this.target = o.speed; }
-    this.roll = 0; this.yawRate = 0; this.carry = null;
+    this.roll = 0; this.yawRate = 0; this.carry = null; this.coast = [0, 0, 0];
   }
 
   // The current (DESIGN 6.4, BUILD.md D4): 1, 2, 3 do not cut to a standpoint, they let the night carry you
@@ -101,7 +104,7 @@ export class Flight {
   carryTo(to, T) {
     this.carry = { t: 0, T, p0: [...this.pos], p1: [to.x, to.y, to.z],
                    y0: this.gaze.yaw, y1: to.yaw * DEG, q0: this.gaze.pitch, q1: to.pitch * DEG, s0: this.speed };
-    this.roll = 0; this.yawRate = 0;
+    this.yawRate = 0; this.coast = [0, 0, 0];
     return T;
   }
   // is a key held that moves the body?
@@ -122,6 +125,7 @@ export class Flight {
       this.gaze.yaw = this.head.yaw = C.y0 + angDiff(C.y1, C.y0) * e;
       this.gaze.pitch = this.head.pitch = C.q0 + (C.q1 - C.q0) * e;
       this.speed = this.target = C.s0 * (1 - e);
+      this.roll *= Math.exp(-dt / 0.35);
       if (C.t >= C.T || (!S && (Math.abs(dxx) + Math.abs(dyy) > 6 || this.pressed()))) { this.carry = null; this.target = 0; }
       return { vx: v[0], vy: v[1], vz: v[2] };
     }
@@ -161,11 +165,14 @@ export class Flight {
     // your own speed -- the descent is held to the speed a constant deceleration could still stop from here, so
     // however fast you come down you are slowed at the same rate and arrive at a walking pace
     if (vy < 0) vy = Math.max(vy, -(Math.sqrt(2 * FLOOR_A * h) + 0.4));
-    this.pos[0] += vx * dt; this.pos[1] = Math.max(fl, this.pos[1] + vy * dt); this.pos[2] += vz * dt;
+    // a body the film has let go keeps its way for a moment and comes to rest as a released key does (E2)
+    const C = this.coast, ck = Math.exp(-dt / T_SPEED);
+    for (let k = 0; k < 3; k++) C[k] = Math.abs(C[k] * ck) < 0.01 ? 0 : C[k] * ck;
+    this.pos[0] += (vx + C[0]) * dt; this.pos[1] = Math.max(fl, this.pos[1] + (vy + C[1]) * dt); this.pos[2] += (vz + C[2]) * dt;
     // the ground under you rises and falls; and the reach is a sphere round the middle of the world, through the stars
     if (this.reach) { const r = Math.hypot(this.pos[0], this.pos[1], this.pos[2]); if (r > this.reach) for (let k = 0; k < 3; k++) this.pos[k] *= this.reach / r; }
-    this.roll = 0;
-    return { vx, vy, vz };
+    this.roll *= Math.exp(-dt / 0.35);         // nought in your own hands; a bank the film left goes out of it
+    return { vx: vx + C[0], vy: vy + C[1], vz: vz + C[2] };
   }
 
   // the camera: at the body, looking where the gaze looks
