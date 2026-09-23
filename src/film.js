@@ -105,7 +105,11 @@ export function script(E, plot) {
     // IV. The fall, and the water: down over the roofs to the river, the eye on the far bank and the sky over it,
     // and along the river low over the stars in it to the moon's
     { name: 'the fall', p: [-16, 48, -206], v: 8, look: at([-50, 70, -430]), time: 0.8, turn: [0, 0.7] },
-    { p: [-33, 14, -290], v: 16, look: ahead(60, 5) },
+    // at the foot of the fall the way ahead is down, to the water, and the eye on it looked eleven degrees down into
+    // the far bank for two seconds -- the ground there lies turned to the knoll, and from twenty metres over the river
+    // it is dark. So it stays up, the horizon on the lower third, on the hills and his sky over the far bank; it
+    // comes down to the water only as the body does, and leads the body round into the river's turn (E2.1)
+    { p: [-33, 14, -290], v: 16, look: ahead(90, 6, true) },
     { name: 'the river', p: [-40, 1.3, -333], v: 18, look: ahead(80, 1), title: { id: 691, delay: 1.5, dur: 8.5 }, grade: { warm: -0.3, sat: 0.05 } },
     { p: [100, 1.2, -349], v: 20, look: ahead(90, 3), grade: { warm: -0.3, sat: 0.05 } },
     { p: [255, 1.2, -369], v: 20, look: at([411, -1, -357]), grade: { warm: -0.2, sat: 0.05 } },
@@ -116,11 +120,14 @@ export function script(E, plot) {
     { p: glide(470), v: 58, look: swirlEye, time: 2, grade: { bloom: 0.2 } },
     { name: 'the morning star', p: star.at(760), v: 60, look: at(star.C), time: 2.4, turn: [0.15, 1], title: { id: 638, delay: 1, dur: 10 }, grade: { bloom: 0.3 } },
     // down the well the lens opens, so that its rings, each wider than the one before it, pass through the frame
-    // and out of it one by one and do not all go out of it at once and leave the core alone in the dark
+    // and out of it one by one and do not all go out of it at once and leave the core alone in the dark. And the
+    // body does not slow for the core: the last ring is out of the frame's corners 190 m short of the blaze, and
+    // coming in at 20 m/s and slowing to 7 the core hung alone in the blue for eight seconds before the light came.
+    // Now it keeps the rings' pace, and the light is rising as the last ring goes out of the corners (E2.1)
     { p: star.at(1000), v: 52, look: at(star.C), fov: 74, time: 2.8, grade: { bloom: 0.35 } },
-    { p: star.at(1220), v: 36, look: at(star.C), fov: 82, time: 3, grade: { bloom: 0.4 } },
-    { p: star.at(1370), v: 20, look: at(star.C), fov: 90, time: 3.2, grade: { bloom: 0.5 } },
-    { name: 'the blaze', p: star.at(1468), v: 7, look: at(star.C), fov: 94, time: 3.2, grade: { bloom: 0.5 } },
+    { p: star.at(1220), v: 44, look: at(star.C), fov: 82, time: 3, grade: { bloom: 0.4 } },
+    { p: star.at(1370), v: 38, look: at(star.C), fov: 90, time: 3.2, grade: { bloom: 0.5 } },
+    { name: 'the blaze', p: star.at(1468), v: 26, look: at(star.C), fov: 94, time: 3.2, grade: { bloom: 0.5 } },
   ];
 }
 
@@ -243,7 +250,7 @@ export class Film {
     let fade = 0, reveal = 1.1;
     if (T < WAKE) { fade = 1 - smoother(T / 3.2); reveal = clamp((T - 0.4) / 6, 0, 1.1); }
     if (T > this.Tb) fade = smoother((T - this.Tb) / BLAZE);
-    const blaze = smoother((T - this.Tb + 2.5) / (BLAZE + 1));
+    const blaze = smoother((T - this.Tb + 3.5) / (BLAZE + 2));   // from a second before the last ring goes
     const grade = {};
     for (const g of GRADE) grade[g] = lerp(A.grade?.[g] || 0, B.grade?.[g] || 0, e);
     grade.exposure += 1.1 * blaze; grade.bloom += 1.8 * blaze;

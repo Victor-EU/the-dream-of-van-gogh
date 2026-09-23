@@ -2220,3 +2220,49 @@ his dream?
   at 0.3 fps; it lifted without an error, and the film's start after it is one line.
 - **Letter 777** is the opening's caption and, on the first time round, the film's first line too.
 - The frame rate, above.
+
+### E2.1 — The fall's dark, the core alone  *(the author's word: "fix: a dark two-second stretch at the end of the fall toward the river, and the last stretch before the core where the rings have left the frame"; the same day)*
+
+Two of E2's *still visible*, sent back the same day. Both were the film's to fix, not the world's: nothing in
+`src/world.js` or the paint moved, and every place before the morning star is where it was, at the same time.
+
+**The fall's dark.** The place at the foot of the fall, 14 m over the near bank, looked 60 m ahead along the way,
+5° up. The way ahead there is down, to the water, so from 97 to 99.5 s the eye looked 9 to 11° down, into the far
+bank 75 to 115 m off. That ground's paint lies turned to the knoll (E0.1). From twenty metres over the river it is
+dark grey, with a few strokes on it and the river in the bottom of the frame. The place now looks level, 90 m
+ahead and 6° up. All the way down, the eye is between 9° up and level, on the hills 330 to 580 m out or on his
+sky over them, with the horizon on the lower third. The morning star, the star east of it and the moon's halo are
+in the top of the frame, and the eye comes down to the water only as the body does. It turns into the river's bend
+about a second before the body does, and its fastest turn in the fall is 20°/s, for 32.
+
+**The core alone.** The morning star's last ring is 254 m round the well's axis, 1,502 m down it from the knoll's
+eye. It leaves the frame's corners 190 m short of the blaze. The body came in at 36, 20 and 7 m/s over the last
+three places, and the light began to rise 7.5 s before the end. So from 168 to about 176 s the core hung by
+itself in the blue. Two changes in `src/film.js`:
+- The body keeps the rings' pace to the core: 44, 38 and 26 m/s.
+- The light begins a second sooner and rises more slowly: from 3.5 s before the blaze over 7 s, for 2.5 s over 6.
+  It is full at the same moment, 1.5 s before the end.
+
+Now the last ring's strokes are in the corners at 166.8 s with the light already rising (exposure +0.27, bloom
++0.85). At 167.8 s they are gone and the exposure is +0.55. The core, 22° across, grows to 60° as the light takes
+the frame. The film is 174.0 s, 7.7 s shorter, over the same 2,911 m.
+
+**What it measures.**
+
+| what | value |
+|---|---|
+| the fall, 97.5 to 99.5 s | mean light inside the bands 57 to 61 (of 255), for 38 to 42; pixels under 40, 40 to 45%, for 64 to 70% (3° up, tried first: 53 to 54, and half the frame under 40) |
+| the fall, the eye | 9° up to level, for 11° down; fastest turn 20°/s, for 32 |
+| the star, the gap | the light rising as the last ring leaves the corners, for 8 s of the core alone before it |
+| the film | 174.0 s, 2,911 m, 33 places in 15 shots |
+| the audit | unchanged: least room 1.5 m, 4.9 m, 12.6 m; the most 60 m/s, the eye 36°/s (off the spire's tip), bank 7°, pull 25 m/s², 1,393 m out |
+| the hand-over in the rush | an arrow at 38 m/s: no jump; 7.4 m more in the next second, and at rest |
+| frame rate | not measured, as in E2; nothing here draws more |
+
+**Pictures.** `e2-the-fall` (98.5 s) and `e2-the-last-ring` (166.8 s), new. `e2-the-blaze` re-taken at 171.3 s,
+which is as far before the end as E2's 179 s was. All headless, 1200 × 675.
+
+**Still visible.** As E2's, less these two. The far bank and the slopes of the northern hills are still dark from
+the air at night, and at 98 s they are still the lower half of the frame: the eye is turned from them, but they are
+not painted for it. The ground's paint lies turned to the knoll, and wherever the film looks at it from low and
+near, it is sparse.
