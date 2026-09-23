@@ -2266,3 +2266,13 @@ which is as far before the end as E2's 179 s was. All headless, 1200 × 675.
 the air at night, and at 98 s they are still the lower half of the frame: the eye is turned from them, but they are
 not painted for it. The ground's paint lies turned to the knoll, and wherever the film looks at it from low and
 near, it is sparse.
+
+### E2.2 — No line at the end  *(the author's word: "remove the last line at the end of the autoplay"; the same day)*
+
+Letter 638 (*we take death to go to a star*) came in the lower band at the morning star, from 158 s. Since E2.1's
+faster way down the well, it was still up as the light rose, to 168 s. It is taken out: the morning star's place
+has no line, and `LINES` in `src/film.js` has three. The film's words are now 777 on the knoll, 678 in the street
+and 691 on the river, and from 111.5 s to the end the band is empty. Nothing else moved: the film is 174.0 s, with
+the same places and the same times. The line is still the piece's own, in `letters/lines.json` and DESIGN.md.
+
+**Pictures.** `e2-the-last-ring` re-taken at 166.8 s without it.

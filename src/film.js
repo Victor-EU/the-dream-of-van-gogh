@@ -16,8 +16,8 @@
 // direction in the sky, or the way ahead -- and the gaze eases from one to the next. (3) The body banks into its
 // turns a little, as a bird does, and breathes; the lens widens with speed. (4) The world's clock is the film's to
 // bend: held nearly still at the top of the spire, where the loose sunflowers hang, and hurried in the sky, where the
-// swirls and the rings turn three times as fast. (5) His words, one an act, in the black band under the picture:
-// the lines the piece already quotes. It is silent, as the piece is (D5).
+// swirls and the rings turn three times as fast. (5) His words, in the black band under the picture: three of the
+// lines the piece already quotes, and none down the star's well. It is silent, as the piece is (D5).
 //
 // Everything here is a function of the film's time, so any frame can be had by asking for it (`dream.film.seek`) and
 // the loop is exact. What is not is yours: the eye, which a drag turns while the dream carries the body and which
@@ -37,13 +37,13 @@ const mix = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[
 const nlerp = (a, b, u) => norm3(mix(a, b, u));
 const GRADE = ['warm', 'sat', 'bloom', 'exposure', 'vignette'];
 
-// His words, one an act: only lines the piece already quotes -- letter 777 is the opening's caption (main.js), the
-// other three are checked against the edition in letters/letters.json (DESIGN 9: vangoghletters.org, CC BY-NC-SA 4.0)
+// His words: only lines the piece already quotes -- letter 777 is the opening's caption (main.js), the other two
+// are checked against the edition in letters/letters.json (DESIGN 9: vangoghletters.org, CC BY-NC-SA 4.0). Letter
+// 638's, the piece's own line, came down the star's well until E2.2, and the author took it out
 export const LINES = {
   777: { text: 'This morning I saw the countryside from my window a long time before sunrise, with nothing but the morning star, which looked very big.', by: 'to Theo · Saint-Rémy, June 1889' },
   678: { text: 'Now there’s a painting of night without black.', by: 'to Wil · Arles, September 1888' },
   691: { text: '…the starry sky at last, actually painted at night, under a gas-lamp.', by: 'to Theo · Arles, September 1888' },
-  638: { text: 'Just as we take the train to go to Tarascon or Rouen, we take death to go to a star.', by: 'to Theo · Arles, July 1888' },
 };
 
 // The places. Each says where the body passes (p), how fast it is going there (v, m/s), what the eye looks at
@@ -118,7 +118,7 @@ export function script(E, plot) {
     ...helix,
     { name: 'the glide', p: glide(240), v: 52, look: swirlEye, time: 1.8, turn: [0, 0.6], grade: { bloom: 0.15 } },
     { p: glide(470), v: 58, look: swirlEye, time: 2, grade: { bloom: 0.2 } },
-    { name: 'the morning star', p: star.at(760), v: 60, look: at(star.C), time: 2.4, turn: [0.15, 1], title: { id: 638, delay: 1, dur: 10 }, grade: { bloom: 0.3 } },
+    { name: 'the morning star', p: star.at(760), v: 60, look: at(star.C), time: 2.4, turn: [0.15, 1], grade: { bloom: 0.3 } },
     // down the well the lens opens, so that its rings, each wider than the one before it, pass through the frame
     // and out of it one by one and do not all go out of it at once and leave the core alone in the dark. And the
     // body does not slow for the core: the last ring is out of the frame's corners 190 m short of the blaze, and

@@ -28,9 +28,9 @@ spire, where the clock nearly stops and the loose sunflowers hang; a fall to the
 water to the moon's gold; a wide turning climb out of it with the valley wheeling under you; a glide into the great
 swirl; and down the morning star's well, through its turning rings, to its core. There the light takes the frame,
 and you wake on the knoll with the world painting itself in round you again. Two black bands close in as a film's
-frame does, and four of his lines come in the lower one, one an act. A drag looks round while the dream carries
-you; an arrow, a place key, `Esc` or `Space` hands the body back where it is, and it comes to rest. On a phone,
-*the dream* in the corner.
+frame does, and three of his lines come in the lower one. A drag looks round while the dream carries you; an
+arrow, a place key, `Esc` or `Space` hands the body back where it is, and it comes to rest. On a phone, *the dream*
+in the corner.
 
 Its sibling, *The World of Van Gogh* (github.com/Victor-EU/the-world-of-van-gogh), is a walk along a road through
 fourteen of his paintings. This piece is built clean beside it, from the same stroke records.
